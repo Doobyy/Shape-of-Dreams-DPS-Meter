@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -15,15 +17,11 @@ public sealed class DpsOverlay : MonoBehaviour
         PartyTotal
     }
 
-    private static readonly Color[] BarColors =
-    {
-        new Color(0.20f, 0.55f, 0.95f, 0.90f),
-        new Color(0.45f, 0.75f, 0.25f, 0.90f),
-        new Color(0.95f, 0.55f, 0.20f, 0.90f),
-        new Color(0.70f, 0.35f, 0.90f, 0.90f),
-        new Color(0.90f, 0.30f, 0.35f, 0.90f),
-        new Color(0.20f, 0.75f, 0.70f, 0.90f)
-    };
+    private static readonly Color DefaultBarColor = new Color(0.30f, 0.30f, 0.30f, 0.90f);
+    private static readonly Color FireBarColor = new Color(0.62f, 0.18f, 0.18f, 0.90f);
+    private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.90f);
+    private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.90f);
+    private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.90f);
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -301,7 +299,7 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             KeyValuePair<SkillTrigger, float> row = rows[i];
-            DrawDamageRow(GetSkillLabel(row.Key), row.Value, total, indexOffset + i);
+            DrawDamageRow(GetSkillLabel(row.Key), row.Value, total, indexOffset + i, _data.GetCurrentSkillElement(row.Key), GetIcon(row.Key));
         }
     }
 
@@ -319,7 +317,7 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             KeyValuePair<string, float> row = rows[i];
-            DrawDamageRow(row.Key, row.Value, total, indexOffset + i);
+            DrawDamageRow(row.Key, row.Value, total, indexOffset + i, null, null);
         }
     }
 
@@ -334,11 +332,30 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             KeyValuePair<string, float> row = rows[i];
-            DrawDamageRow(row.Key, row.Value, total, i);
+            DrawDamageRow(row.Key, row.Value, total, i, null, null);
         }
     }
 
-    private void DrawDamageRow(string name, float amount, float total, int index)
+    private void DrawRows(
+        IReadOnlyList<KeyValuePair<Gem, float>> rows,
+        float total,
+        int indexOffset = 0)
+    {
+        if (rows.Count == 0)
+        {
+            GUILayout.Label("No damage recorded yet.", _small);
+            return;
+        }
+
+        for (int i = 0; i < rows.Count; i++)
+        {
+            KeyValuePair<Gem, float> row = rows[i];
+            string name = row.Key != null ? row.Key.GetActorReadableName() : "Unknown Essence";
+            DrawDamageRow(name, row.Value, total, indexOffset + i, _data.GetCurrentEssenceElement(row.Key), row.Key != null ? row.Key.icon : null);
+        }
+    }
+
+    private void DrawDamageRow(string name, float amount, float total, int index, ElementalType? elemental, Sprite icon)
     {
         float ratio = total > 0f ? Mathf.Clamp01(amount / total) : 0f;
         float percent = ratio * 100f;
@@ -348,7 +365,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.Box(rowRect, GUIContent.none, _barBackground);
 
-        GUI.color = BarColors[index % BarColors.Length];
+        GUI.color = GetBarColor(elemental);
         GUI.Box(
             new Rect(
                 rowRect.x,
@@ -360,8 +377,16 @@ public sealed class DpsOverlay : MonoBehaviour
 
         GUI.color = Color.white;
 
+        float textX = rowRect.x + 7f;
+        if (icon != null)
+        {
+            Rect iconRect = new Rect(rowRect.x + 2f, rowRect.y + 2f, 18f, 18f);
+            DrawSprite(icon, iconRect);
+            textX = rowRect.x + 24f;
+        }
+
         GUI.Label(
-            new Rect(rowRect.x + 7f, rowRect.y, rowRect.width - 14f, rowRect.height),
+            new Rect(textX, rowRect.y, rowRect.width - (textX - rowRect.x) - 7f, rowRect.height),
             name,
             _row);
 
@@ -371,6 +396,67 @@ public sealed class DpsOverlay : MonoBehaviour
             _rowRight);
 
         GUI.color = Color.white;
+    }
+
+    private static Color GetBarColor(ElementalType? elemental)
+    {
+        if (!elemental.HasValue)
+            return DefaultBarColor;
+
+        switch (elemental.Value.ToString())
+        {
+            case "Fire": return FireBarColor;
+            case "Ice": return IceBarColor;
+            case "Light": return LightBarColor;
+            case "Dark": return DarkBarColor;
+            default: return DefaultBarColor;
+        }
+    }
+
+    private static void DrawSprite(Sprite sprite, Rect rect)
+    {
+        if (sprite == null || sprite.texture == null)
+            return;
+
+        Rect r = sprite.textureRect;
+        Texture texture = sprite.texture;
+        Rect uv = new Rect(
+            r.x / texture.width,
+            r.y / texture.height,
+            r.width / texture.width,
+            r.height / texture.height);
+        GUI.DrawTextureWithTexCoords(rect, texture, uv, true);
+    }
+
+    private static Sprite GetIcon(SkillTrigger skill)
+    {
+        if (skill == null)
+            return null;
+
+        Sprite direct = FindSpriteMember(skill);
+        if (direct != null)
+            return direct;
+
+        PropertyInfo configProperty = skill.GetType().GetProperty("currentConfig", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        object config = configProperty != null ? configProperty.GetValue(skill, null) : null;
+        return FindSpriteMember(config);
+    }
+
+    private static Sprite FindSpriteMember(object target)
+    {
+        if (target == null)
+            return null;
+
+        Type type = target.GetType();
+        FieldInfo field = type.GetField("icon", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (field != null && typeof(Sprite).IsAssignableFrom(field.FieldType))
+            return field.GetValue(target) as Sprite;
+
+        PropertyInfo property = type.GetProperty("icon", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (property != null && typeof(Sprite).IsAssignableFrom(property.PropertyType))
+            return property.GetValue(target, null) as Sprite;
+
+        return null;
     }
 
     private string GetSkillLabel(SkillTrigger skill)
