@@ -88,11 +88,11 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
 
             case DisplayMode.PartyDps:
-                DrawParty(_data.CurrentParty, _data.CurrentTotalDamage);
+                DrawParty(_data.CurrentParty, _data.CurrentInstancePartyDamage);
                 break;
 
             case DisplayMode.PartyTotal:
-                DrawParty(_data.CumulativeParty, _data.CumulativeTotalDamage);
+                DrawParty(_data.CumulativeParty, _data.CumulativePartyDamage);
                 break;
         }
 
