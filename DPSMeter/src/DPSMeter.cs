@@ -69,7 +69,7 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        SkillTrigger skill = info.actor.firstTrigger;
+        SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
         AbilityInstance ability = info.actor.FindFirstOfType<AbilityInstance>();
         Gem gem = ability != null ? ability.gem : info.actor.FindFirstOfType<Gem>();
 
