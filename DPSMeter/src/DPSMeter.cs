@@ -78,7 +78,15 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeDamage(EventInfoDamage info)
     {
-        if (info.actor == null || info.victim == null || info.damage.amount <= 0f)
+        if (info.actor == null || info.victim == null)
+        {
+            return;
+        }
+
+        float appliedDamage = Mathf.Max(0f, info.damage.amount);
+        float producedDamage = appliedDamage + Mathf.Max(0f, info.damage.discardedAmount);
+
+        if (producedDamage <= 0f)
         {
             return;
         }
@@ -110,22 +118,72 @@ public sealed class DPSMeter : ModBehaviour
         Gem gem = ability != null ? ability.gem : null;
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
 
-        Actor source = gem != null
-            ? gem
-            : (skill != null ? skill : null);
+        string skillName = skill != null
+            ? skill.GetFormattedSkillTitle()
+            : null;
 
-        string sourceName = source != null
-            ? source.GetType().Name
-            : "Basic / Other";
+        string essenceName = gem != null
+            ? GetEssenceLabel(gem)
+            : null;
 
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
 
         _data.AddDamage(
-            info.damage.amount,
+            producedDamage,
+            appliedDamage,
             isLocalPlayer,
-            source,
-            sourceName,
+            skillName,
+            essenceName,
             playerName);
+    }
+
+    private static string GetEssenceLabel(Gem gem)
+    {
+        if (gem == null)
+        {
+            return null;
+        }
+
+        string typeName = gem.GetType().Name;
+
+        if (typeName.StartsWith("Gem_"))
+        {
+            string name = typeName.Substring(4);
+            int separator = name.IndexOf('_');
+
+            if (separator >= 0)
+            {
+                name = name.Substring(separator + 1);
+            }
+
+            return "Essence of " + SplitPascalCase(name);
+        }
+
+        return typeName;
+    }
+
+    private static string SplitPascalCase(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return "Unknown";
+        }
+
+        System.Text.StringBuilder result = new System.Text.StringBuilder(value.Length + 8);
+
+        for (int i = 0; i < value.Length; i++)
+        {
+            char c = value[i];
+
+            if (i > 0 && char.IsUpper(c) && !char.IsUpper(value[i - 1]))
+            {
+                result.Append(' ');
+            }
+
+            result.Append(c);
+        }
+
+        return result.ToString();
     }
 
     private DewPlayer FindPlayer(Hero hero)
@@ -154,6 +212,15 @@ public sealed class DPSMeter : ModBehaviour
         if (_overlay != null)
         {
             _overlay.Visible = !_overlay.Visible;
+        }
+    }
+
+    [ModBehaviour.ConsoleCommand("Reset the DPS meter.", "dps_reset")]
+    private void ResetMeter()
+    {
+        if (_data != null)
+        {
+            _data.Reset();
         }
     }
 
