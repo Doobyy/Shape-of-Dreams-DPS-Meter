@@ -11,6 +11,7 @@ public sealed class DPSMeter : ModBehaviour
     private DpsData _data;
     private DpsOverlay _overlay;
     private bool _subscribed;
+    private Hero _currentHero;
 
     private void Awake()
     {
@@ -33,6 +34,7 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _clientEvents.OnTakeDamage += OnTakeDamage;
+        _clientEvents.OnLocalHeroAbilityChanged += OnLocalHeroAbilityChanged;
         _subscribed = true;
         Debug.Log("[DPS Meter] Damage event listener attached.");
     }
@@ -42,33 +44,27 @@ public sealed class DPSMeter : ModBehaviour
         if (_clientEvents != null && _subscribed)
         {
             _clientEvents.OnTakeDamage -= OnTakeDamage;
+            _clientEvents.OnLocalHeroAbilityChanged -= OnLocalHeroAbilityChanged;
         }
 
         _clientEvents = null;
         _subscribed = false;
     }
 
-    private void AttachToZoneManager()
+    private void OnLocalHeroAbilityChanged(Hero hero, HeroSkillLocation location)
     {
-        _zoneManager = ZoneManager.instance;
-
-        if (_zoneManager == null)
+        if (hero == null || hero == _currentHero)
         {
             return;
         }
 
-        _zoneManager.ClientEvent_OnZoneLoadStarted += OnZoneLoadStarted;
-        Debug.Log("[DPS Meter] Zone reset listener attached.");
-    }
-
-    private void DetachFromZoneManager()
-    {
-        if (_zoneManager != null)
+        if (_currentHero != null)
         {
-            _zoneManager.ClientEvent_OnZoneLoadStarted -= OnZoneLoadStarted;
+            _data.ResetCurrentInstance();
         }
 
-        _zoneManager = null;
+        _currentHero = hero;
+        Debug.Log("[DPS Meter] Reset current damage window for hero ability change.");
     }
 
     private void OnZoneLoadStarted(EventInfoLoadZone info)
@@ -114,16 +110,22 @@ public sealed class DPSMeter : ModBehaviour
 
         bool isLocalPlayer = sourcePlayer == local;
 
-        AbilityInstance ability = info.actor.FindFirstOfType<AbilityInstance>();
-        Gem gem = ability != null ? ability.gem : null;
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
+        AbilityInstance ability = info.actor.FindFirstOfType<AbilityInstance>();
+
+        Gem gem = ability != null ? ability.gem : null;
+
+        if (gem == null)
+        {
+            gem = info.actor.FindFirstOfType<Gem>();
+        }
 
         string skillName = skill != null
             ? skill.GetFormattedSkillTitle()
-            : null;
+            : "Basic / Other";
 
         string essenceName = gem != null
-            ? GetEssenceLabel(gem)
+            ? gem.GetActorReadableName()
             : null;
 
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
@@ -132,6 +134,7 @@ public sealed class DPSMeter : ModBehaviour
             producedDamage,
             appliedDamage,
             isLocalPlayer,
+            skill,
             skillName,
             essenceName,
             playerName);
@@ -139,51 +142,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private static string GetEssenceLabel(Gem gem)
     {
-        if (gem == null)
-        {
-            return null;
-        }
-
-        string typeName = gem.GetType().Name;
-
-        if (typeName.StartsWith("Gem_"))
-        {
-            string name = typeName.Substring(4);
-            int separator = name.IndexOf('_');
-
-            if (separator >= 0)
-            {
-                name = name.Substring(separator + 1);
-            }
-
-            return "Essence of " + SplitPascalCase(name);
-        }
-
-        return typeName;
-    }
-
-    private static string SplitPascalCase(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-        {
-            return "Unknown";
-        }
-
-        System.Text.StringBuilder result = new System.Text.StringBuilder(value.Length + 8);
-
-        for (int i = 0; i < value.Length; i++)
-        {
-            char c = value[i];
-
-            if (i > 0 && char.IsUpper(c) && !char.IsUpper(value[i - 1]))
-            {
-                result.Append(' ');
-            }
-
-            result.Append(c);
-        }
-
-        return result.ToString();
+        return gem != null ? gem.GetActorReadableName() : null;
     }
 
     private DewPlayer FindPlayer(Hero hero)
@@ -239,5 +198,28 @@ public sealed class DPSMeter : ModBehaviour
         {
             Instance = null;
         }
+    }
+
+    private void AttachToZoneManager()
+    {
+        _zoneManager = ZoneManager.instance;
+
+        if (_zoneManager == null)
+        {
+            return;
+        }
+
+        _zoneManager.ClientEvent_OnZoneLoadStarted += OnZoneLoadStarted;
+        Debug.Log("[DPS Meter] Zone reset listener attached.");
+    }
+
+    private void DetachFromZoneManager()
+    {
+        if (_zoneManager != null)
+        {
+            _zoneManager.ClientEvent_OnZoneLoadStarted -= OnZoneLoadStarted;
+        }
+
+        _zoneManager = null;
     }
 }
