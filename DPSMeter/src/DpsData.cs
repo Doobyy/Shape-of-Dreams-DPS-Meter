@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -7,11 +6,10 @@ namespace DPSMeter;
 
 public sealed class DpsData
 {
-    private readonly Dictionary<SkillTrigger, float> _currentPersonal = new Dictionary<SkillTrigger, float>();
-    private readonly Dictionary<SkillTrigger, float> _cumulativePersonal = new Dictionary<SkillTrigger, float>();
+    private readonly Dictionary<Actor, float> _currentPersonal = new Dictionary<Actor, float>();
+    private readonly Dictionary<Actor, float> _cumulativePersonal = new Dictionary<Actor, float>();
     private readonly Dictionary<string, float> _currentOtherPersonal = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeOtherPersonal = new Dictionary<string, float>();
-
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
 
@@ -27,15 +25,10 @@ public sealed class DpsData
     public float CurrentDps =>
         CurrentHitCount == 0 ? 0f : CurrentTotalDamage / CurrentDuration;
 
-    public float CumulativeDps =>
-        CumulativeTotalDamage <= 0f || StartedAt <= 0f
-            ? 0f
-            : CumulativeTotalDamage / Mathf.Max(0.001f, Time.time - StartedAt);
-
-    public IReadOnlyList<KeyValuePair<SkillTrigger, float>> CurrentPersonalSkills =>
+    public IReadOnlyList<KeyValuePair<Actor, float>> CurrentPersonalSkills =>
         _currentPersonal.OrderByDescending(pair => pair.Value).ToList();
 
-    public IReadOnlyList<KeyValuePair<SkillTrigger, float>> CumulativePersonalSkills =>
+    public IReadOnlyList<KeyValuePair<Actor, float>> CumulativePersonalSkills =>
         _cumulativePersonal.OrderByDescending(pair => pair.Value).ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalOther =>
@@ -50,12 +43,7 @@ public sealed class DpsData
     public IReadOnlyList<KeyValuePair<string, float>> CumulativeParty =>
         _cumulativeParty.OrderByDescending(pair => pair.Value).ToList();
 
-    public void AddDamage(
-        float amount,
-        bool isLocalPlayer,
-        SkillTrigger skill,
-        string sourceName,
-        string playerName)
+    public void AddDamage(float amount, bool isLocalPlayer, Actor source, string sourceName, string playerName)
     {
         if (amount <= 0f)
         {
@@ -82,10 +70,10 @@ public sealed class DpsData
             return;
         }
 
-        if (skill != null)
+        if (source != null)
         {
-            Add(_currentPersonal, skill, amount);
-            Add(_cumulativePersonal, skill, amount);
+            Add(_currentPersonal, source, amount);
+            Add(_cumulativePersonal, source, amount);
         }
         else
         {
@@ -126,7 +114,7 @@ public sealed class DpsData
         map[key] = current + amount;
     }
 
-    private static void Add(Dictionary<SkillTrigger, float> map, SkillTrigger key, float amount)
+    private static void Add(Dictionary<Actor, float> map, Actor key, float amount)
     {
         float current;
         map.TryGetValue(key, out current);
