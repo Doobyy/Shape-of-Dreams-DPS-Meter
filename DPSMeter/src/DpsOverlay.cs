@@ -9,6 +9,8 @@ public sealed class DpsOverlay : MonoBehaviour
     {
         CurrentDps,
         DamageTotal,
+        SkillBreakdown,
+        EssenceBreakdown,
         PartyDps,
         PartyTotal
     }
@@ -40,6 +42,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _small;
     private GUIStyle _barBackground;
     private GUIStyle _barFill;
+    private GUIStyle _rowRight;
 
     public bool Visible { get; set; } = true;
 
@@ -80,11 +83,29 @@ public sealed class DpsOverlay : MonoBehaviour
         switch (_mode)
         {
             case DisplayMode.CurrentDps:
-                DrawPersonal(_data.CurrentPersonalSkills, _data.CurrentPersonalOther, _data.CurrentInstancePersonalDamage);
+                DrawPersonal(
+                    _data.CurrentPersonalSkills,
+                    _data.CurrentPersonalOther,
+                    _data.CurrentInstancePersonalDamage);
                 break;
 
             case DisplayMode.DamageTotal:
-                DrawPersonal(_data.CumulativePersonalSkills, _data.CumulativePersonalOther, _data.CumulativePersonalDamage);
+                DrawPersonal(
+                    _data.CumulativePersonalSkills,
+                    _data.CurrentPersonalOther,
+                    _data.CumulativePersonalDamage);
+                break;
+
+            case DisplayMode.SkillBreakdown:
+                DrawRows(
+                    _data.CurrentPersonalSkills,
+                    _data.CurrentInstancePersonalDamage);
+                break;
+
+            case DisplayMode.EssenceBreakdown:
+                DrawRows(
+                    _data.CurrentPersonalEssences,
+                    _data.CurrentInstancePersonalDamage);
                 break;
 
             case DisplayMode.PartyDps:
@@ -195,7 +216,7 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 if (!_headerMoved)
                 {
-                    _mode = (DisplayMode)(((int)_mode + 1) % 4);
+                    _mode = (DisplayMode)(((int)_mode + 1) % 6);
                 }
 
                 _dragging = false;
@@ -219,6 +240,16 @@ public sealed class DpsOverlay : MonoBehaviour
             case DisplayMode.DamageTotal:
                 title = "DAMAGE TOTAL";
                 metric = FormatNumber(_data.CumulativePersonalDamage) + " DAMAGE";
+                break;
+
+            case DisplayMode.SkillBreakdown:
+                title = "SKILL DAMAGE";
+                metric = FormatNumber(_data.CurrentInstancePersonalDamage) + " TOTAL";
+                break;
+
+            case DisplayMode.EssenceBreakdown:
+                title = "ESSENCE DAMAGE";
+                metric = FormatNumber(_data.CurrentInstancePersonalDamage) + " TOTAL";
                 break;
 
             case DisplayMode.PartyDps:
@@ -248,26 +279,29 @@ public sealed class DpsOverlay : MonoBehaviour
     }
 
     private void DrawPersonal(
-        IReadOnlyList<KeyValuePair<Actor, float>> sources,
+        IReadOnlyList<KeyValuePair<string, float>> sources,
         IReadOnlyList<KeyValuePair<string, float>> other,
         float total)
     {
-        if (sources.Count == 0 && other.Count == 0)
+        DrawRows(sources, total);
+        DrawRows(other, total, sources.Count);
+    }
+
+    private void DrawRows(
+        IReadOnlyList<KeyValuePair<string, float>> rows,
+        float total,
+        int indexOffset = 0)
+    {
+        if (rows.Count == 0)
         {
             GUILayout.Label("No damage recorded yet.", _small);
             return;
         }
 
-        for (int i = 0; i < sources.Count; i++)
+        for (int i = 0; i < rows.Count; i++)
         {
-            KeyValuePair<Actor, float> entry = sources[i];
-            DrawDamageRow(GetSourceLabel(entry.Key), entry.Value, total, i);
-        }
-
-        for (int i = 0; i < other.Count; i++)
-        {
-            KeyValuePair<string, float> entry = other[i];
-            DrawDamageRow(entry.Key, entry.Value, total, sources.Count + i);
+            KeyValuePair<string, float> row = rows[i];
+            DrawDamageRow(row.Key, row.Value, total, indexOffset + i);
         }
     }
 
@@ -321,60 +355,6 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = Color.white;
     }
 
-    private string GetSourceLabel(Actor source)
-    {
-        if (source is SkillTrigger skill)
-        {
-            return skill.GetFormattedSkillTitle();
-        }
-
-        if (source is Gem gem)
-        {
-            string typeName = gem.GetType().Name;
-
-            if (typeName.StartsWith("Gem_"))
-            {
-                string name = typeName.Substring(4);
-                int separator = name.IndexOf('_');
-
-                if (separator >= 0)
-                {
-                    name = name.Substring(separator + 1);
-                }
-
-                return "Essence of " + SplitPascalCase(name);
-            }
-
-            return typeName;
-        }
-
-        return source != null ? source.GetType().Name : "Unknown Source";
-    }
-
-    private static string SplitPascalCase(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-        {
-            return "Unknown";
-        }
-
-        System.Text.StringBuilder result = new System.Text.StringBuilder(value.Length + 8);
-
-        for (int i = 0; i < value.Length; i++)
-        {
-            char c = value[i];
-
-            if (i > 0 && char.IsUpper(c) && !char.IsUpper(value[i - 1]))
-            {
-                result.Append(' ');
-            }
-
-            result.Append(c);
-        }
-
-        return result.ToString();
-    }
-
     private static string FormatNumber(float value)
     {
         if (value >= 1000000000f)
@@ -407,8 +387,6 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.Box(grip, "...");
         GUI.color = Color.white;
     }
-
-    private GUIStyle _rowRight;
 
     private void EnsureStyles()
     {
