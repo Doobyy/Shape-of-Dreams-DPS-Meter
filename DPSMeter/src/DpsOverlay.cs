@@ -218,7 +218,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             case DisplayMode.DamageTotal:
                 title = "DAMAGE TOTAL";
-                metric = FormatNumber(_data.CumulativeTotalDamage) + " DAMAGE";
+                metric = FormatNumber(_data.CumulativePersonalDamage) + " DAMAGE";
                 break;
 
             case DisplayMode.PartyDps:
@@ -228,7 +228,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             default:
                 title = "PARTY TOTAL";
-                metric = FormatNumber(_data.CumulativeTotalDamage) + " DAMAGE";
+                metric = FormatNumber(_data.CumulativePartyDamage) + " DAMAGE";
                 break;
         }
 
