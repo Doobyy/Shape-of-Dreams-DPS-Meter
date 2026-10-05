@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Assembly-CSharp</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>net40</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>14.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup />
+  <ItemGroup>
+    <Reference Include="Dew.Core">
+      <HintPath>..\dll\Dew.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Universal.Runtime" />
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\dll\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.RenderPipelines.Core.Runtime" />
+    <Reference Include="Unity.TextMeshPro" />
+    <Reference Include="Febucci.TextAnimator.Runtime" />
+    <Reference Include="UnityEngine.AnimationModule" />
+    <Reference Include="DOTween" />
+    <Reference Include="UnityEngine.ParticleSystemModule" />
+    <Reference Include="UnityEngine.VideoModule" />
+    <Reference Include="UnityEngine.UIModule" />
+    <Reference Include="sc.posteffects.runtime" />
+    <Reference Include="Dew.UI" />
+    <Reference Include="UnityEngine.UI" />
+    <Reference Include="ScreenFx" />
+    <Reference Include="Unity.VisualEffectGraph.Runtime" />
+    <Reference Include="UnityEngine.VFXModule" />
+    <Reference Include="UnityEngine.PhysicsModule" />
+    <Reference Include="UnityEngine.InputLegacyModule" />
+    <Reference Include="Mirror" />
+    <Reference Include="System.Core" />
+    <Reference Include="VolFx" />
+    <Reference Include="Unity.InputSystem" />
+  </ItemGroup>
+</Project>
