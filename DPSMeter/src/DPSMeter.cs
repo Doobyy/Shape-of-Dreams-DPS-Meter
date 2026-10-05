@@ -124,9 +124,7 @@ public sealed class DPSMeter : ModBehaviour
             ? skill.GetFormattedSkillTitle()
             : "Basic / Other";
 
-        string essenceName = gem != null
-            ? gem.GetActorReadableName()
-            : null;
+        ElementalType? elementalType = info.damage.elementalType;
 
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
 
@@ -136,7 +134,8 @@ public sealed class DPSMeter : ModBehaviour
             isLocalPlayer,
             skill,
             skillName,
-            essenceName,
+            gem,
+            elementalType,
             playerName);
     }
 
