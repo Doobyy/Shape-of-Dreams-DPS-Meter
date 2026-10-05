@@ -1,0 +1,20 @@
+﻿[
+  {
+    "target": "Shrine_BlessedGuidance",
+    "overrides": {
+      "healRatio": "1",
+      "ticks": "1",
+      "tickInterval": "0.1",
+      "healDelayByDistance": "0.02",
+      "explodeDelay": "1",
+      "canBreak": "True",
+      "mapVisibility": "0",
+      "interactableDelay": "0",
+      "maxTotalUseCount": "1",
+      "maxUseCountPerPlayer": "-1",
+      "useCooldown": "1",
+      "baseGoldCost": "0",
+      "unavailableByDefault": "False"
+    }
+  }
+]

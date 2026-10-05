@@ -1,0 +1,12 @@
+﻿[
+  {
+    "target": "Ai_Atk_VesperMace_Crit",
+    "overrides": {
+      "scaleRangeWithTriggerRange": "False",
+      "mainTargetAttackEffect": "1",
+      "mainTargetDamage": "1",
+      "subTargetAttackEffect": "0.5",
+      "subTargetDamage": "0.5"
+    }
+  }
+]
