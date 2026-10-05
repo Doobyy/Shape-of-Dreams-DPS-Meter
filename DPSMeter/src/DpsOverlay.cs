@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -406,7 +405,7 @@ public sealed class DpsOverlay : MonoBehaviour
         switch (elemental.Value.ToString())
         {
             case "Fire": return FireBarColor;
-            case "Ice": return IceBarColor;
+            case "Cold": return IceBarColor;
             case "Light": return LightBarColor;
             case "Dark": return DarkBarColor;
             default: return DefaultBarColor;
@@ -430,33 +429,10 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private static Sprite GetIcon(SkillTrigger skill)
     {
-        if (skill == null)
+        if (skill == null || skill.currentConfig == null)
             return null;
 
-        Sprite direct = FindSpriteMember(skill);
-        if (direct != null)
-            return direct;
-
-        PropertyInfo configProperty = skill.GetType().GetProperty("currentConfig", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        object config = configProperty != null ? configProperty.GetValue(skill, null) : null;
-        return FindSpriteMember(config);
-    }
-
-    private static Sprite FindSpriteMember(object target)
-    {
-        if (target == null)
-            return null;
-
-        Type type = target.GetType();
-        FieldInfo field = type.GetField("icon", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (field != null && typeof(Sprite).IsAssignableFrom(field.FieldType))
-            return field.GetValue(target) as Sprite;
-
-        PropertyInfo property = type.GetProperty("icon", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (property != null && typeof(Sprite).IsAssignableFrom(property.PropertyType))
-            return property.GetValue(target, null) as Sprite;
-
-        return null;
+        return skill.currentConfig.triggerIcon;
     }
 
     private string GetSkillLabel(SkillTrigger skill)
@@ -467,7 +443,7 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         string title = skill.GetFormattedSkillTitle();
-        return title + " [" + skill.skillType + "]";
+        return title;
     }
 
     private static string FormatNumber(float value)
