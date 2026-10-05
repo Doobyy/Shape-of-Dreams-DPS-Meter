@@ -13,8 +13,10 @@ public sealed class DpsData
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
 
-    public float CurrentInstanceDamage { get; private set; }
-    public float CumulativeTotalDamage { get; private set; }
+    public float CurrentInstancePersonalDamage { get; private set; }
+    public float CumulativePersonalDamage { get; private set; }
+    public float CurrentInstancePartyDamage { get; private set; }
+    public float CumulativePartyDamage { get; private set; }
     public float StartedAt { get; private set; }
     public float LastHitAt { get; private set; }
     public int CurrentHitCount { get; private set; }
@@ -22,8 +24,11 @@ public sealed class DpsData
     public float CurrentDuration =>
         CurrentHitCount == 0 ? 0f : Mathf.Max(0.001f, LastHitAt - StartedAt);
 
-    public float CurrentDps =>
-        CurrentHitCount == 0 ? 0f : CurrentInstanceDamage / CurrentDuration;
+    public float CurrentPersonalDps =>
+        CurrentHitCount == 0 ? 0f : CurrentInstancePersonalDamage / CurrentDuration;
+
+    public float CurrentPartyDps =>
+        CurrentHitCount == 0 ? 0f : CurrentInstancePartyDamage / CurrentDuration;
 
     public IReadOnlyList<KeyValuePair<Actor, float>> CurrentPersonalSkills =>
         _currentPersonal.OrderByDescending(pair => pair.Value).ToList();
@@ -59,8 +64,8 @@ public sealed class DpsData
 
         LastHitAt = now;
         CurrentHitCount++;
-        CurrentInstanceDamage += amount;
-        CumulativeTotalDamage += amount;
+        CurrentInstancePartyDamage += amount;
+        CumulativePartyDamage += amount;
 
         Add(_currentParty, playerName, amount);
         Add(_cumulativeParty, playerName, amount);
@@ -69,6 +74,9 @@ public sealed class DpsData
         {
             return;
         }
+
+        CurrentInstancePersonalDamage += amount;
+        CumulativePersonalDamage += amount;
 
         if (source != null)
         {
@@ -84,7 +92,8 @@ public sealed class DpsData
 
     public void ResetCurrentInstance()
     {
-        CurrentInstanceDamage = 0f;
+        CurrentInstancePersonalDamage = 0f;
+        CurrentInstancePartyDamage = 0f;
         StartedAt = 0f;
         LastHitAt = 0f;
         CurrentHitCount = 0;
@@ -96,7 +105,8 @@ public sealed class DpsData
     public void Reset()
     {
         ResetCurrentInstance();
-        CumulativeTotalDamage = 0f;
+        CumulativePersonalDamage = 0f;
+        CumulativePartyDamage = 0f;
         _cumulativePersonal.Clear();
         _cumulativeOtherPersonal.Clear();
         _cumulativeParty.Clear();
