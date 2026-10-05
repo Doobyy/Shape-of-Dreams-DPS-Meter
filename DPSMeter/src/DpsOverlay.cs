@@ -92,7 +92,7 @@ public sealed class DpsOverlay : MonoBehaviour
             case DisplayMode.DamageTotal:
                 DrawPersonal(
                     _data.CumulativePersonalSkills,
-                    _data.CurrentPersonalOther,
+                    _data.CumulativePersonalOther,
                     _data.CumulativePersonalDamage);
                 break;
 
@@ -279,12 +279,30 @@ public sealed class DpsOverlay : MonoBehaviour
     }
 
     private void DrawPersonal(
-        IReadOnlyList<KeyValuePair<string, float>> sources,
+        IReadOnlyList<KeyValuePair<SkillTrigger, float>> sources,
         IReadOnlyList<KeyValuePair<string, float>> other,
         float total)
     {
         DrawRows(sources, total);
         DrawRows(other, total, sources.Count);
+    }
+
+    private void DrawRows(
+        IReadOnlyList<KeyValuePair<SkillTrigger, float>> rows,
+        float total,
+        int indexOffset = 0)
+    {
+        if (rows.Count == 0)
+        {
+            GUILayout.Label("No damage recorded yet.", _small);
+            return;
+        }
+
+        for (int i = 0; i < rows.Count; i++)
+        {
+            KeyValuePair<SkillTrigger, float> row = rows[i];
+            DrawDamageRow(GetSkillLabel(row.Key), row.Value, total, indexOffset + i);
+        }
     }
 
     private void DrawRows(
@@ -353,6 +371,17 @@ public sealed class DpsOverlay : MonoBehaviour
             _rowRight);
 
         GUI.color = Color.white;
+    }
+
+    private string GetSkillLabel(SkillTrigger skill)
+    {
+        if (skill == null)
+        {
+            return "Basic / Other";
+        }
+
+        string title = skill.GetFormattedSkillTitle();
+        return title + " [" + skill.skillType + "]";
     }
 
     private static string FormatNumber(float value)
