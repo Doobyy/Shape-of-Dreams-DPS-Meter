@@ -124,7 +124,7 @@ public sealed class DPSMeter : ModBehaviour
             ? skill.GetFormattedSkillTitle()
             : "Basic / Other";
 
-        ElementalType? elementalType = info.damage.elementalType;
+        ElementalType? elementalType = info.damage.elemental;
 
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
 
