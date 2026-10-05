@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Dew.Contents</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>net40</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>14.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup />
+  <ItemGroup>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\dll\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AnimationModule" />
+    <Reference Include="Dew.Core">
+      <HintPath>..\dll\Dew.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core" />
+    <Reference Include="Mirror" />
+    <Reference Include="UniTask" />
+    <Reference Include="UnityEngine.ParticleSystemModule" />
+    <Reference Include="UnityEngine.PhysicsModule" />
+    <Reference Include="ClassLibrary1" />
+    <Reference Include="Dew.External" />
+    <Reference Include="UnityEngine.AIModule" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="DOTween" />
+    <Reference Include="UnityEngine.TerrainModule" />
+    <Reference Include="UnityEngine.AudioModule" />
+    <Reference Include="UnityEngine.UI" />
+    <Reference Include="Unity.RenderPipelines.Universal.Runtime" />
+    <Reference Include="Unity.RenderPipelines.Core.Runtime" />
+    <Reference Include="Newtonsoft.Json" />
+    <Reference Include="com.rlabrecque.steamworks.net" />
+    <Reference Include="Unity.AI.Navigation" />
+    <Reference Include="Unity.InputSystem" />
+  </ItemGroup>
+</Project>

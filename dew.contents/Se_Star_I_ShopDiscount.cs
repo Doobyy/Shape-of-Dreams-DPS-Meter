@@ -1,0 +1,29 @@
+using Mirror;
+using UnityEngine;
+
+public class Se_Star_I_ShopDiscount : StarEffect
+{
+	public StarScalingValue discountRatio;
+
+	protected override void OnCreate()
+	{
+		base.OnCreate();
+		if (((NetworkBehaviour)this).isServer)
+		{
+			player.buyPriceMultiplier *= 1f - GetValue(discountRatio);
+		}
+	}
+
+	protected override void OnDestroyActor()
+	{
+		base.OnDestroyActor();
+		if (((NetworkBehaviour)this).isServer && (Object)(object)player != null)
+		{
+			player.buyPriceMultiplier /= 1f - GetValue(discountRatio);
+		}
+	}
+
+	private void MirrorProcessed()
+	{
+	}
+}
