@@ -202,13 +202,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
         string title = skill.GetFormattedSkillTitle();
 
-        HeroSkillLocation location;
-        if (HeroSkill.TryGetSkillLocation(skill, out location))
-        {
-            return title + " [" + location + "]";
-        }
-
-        return title;
+        return title + " [" + skill.skillType + "]";
     }
 
     private static string FormatNumber(float value)
