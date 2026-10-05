@@ -6,8 +6,8 @@ namespace DPSMeter;
 
 public sealed class DpsData
 {
-    private readonly Dictionary<string, float> _currentPersonalSkills = new Dictionary<string, float>();
-    private readonly Dictionary<string, float> _cumulativePersonalSkills = new Dictionary<string, float>();
+    private readonly Dictionary<SkillTrigger, float> _currentPersonalSkills = new Dictionary<SkillTrigger, float>();
+    private readonly Dictionary<SkillTrigger, float> _cumulativePersonalSkills = new Dictionary<SkillTrigger, float>();
     private readonly Dictionary<string, float> _currentPersonalEssences = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativePersonalEssences = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentOtherPersonal = new Dictionary<string, float>();
@@ -45,16 +45,15 @@ public sealed class DpsData
     public float CurrentPersonalAppliedDps =>
         CurrentHitCount == 0 ? 0f : CurrentInstancePersonalAppliedDamage / CurrentDuration;
 
-    public float CurrentPersonalOverkill =>
-        CurrentInstancePersonalOverkill;
+    public float CurrentPersonalOverkill => CurrentInstancePersonalOverkill;
 
     public float CurrentPartyAppliedDps =>
         CurrentHitCount == 0 ? 0f : CurrentInstancePartyAppliedDamage / CurrentDuration;
 
-    public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalSkills =>
+    public IReadOnlyList<KeyValuePair<SkillTrigger, float>> CurrentPersonalSkills =>
         _currentPersonalSkills.OrderByDescending(pair => pair.Value).ToList();
 
-    public IReadOnlyList<KeyValuePair<string, float>> CumulativePersonalSkills =>
+    public IReadOnlyList<KeyValuePair<SkillTrigger, float>> CumulativePersonalSkills =>
         _cumulativePersonalSkills.OrderByDescending(pair => pair.Value).ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalEssences =>
@@ -79,7 +78,8 @@ public sealed class DpsData
         float producedDamage,
         float appliedDamage,
         bool isLocalPlayer,
-        string skillName,
+        SkillTrigger skill,
+        string sourceName,
         string essenceName,
         string playerName)
     {
@@ -121,15 +121,15 @@ public sealed class DpsData
         CurrentInstancePersonalOverkill += overkill;
         CumulativePersonalOverkill += overkill;
 
-        if (!string.IsNullOrEmpty(skillName))
+        if (skill != null)
         {
-            Add(_currentPersonalSkills, skillName, producedDamage);
-            Add(_cumulativePersonalSkills, skillName, producedDamage);
+            Add(_currentPersonalSkills, skill, producedDamage);
+            Add(_cumulativePersonalSkills, skill, producedDamage);
         }
         else
         {
-            Add(_currentOtherPersonal, "Basic / Other", producedDamage);
-            Add(_cumulativeOtherPersonal, "Basic / Other", producedDamage);
+            Add(_currentOtherPersonal, sourceName, producedDamage);
+            Add(_cumulativeOtherPersonal, sourceName, producedDamage);
         }
 
         if (!string.IsNullOrEmpty(essenceName))
@@ -181,6 +181,13 @@ public sealed class DpsData
             key = "Unknown";
         }
 
+        float current;
+        map.TryGetValue(key, out current);
+        map[key] = current + amount;
+    }
+
+    private static void Add(Dictionary<SkillTrigger, float> map, SkillTrigger key, float amount)
+    {
         float current;
         map.TryGetValue(key, out current);
         map[key] = current + amount;
