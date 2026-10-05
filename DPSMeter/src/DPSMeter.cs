@@ -7,10 +7,10 @@ public sealed class DPSMeter : ModBehaviour
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
+    private ZoneManager _zoneManager;
     private DpsData _data;
     private DpsOverlay _overlay;
     private bool _subscribed;
-    private Hero _currentHero;
 
     private void Awake()
     {
@@ -20,18 +20,19 @@ public sealed class DPSMeter : ModBehaviour
         _overlay.Initialize(_data);
 
         CallOnNetworkedManager<ClientEventManager>(AttachToClientEvents, DetachFromClientEvents);
+        CallOnNetworkedManager<ZoneManager>(AttachToZoneManager, DetachFromZoneManager);
     }
 
     private void AttachToClientEvents()
     {
         _clientEvents = ClientEventManager.instance;
+
         if (_clientEvents == null || _subscribed)
         {
             return;
         }
 
         _clientEvents.OnTakeDamage += OnTakeDamage;
-        _clientEvents.OnLocalHeroAbilityChanged += OnLocalHeroAbilityChanged;
         _subscribed = true;
         Debug.Log("[DPS Meter] Damage event listener attached.");
     }
@@ -41,11 +42,38 @@ public sealed class DPSMeter : ModBehaviour
         if (_clientEvents != null && _subscribed)
         {
             _clientEvents.OnTakeDamage -= OnTakeDamage;
-            _clientEvents.OnLocalHeroAbilityChanged -= OnLocalHeroAbilityChanged;
         }
 
         _clientEvents = null;
         _subscribed = false;
+    }
+
+    private void AttachToZoneManager()
+    {
+        _zoneManager = ZoneManager.instance;
+
+        if (_zoneManager == null)
+        {
+            return;
+        }
+
+        _zoneManager.ClientEvent_OnZoneLoadStarted += OnZoneLoadStarted;
+        Debug.Log("[DPS Meter] Zone reset listener attached.");
+    }
+
+    private void DetachFromZoneManager()
+    {
+        if (_zoneManager != null)
+        {
+            _zoneManager.ClientEvent_OnZoneLoadStarted -= OnZoneLoadStarted;
+        }
+
+        _zoneManager = null;
+    }
+
+    private void OnZoneLoadStarted(EventInfoLoadZone info)
+    {
+        _data.ResetCurrentInstance();
     }
 
     private void OnTakeDamage(EventInfoDamage info)
@@ -56,18 +84,21 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         DewPlayer local = DewPlayer.local;
+
         if (local == null || local.hero == null)
         {
             return;
         }
 
         Hero sourceHero = info.actor.firstEntity as Hero;
+
         if (sourceHero == null)
         {
             return;
         }
 
         DewPlayer sourcePlayer = FindPlayer(sourceHero);
+
         if (sourcePlayer == null || !sourcePlayer.isHumanPlayer)
         {
             return;
@@ -75,14 +106,24 @@ public sealed class DPSMeter : ModBehaviour
 
         bool isLocalPlayer = sourcePlayer == local;
 
+        AbilityInstance ability = info.actor.FindFirstOfType<AbilityInstance>();
+        Gem gem = ability != null ? ability.gem : null;
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
-        string sourceName = skill != null ? skill.GetFormattedSkillTitle() : "Basic / Other";
+
+        Actor source = gem != null
+            ? gem
+            : (skill != null ? skill : null);
+
+        string sourceName = source != null
+            ? source.GetType().Name
+            : "Basic / Other";
+
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
 
         _data.AddDamage(
             info.damage.amount,
             isLocalPlayer,
-            skill,
+            source,
             sourceName,
             playerName);
     }
@@ -107,27 +148,6 @@ public sealed class DPSMeter : ModBehaviour
         return null;
     }
 
-    private void OnLocalHeroAbilityChanged(Hero hero, HeroSkillLocation location)
-    {
-        if (hero == null || hero == _currentHero)
-        {
-            return;
-        }
-
-        if (_currentHero != null)
-        {
-            _data.ResetCurrentInstance();
-        }
-
-        _currentHero = hero;
-    }
-
-    [ModBehaviour.ConsoleCommand("Reset the DPS meter.", "dps_reset")]
-    private void ResetMeter()
-    {
-        _data.Reset();
-    }
-
     [ModBehaviour.ConsoleCommand("Toggle the DPS meter overlay.", "dps_meter")]
     private void ToggleMeter()
     {
@@ -140,6 +160,7 @@ public sealed class DPSMeter : ModBehaviour
     private void OnDestroy()
     {
         DetachFromClientEvents();
+        DetachFromZoneManager();
 
         if (_overlay != null)
         {
