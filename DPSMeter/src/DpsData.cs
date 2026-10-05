@@ -13,7 +13,7 @@ public sealed class DpsData
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
 
-    public float CurrentTotalDamage { get; private set; }
+    public float CurrentInstanceDamage { get; private set; }
     public float CumulativeTotalDamage { get; private set; }
     public float StartedAt { get; private set; }
     public float LastHitAt { get; private set; }
@@ -23,7 +23,7 @@ public sealed class DpsData
         CurrentHitCount == 0 ? 0f : Mathf.Max(0.001f, LastHitAt - StartedAt);
 
     public float CurrentDps =>
-        CurrentHitCount == 0 ? 0f : CurrentTotalDamage / CurrentDuration;
+        CurrentHitCount == 0 ? 0f : CurrentInstanceDamage / CurrentDuration;
 
     public IReadOnlyList<KeyValuePair<Actor, float>> CurrentPersonalSkills =>
         _currentPersonal.OrderByDescending(pair => pair.Value).ToList();
@@ -59,7 +59,7 @@ public sealed class DpsData
 
         LastHitAt = now;
         CurrentHitCount++;
-        CurrentTotalDamage += amount;
+        CurrentInstanceDamage += amount;
         CumulativeTotalDamage += amount;
 
         Add(_currentParty, playerName, amount);
@@ -84,7 +84,7 @@ public sealed class DpsData
 
     public void ResetCurrentInstance()
     {
-        CurrentTotalDamage = 0f;
+        CurrentInstanceDamage = 0f;
         StartedAt = 0f;
         LastHitAt = 0f;
         CurrentHitCount = 0;
