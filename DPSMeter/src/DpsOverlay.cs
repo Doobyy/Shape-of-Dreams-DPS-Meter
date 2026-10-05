@@ -80,11 +80,11 @@ public sealed class DpsOverlay : MonoBehaviour
         switch (_mode)
         {
             case DisplayMode.CurrentDps:
-                DrawPersonal(_data.CurrentPersonalSkills, _data.CurrentPersonalOther, _data.CurrentTotalDamage);
+                DrawPersonal(_data.CurrentPersonalSkills, _data.CurrentPersonalOther, _data.CurrentInstancePersonalDamage);
                 break;
 
             case DisplayMode.DamageTotal:
-                DrawPersonal(_data.CumulativePersonalSkills, _data.CumulativePersonalOther, _data.CumulativeTotalDamage);
+                DrawPersonal(_data.CumulativePersonalSkills, _data.CumulativePersonalOther, _data.CumulativePersonalDamage);
                 break;
 
             case DisplayMode.PartyDps:
@@ -213,7 +213,7 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             case DisplayMode.CurrentDps:
                 title = "CURRENT DPS";
-                metric = FormatNumber(_data.CurrentDps) + " DPS";
+                metric = FormatNumber(_data.CurrentPersonalDps) + " DPS";
                 break;
 
             case DisplayMode.DamageTotal:
@@ -223,7 +223,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             case DisplayMode.PartyDps:
                 title = "PARTY DPS";
-                metric = FormatNumber(_data.CurrentDps) + " DPS";
+                metric = FormatNumber(_data.CurrentPartyDps) + " DPS";
                 break;
 
             default:
