@@ -8,9 +8,13 @@ public sealed class DpsData
 {
     private readonly Dictionary<SkillTrigger, float> _currentPersonalSkills = new Dictionary<SkillTrigger, float>();
     private readonly Dictionary<SkillTrigger, float> _cumulativePersonalSkills = new Dictionary<SkillTrigger, float>();
-    private readonly Dictionary<string, float> _currentPersonalEssences = new Dictionary<string, float>();
-    private readonly Dictionary<string, float> _cumulativePersonalEssences = new Dictionary<string, float>();
+    private readonly Dictionary<Gem, float> _currentPersonalEssences = new Dictionary<Gem, float>();
+    private readonly Dictionary<Gem, float> _cumulativePersonalEssences = new Dictionary<Gem, float>();
     private readonly Dictionary<string, float> _currentOtherPersonal = new Dictionary<string, float>();
+    private readonly Dictionary<SkillTrigger, Dictionary<ElementalType, float>> _currentPersonalSkillElements = new Dictionary<SkillTrigger, Dictionary<ElementalType, float>>();
+    private readonly Dictionary<SkillTrigger, Dictionary<ElementalType, float>> _cumulativePersonalSkillElements = new Dictionary<SkillTrigger, Dictionary<ElementalType, float>>();
+    private readonly Dictionary<Gem, Dictionary<ElementalType, float>> _currentPersonalEssenceElements = new Dictionary<Gem, Dictionary<ElementalType, float>>();
+    private readonly Dictionary<Gem, Dictionary<ElementalType, float>> _cumulativePersonalEssenceElements = new Dictionary<Gem, Dictionary<ElementalType, float>>();
     private readonly Dictionary<string, float> _cumulativeOtherPersonal = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
@@ -56,10 +60,10 @@ public sealed class DpsData
     public IReadOnlyList<KeyValuePair<SkillTrigger, float>> CumulativePersonalSkills =>
         _cumulativePersonalSkills.OrderByDescending(pair => pair.Value).ToList();
 
-    public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalEssences =>
+    public IReadOnlyList<KeyValuePair<Gem, float>> CurrentPersonalEssences =>
         _currentPersonalEssences.OrderByDescending(pair => pair.Value).ToList();
 
-    public IReadOnlyList<KeyValuePair<string, float>> CumulativePersonalEssences =>
+    public IReadOnlyList<KeyValuePair<Gem, float>> CumulativePersonalEssences =>
         _cumulativePersonalEssences.OrderByDescending(pair => pair.Value).ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalOther =>
@@ -80,7 +84,8 @@ public sealed class DpsData
         bool isLocalPlayer,
         SkillTrigger skill,
         string sourceName,
-        string essenceName,
+        Gem essence,
+        ElementalType? elemental,
         string playerName)
     {
         if (producedDamage <= 0f)
@@ -125,6 +130,8 @@ public sealed class DpsData
         {
             Add(_currentPersonalSkills, skill, producedDamage);
             Add(_cumulativePersonalSkills, skill, producedDamage);
+            AddElement(_currentPersonalSkillElements, skill, elemental, producedDamage);
+            AddElement(_cumulativePersonalSkillElements, skill, elemental, producedDamage);
         }
         else
         {
@@ -132,10 +139,12 @@ public sealed class DpsData
             Add(_cumulativeOtherPersonal, sourceName, producedDamage);
         }
 
-        if (!string.IsNullOrEmpty(essenceName))
+        if (essence != null)
         {
-            Add(_currentPersonalEssences, essenceName, producedDamage);
-            Add(_cumulativePersonalEssences, essenceName, producedDamage);
+            Add(_currentPersonalEssences, essence, producedDamage);
+            Add(_cumulativePersonalEssences, essence, producedDamage);
+            AddElement(_currentPersonalEssenceElements, essence, elemental, producedDamage);
+            AddElement(_cumulativePersonalEssenceElements, essence, elemental, producedDamage);
         }
     }
 
@@ -153,6 +162,8 @@ public sealed class DpsData
 
         _currentPersonalSkills.Clear();
         _currentPersonalEssences.Clear();
+        _currentPersonalSkillElements.Clear();
+        _currentPersonalEssenceElements.Clear();
         _currentOtherPersonal.Clear();
         _currentParty.Clear();
     }
@@ -170,6 +181,8 @@ public sealed class DpsData
 
         _cumulativePersonalSkills.Clear();
         _cumulativePersonalEssences.Clear();
+        _cumulativePersonalSkillElements.Clear();
+        _cumulativePersonalEssenceElements.Clear();
         _cumulativeOtherPersonal.Clear();
         _cumulativeParty.Clear();
     }
@@ -180,6 +193,59 @@ public sealed class DpsData
         {
             key = "Unknown";
         }
+
+        float current;
+        map.TryGetValue(key, out current);
+        map[key] = current + amount;
+    }
+
+    public ElementalType? GetCurrentSkillElement(SkillTrigger skill) => GetDominantElement(_currentPersonalSkillElements, skill);
+
+    public ElementalType? GetCurrentEssenceElement(Gem gem) => GetDominantElement(_currentPersonalEssenceElements, gem);
+
+    private static ElementalType? GetDominantElement<T>(Dictionary<T, Dictionary<ElementalType, float>> map, T key) where T : class
+    {
+        Dictionary<ElementalType, float> elements;
+        if (key == null || !map.TryGetValue(key, out elements) || elements.Count == 0)
+            return null;
+
+        ElementalType dominant = default(ElementalType);
+        float amount = 0f;
+        bool found = false;
+        foreach (KeyValuePair<ElementalType, float> pair in elements)
+        {
+            if (!found || pair.Value > amount)
+            {
+                dominant = pair.Key;
+                amount = pair.Value;
+                found = true;
+            }
+        }
+
+        return found ? (ElementalType?)dominant : null;
+    }
+
+    private static void AddElement<T>(Dictionary<T, Dictionary<ElementalType, float>> map, T key, ElementalType? elemental, float amount) where T : class
+    {
+        if (key == null || !elemental.HasValue)
+            return;
+
+        Dictionary<ElementalType, float> elements;
+        if (!map.TryGetValue(key, out elements))
+        {
+            elements = new Dictionary<ElementalType, float>();
+            map[key] = elements;
+        }
+
+        float current;
+        elements.TryGetValue(elemental.Value, out current);
+        elements[elemental.Value] = current + amount;
+    }
+
+    private static void Add(Dictionary<Gem, float> map, Gem key, float amount)
+    {
+        if (key == null)
+            return;
 
         float current;
         map.TryGetValue(key, out current);
