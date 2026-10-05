@@ -10,6 +10,7 @@ public sealed class DPSMeter : ModBehaviour
     private DpsData _data;
     private DpsOverlay _overlay;
     private bool _subscribed;
+    private Hero _currentHero;
 
     private void Awake()
     {
@@ -30,6 +31,7 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _clientEvents.OnTakeDamage += OnTakeDamage;
+        _clientEvents.OnLocalHeroAbilityChanged += OnLocalHeroAbilityChanged;
         _subscribed = true;
         Debug.Log("[DPS Meter] Damage event listener attached.");
     }
@@ -39,6 +41,7 @@ public sealed class DPSMeter : ModBehaviour
         if (_clientEvents != null && _subscribed)
         {
             _clientEvents.OnTakeDamage -= OnTakeDamage;
+            _clientEvents.OnLocalHeroAbilityChanged -= OnLocalHeroAbilityChanged;
         }
 
         _clientEvents = null;
@@ -47,7 +50,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeDamage(EventInfoDamage info)
     {
-        if (info.actor == null || info.victim == null)
+        if (info.actor == null || info.victim == null || info.damage.amount <= 0f)
         {
             return;
         }
@@ -58,25 +61,65 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        if (info.actor.firstEntity != local.hero)
+        Hero sourceHero = info.actor.firstEntity as Hero;
+        if (sourceHero == null)
         {
             return;
         }
 
-        float amount = info.damage.amount;
-        if (amount <= 0f)
+        DewPlayer sourcePlayer = FindPlayer(sourceHero);
+        if (sourcePlayer == null || !sourcePlayer.isHumanPlayer)
         {
             return;
         }
+
+        bool isLocalPlayer = sourcePlayer == local;
 
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
-        AbilityInstance ability = info.actor.FindFirstOfType<AbilityInstance>();
-        Gem gem = ability != null ? ability.gem : info.actor.FindFirstOfType<Gem>();
+        string sourceName = skill != null ? skill.GetFormattedSkillTitle() : "Basic / Other";
+        string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
 
-        string skillName = skill != null ? skill.GetFormattedSkillTitle() : "Basic / Other";
-        string gemName = gem != null ? gem.GetActorReadableName() : "No Essence";
+        _data.AddDamage(
+            info.damage.amount,
+            isLocalPlayer,
+            skill,
+            sourceName,
+            playerName);
+    }
 
-        _data.AddDamage(amount, skillName, gemName);
+    private DewPlayer FindPlayer(Hero hero)
+    {
+        if (hero == null || DewPlayer.gamePlayers == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < DewPlayer.gamePlayers.Count; i++)
+        {
+            DewPlayer player = DewPlayer.gamePlayers[i];
+
+            if (player != null && player.hero == hero)
+            {
+                return player;
+            }
+        }
+
+        return null;
+    }
+
+    private void OnLocalHeroAbilityChanged(Hero hero, HeroSkillLocation location)
+    {
+        if (hero == null || hero == _currentHero)
+        {
+            return;
+        }
+
+        if (_currentHero != null)
+        {
+            _data.ResetCurrentInstance();
+        }
+
+        _currentHero = hero;
     }
 
     [ModBehaviour.ConsoleCommand("Reset the DPS meter.", "dps_reset")]
