@@ -1,0 +1,79 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Dew.Core</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>net40</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>14.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup />
+  <ItemGroup>
+    <Reference Include="Mirror" />
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Dew.External" />
+    <Reference Include="UnityEngine.ParticleSystemModule" />
+    <Reference Include="Unity.TextMeshPro" />
+    <Reference Include="UnityEngine.PhysicsModule" />
+    <Reference Include="System.Core" />
+    <Reference Include="com.rlabrecque.steamworks.net" />
+    <Reference Include="UniTask" />
+    <Reference Include="UnityEngine.IMGUIModule" />
+    <Reference Include="Sirenix.Serialization" />
+    <Reference Include="UnityEngine.AnimationModule" />
+    <Reference Include="UnityEngine.AudioModule" />
+    <Reference Include="NCalc" />
+    <Reference Include="UnityEngine.UI" />
+    <Reference Include="UnityEngine.UIModule" />
+    <Reference Include="DOTween" />
+    <Reference Include="Unity.RenderPipelines.Core.Runtime" />
+    <Reference Include="UnityEngine.UnityWebRequestModule" />
+    <Reference Include="BouncyCastle.Crypto" />
+    <Reference Include="Unity.InputSystem" />
+    <Reference Include="Cinemachine" />
+    <Reference Include="Newtonsoft.Json" />
+    <Reference Include="Unity.RenderPipelines.Universal.Runtime" />
+    <Reference Include="UnityEngine.VFXModule" />
+    <Reference Include="UnityEngine.AIModule" />
+    <Reference Include="UnityEngine.Physics2DModule" />
+    <Reference Include="UnityEngine.DirectorModule" />
+    <Reference Include="UnityEngine.TerrainModule" />
+    <Reference Include="BRGInstancedRenderer" />
+    <Reference Include="ClassLibrary1" />
+    <Reference Include="MagicaClothV2" />
+    <Reference Include="UnityUIExtensions" />
+    <Reference Include="UnityEngine.ClothModule" />
+    <Reference Include="Unity.VisualEffectGraph.Runtime" />
+    <Reference Include="DTT.AreaOfEffectRegions.Runtime" />
+    <Reference Include="Unity.Services.Analytics" />
+    <Reference Include="UnityEngine.TextRenderingModule" />
+    <Reference Include="Unity.Services.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="Mono.CecilX" />
+    <Reference Include="0Harmony" />
+    <Reference Include="Unity.ResourceManager" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="inc8877.GraphicsConfigurator" />
+    <Reference Include="ch.sycoforge.Decal" />
+    <Reference Include="UnityEngine.JSONSerializeModule" />
+    <Reference Include="Sirenix.Utilities" />
+    <Reference Include="UnityEngine.InputLegacyModule" />
+    <Reference Include="DOTweenPro" />
+    <Reference Include="Mirror.Transports" />
+    <Reference Include="FizzySteamworks" />
+    <Reference Include="UnityEngine.CrashReportingModule" />
+    <Reference Include="UnityEngine.UnityAnalyticsModule" />
+    <Reference Include="UnityEngine.PerformanceReportingModule" />
+    <Reference Include="Unity.Services.Authentication" />
+    <Reference Include="UnityEngine.ImageConversionModule" />
+    <Reference Include="Unity.Addressables" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="Unity.Timeline" />
+    <Reference Include="Unity.Services.Core.Environments" />
+  </ItemGroup>
+</Project>
