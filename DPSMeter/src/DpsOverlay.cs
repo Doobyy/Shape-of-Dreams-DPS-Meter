@@ -313,11 +313,11 @@ public sealed class DpsOverlay : MonoBehaviour
         IReadOnlyList<KeyValuePair<string, float>> other,
         float total)
     {
-        DrawRows(sources, total);
+        DrawSkillRows(sources, total);
         DrawRows(other, total, sources.Count);
     }
 
-    private void DrawRows(
+    private void DrawSkillRows(
         IReadOnlyList<KeyValuePair<string, float>> rows,
         float total,
         int indexOffset = 0)
