@@ -303,8 +303,29 @@ public sealed class DPSMeter : ModBehaviour
             depth++;
         }
 
+        // Character-specific passives can use a different actor structure from
+        // the generic Essence/status-effect path. Walk the actor chain for both
+        // a localized Star/passive name and its icon before falling back to the
+        // raw status-effect name.
+        Actor fallbackActor = statusActor;
+        int fallbackDepth = 0;
+        while (fallbackActor != null && fallbackDepth < 8)
+        {
+            string starName = TryGetStarDisplayName(fallbackActor);
+            if (!string.IsNullOrEmpty(starName))
+            {
+                sourceName = starName;
+                sourceIdentity = fallbackActor.name;
+                icon = FindSpriteInActorChain(statusActor);
+                return;
+            }
+
+            fallbackActor = fallbackActor.parentActor;
+            fallbackDepth++;
+        }
+
         sourceName = statusActor.name;
-        icon = FindSpriteMember(statusActor);
+        icon = FindSpriteInActorChain(statusActor);
         sourceIdentity = sourceName;
     }
 
