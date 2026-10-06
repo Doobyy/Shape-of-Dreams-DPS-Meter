@@ -30,7 +30,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.61";
+    private const string DevelopmentVersion = "v4.62";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -142,7 +142,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
 
             case DisplayMode.BarrierTotal:
-                DrawBarrierBreakdown(_data.CumulativePersonalBarrierRows, _data.CumulativePersonalBarrier);
+                DrawBarrierBreakdown(_data.CumulativeBarrierRows, _data.CumulativePersonalBarrier);
                 break;
 
             case DisplayMode.PartyDps:
