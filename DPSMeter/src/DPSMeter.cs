@@ -184,6 +184,7 @@ public sealed class DPSMeter : ModBehaviour
                 }
 
                 TraceHealingStarDefinition("Se_Star_L_HealOnAttack");
+                TraceHealingLiveStarEffects();
             }
 
             current = current.parentActor;
@@ -223,6 +224,137 @@ public sealed class DPSMeter : ModBehaviour
             Debug.Log("[DPS Meter][HEAL TRACE] STAR DEFINITION SEARCH ERROR " + exception.GetType().Name + ": " + exception.Message);
         }
         Debug.Log("[DPS Meter][HEAL TRACE] STAR DEFINITION SEARCH no static string match");
+    }
+
+
+
+    private static void TraceHealingLiveStarEffects()
+    {
+        try
+        {
+            Type starEffectType = typeof(Actor).Assembly.GetType("StarEffect");
+            if (starEffectType == null)
+            {
+                Debug.Log("[DPS Meter][HEAL TRACE] STAR EFFECT TYPE not found");
+                return;
+            }
+
+            UnityEngine.Object[] objects = Resources.FindObjectsOfTypeAll(starEffectType);
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] STAR EFFECT LIVE SCAN count=" +
+                (objects == null ? 0 : objects.Length));
+
+            if (objects == null)
+            {
+                return;
+            }
+
+            int scanned = 0;
+
+            for (int i = 0; i < objects.Length && scanned < 20; i++)
+            {
+                UnityEngine.Object value = objects[i];
+                if (value == null)
+                {
+                    continue;
+                }
+
+                scanned++;
+
+                Debug.Log(
+                    "[DPS Meter][HEAL TRACE] STAR EFFECT INSTANCE name=" +
+                    value.name);
+
+                TraceHealingStarEffectMembers(value);
+            }
+        }
+        catch (Exception exception)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] STAR EFFECT LIVE SCAN ERROR " +
+                exception.GetType().Name + ": " + exception.Message);
+        }
+    }
+
+    private static void TraceHealingStarEffectMembers(object value)
+    {
+        if (value == null)
+        {
+            return;
+        }
+
+        Type type = value.GetType();
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+
+            try
+            {
+                object memberValue = field.GetValue(value);
+                TraceHealingStarEffectMember(field.Name, field.FieldType, memberValue);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+            {
+                continue;
+            }
+
+            try
+            {
+                object memberValue = property.GetValue(value, null);
+                TraceHealingStarEffectMember(property.Name, property.PropertyType, memberValue);
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
+    private static void TraceHealingStarEffectMember(
+        string memberName,
+        Type memberType,
+        object value)
+    {
+        string typeName = memberType == null
+            ? "<unknown>"
+            : memberType.FullName ?? memberType.Name;
+
+        string valueType = value == null
+            ? "null"
+            : value.GetType().FullName;
+
+        Debug.Log(
+            "[DPS Meter][HEAL TRACE] STAR EFFECT MEMBER " + memberName +
+            " declaredType=" + typeName +
+            " valueType=" + valueType);
+
+        if (value is string)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] STAR EFFECT MEMBER " + memberName +
+                " value=\"" + value + "\"");
+        }
+        else if (value != null && (value.GetType().IsPrimitive || value.GetType().IsEnum))
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] STAR EFFECT MEMBER " + memberName +
+                " value=" + value);
+        }
     }
 
     private static DewPlayer FindLocalDewPlayer(Hero hero)
