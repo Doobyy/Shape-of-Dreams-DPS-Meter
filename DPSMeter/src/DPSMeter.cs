@@ -167,11 +167,6 @@ public sealed class DPSMeter : ModBehaviour
             sourceName = GetLocalizedEssenceName(healingGem) ?? sourceName;
         }
 
-        // Temporarily trace every healing event so runtime sources such as
-        // Shrine of Guidance and Power of Guidance can be identified even
-        // when their actor name does not contain the expected generic key.
-        TraceUnresolvedHealingSource(info, healingGem, sourceName);
-
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
         _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
 
@@ -579,10 +574,6 @@ public sealed class DPSMeter : ModBehaviour
         return source.GetType().Name;
     }
 
-
-    private static readonly HashSet<string> _healingNameTraceCache = new HashSet<string>();
-    private static bool _healingLocalizationApiTraced;
-
     private static string TryGetLocalizedHealingActorName(Actor source)
     {
         if (source == null)
@@ -665,92 +656,7 @@ public sealed class DPSMeter : ModBehaviour
         return null;
     }
 
-    private static void TraceHealingLocalizationApi(Actor actor)
-    {
-        if (_healingLocalizationProbeRan || actor == null)
-            return;
 
-        _healingLocalizationProbeRan = true;
-
-        try
-        {
-            Type localizationType = typeof(DewLocalization);
-            MethodInfo[] methods = localizationType.GetMethods(
-                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-
-            foreach (MethodInfo method in methods)
-            {
-                string lower = (method.Name ?? "").ToLowerInvariant();
-                if (!lower.Contains("name") && !lower.Contains("local") &&
-                    !lower.Contains("display") && !lower.Contains("key"))
-                    continue;
-
-                if (method.ReturnType != typeof(string))
-                    continue;
-
-                ParameterInfo[] parameters = method.GetParameters();
-                if (parameters.Length != 1)
-                    continue;
-
-                Type parameterType = parameters[0].ParameterType;
-                object argument = null;
-                string argumentLabel = null;
-
-                if (parameterType.IsInstanceOfType(actor))
-                {
-                    argument = actor;
-                    argumentLabel = "actor";
-                }
-                else if (parameterType == typeof(Type))
-                {
-                    argument = actor.GetType();
-                    argumentLabel = "actorType";
-                }
-                else if (parameterType == typeof(string))
-                {
-                    string originalName = null;
-                    try
-                    {
-                        originalName = actor.GetOriginalName();
-                    }
-                    catch (Exception)
-                    {
-                    }
-
-                    if (string.IsNullOrEmpty(originalName))
-                        continue;
-
-                    argument = originalName;
-                    argumentLabel = "originalName";
-                }
-                else
-                {
-                    continue;
-                }
-
-                try
-                {
-                    object result = method.Invoke(null, new object[] { argument });
-                    Debug.Log("[DPS Meter][HEAL LOCALIZATION PROBE] method=" + method.Name +
-                        " parameterType=" + parameterType.FullName +
-                        " argumentType=" + argumentLabel +
-                        " argument=" + argument +
-                        " result=" + (result == null ? "<null>" : result.ToString()));
-                }
-                catch (Exception)
-                {
-                    Debug.Log("[DPS Meter][HEAL LOCALIZATION PROBE] method=" + method.Name +
-                        " parameterType=" + parameterType.FullName +
-                        " argumentType=" + argumentLabel +
-                        " invoke=failed");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.Log("[DPS Meter][HEAL LOCALIZATION PROBE] inspection=threw " + ex.GetType().FullName);
-        }
-    }
 
     private static void TraceHealingNameMethods(object target, string label)
     {
