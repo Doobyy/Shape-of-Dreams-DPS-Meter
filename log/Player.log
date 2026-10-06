@@ -2105,3 +2105,670 @@ Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info messag
 Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
 Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 6 (Closing connection)
 Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: invalid HTTP response code received. URL: https://api.epicgames.dev/telemetry/data/datarouter/api/v1/public/data?SessionID=%7B9C58BC38-4AB0-D50E-77E4-51917568EDA8%7D&AppID=EOSSDK.PhaseRelease.ReleaseBuild&AppVersion=1.19.0.3-49960398%20-%20%2B%2BEOSSDK%2BRelease-1.19.0.3&UserID=&AppEnvironment=Production&UploadType=sdkevents, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 0 (Hostname in DNS cache was stale, zapped)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 1 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 2 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 3 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 4 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 13 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/telemetry/data/datarouter/api/v1/public/data?SessionID=%7B9C58BC38-4AB0-D50E-77E4-51917568EDA8%7D&AppID=EOSSDK.PhaseRelease.ReleaseBuild&AppVersion=1.19.0.3-49960398%20-%20%2B%2BEOSSDK%2BRelease-1.19.0.3&UserID=&AppEnvironment=Production&UploadType=sdkevents
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 1 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 2 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 3 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 4 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA204D80: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 5 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/telemetry/data/datarouter/api/v1/public/data?SessionID=%7B9C58BC38-4AB0-D50E-77E4-51917568EDA8%7D&AppID=EOSSDK.PhaseRelease.ReleaseBuild&AppVersion=1.19.0.3-49960398%20-%20%2B%2BEOSSDK%2BRelease-1.19.0.3&UserID=&AppEnvironment=Production&UploadType=sdkevents, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname in DNS cache was stale, zapped)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 13 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/telemetry/data/datarouter/api/v1/public/data?SessionID=%7B9C58BC38-4AB0-D50E-77E4-51917568EDA8%7D&AppID=EOSSDK.PhaseRelease.ReleaseBuild&AppVersion=1.19.0.3-49960398%20-%20%2B%2BEOSSDK%2BRelease-1.19.0.3&UserID=&AppEnvironment=Production&UploadType=sdkevents
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/telemetry/data/datarouter/api/v1/public/data?SessionID=%7B9C58BC38-4AB0-D50E-77E4-51917568EDA8%7D&AppID=EOSSDK.PhaseRelease.ReleaseBuild&AppVersion=1.19.0.3-49960398%20-%20%2B%2BEOSSDK%2BRelease-1.19.0.3&UserID=&AppEnvironment=Production&UploadType=sdkevents, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname in DNS cache was stale, zapped)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 14 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/telemetry/data/datarouter/api/v1/public/data?SessionID=%7B9C58BC38-4AB0-D50E-77E4-51917568EDA8%7D&AppID=EOSSDK.PhaseRelease.ReleaseBuild&AppVersion=1.19.0.3-49960398%20-%20%2B%2BEOSSDK%2BRelease-1.19.0.3&UserID=&AppEnvironment=Production&UploadType=sdkevents
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 5 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+[DewMod] Initialized com.doobyy.dpsmeter::DPSMeter
+[DewMod] Activating com.doobyy.dpsmeter
+[DPS Meter][DIAGNOSTIC] v4.46 loaded
+[DPS Meter] Damage event listener attached.
+[DPS Meter] Zone/node reset listeners attached.
+[DPS Meter][HEAL TRACE] ENTER source=type=Se_Star_L_HealOnAttack name=Se_Star_L_HealOnAttack(Clone)
+[DPS Meter][HEAL TRACE] TARGET STAR EFFECT FOUND name=Se_Star_L_HealOnAttack(Clone)
+[DPS Meter][HEAL TRACE] SELECTED LOADOUT type=HeroLoadoutData
+[DPS Meter][HEAL TRACE] OBJECT SCAN SelectedLoadout type=HeroLoadoutData
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillQ declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillQ value=1
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillR declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillR value=0
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillTrait declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillTrait value=0
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillMovement declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillMovement value=0
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_D_RiftFirstCastDamageUp"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_D_FireAmp"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_D_BossDamageAmp"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[3] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[3] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_D_SkillHasteAndAutoCast"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[4] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[4] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_D_BonusAttackEffect"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cLife[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_L_DodgeCooldown"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cLife[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_L_HealOnAttack"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cLife[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_L_ContinuousSpeed"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_I_KnowledgeBook"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_I_DismantleMemoryDreamDust"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_MoreShopItems"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[3] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[3] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_F_IT_InnerDamage"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=1
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[4] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[4] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_ShopRefreshToken"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[5] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[5] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_ExtraChaosOptionGoldOnUse"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[6] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[6] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_DreamDustOnKillChance"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cFlexible[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_DismantleDustToBonusGold"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cFlexible[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_AdditionalChaosChance"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=5
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cFlexible[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_ShopDiscount"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=5
+[DPS Meter][HEAL TRACE] ENTER source=type=Se_Star_L_HealOnAttack name=Se_Star_L_HealOnAttack(Clone)
+[DPS Meter][HEAL TRACE] TARGET STAR EFFECT FOUND name=Se_Star_L_HealOnAttack(Clone)
+[DPS Meter][HEAL TRACE] SELECTED LOADOUT type=HeroLoadoutData
+[DPS Meter][HEAL TRACE] OBJECT SCAN SelectedLoadout type=HeroLoadoutData
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillQ declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillQ value=1
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillR declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillR value=0
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillTrait declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillTrait value=0
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillMovement declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillMovement value=0
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_D_RiftFirstCastDamageUp"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_D_FireAmp"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_D_BossDamageAmp"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[3] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[3] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_D_SkillHasteAndAutoCast"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[4] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[4] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_D_BonusAttackEffect"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cLife[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_L_DodgeCooldown"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cLife[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_L_HealOnAttack"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cLife[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_L_ContinuousSpeed"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_I_KnowledgeBook"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_I_DismantleMemoryDreamDust"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_MoreShopItems"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[3] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[3] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_F_IT_InnerDamage"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=1
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[4] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[4] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_ShopRefreshToken"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[5] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[5] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_ExtraChaosOptionGoldOnUse"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[6] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[6] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_DreamDustOnKillChance"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cFlexible[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_DismantleDustToBonusGold"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cFlexible[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_AdditionalChaosChance"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=5
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cFlexible[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_ShopDiscount"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=5
+[DPS Meter][HEAL TRACE] ENTER source=type=Se_Star_L_HealOnAttack name=Se_Star_L_HealOnAttack(Clone)
+[DPS Meter][HEAL TRACE] TARGET STAR EFFECT FOUND name=Se_Star_L_HealOnAttack(Clone)
+[DPS Meter][HEAL TRACE] SELECTED LOADOUT type=HeroLoadoutData
+[DPS Meter][HEAL TRACE] OBJECT SCAN SelectedLoadout type=HeroLoadoutData
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillQ declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillQ value=1
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillR declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillR value=0
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillTrait declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillTrait value=0
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillMovement declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.skillMovement value=0
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_D_RiftFirstCastDamageUp"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_D_FireAmp"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_D_BossDamageAmp"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[3] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[3] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_D_SkillHasteAndAutoCast"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cDestruction item[4] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cDestruction[4] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_D_BonusAttackEffect"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cLife[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_L_DodgeCooldown"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cLife[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_L_HealOnAttack"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cLife item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cLife[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_L_ContinuousSpeed"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_I_KnowledgeBook"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_I_DismantleMemoryDreamDust"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_MoreShopItems"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[3] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[3] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_Bismuth_F_IT_InnerDamage"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=1
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[4] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[4] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_ShopRefreshToken"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[5] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[5] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_ExtraChaosOptionGoldOnUse"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=3
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cImagination item[6] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cImagination[6] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_DreamDustOnKillChance"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible declaredType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]] valueType=System.Collections.Generic.List`1[[LoadoutStarItem, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible item[0] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cFlexible[0] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_DismantleDustToBonusGold"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=4
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible item[1] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cFlexible[1] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_AdditionalChaosChance"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=5
+[DPS Meter][HEAL TRACE] OBJECT MEMBER HeroLoadoutData.cFlexible item[2] type=LoadoutStarItem value=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT SCAN HeroLoadoutData.cFlexible[2] type=LoadoutStarItem
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.name declaredType=System.String valueType=System.String
+[DPS Meter][HEAL TRACE] LoadoutStarItem.name -> string="Se_Star_I_ShopDiscount"
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level declaredType=System.Int32 valueType=System.Int32
+[DPS Meter][HEAL TRACE] OBJECT MEMBER LoadoutStarItem.level value=5
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 5 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA2047B0: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
+Epic Manager: Category - LogHttp Message - 00000229AA203070: invalid HTTP response code received. URL: https://api.epicgames.dev/sdk/v1/default?platformId=WIN, HTTP code: 0, content length: 0, actual payload size: 0
+Epic Manager: Category - LogHttp Message - 00000229AA203070: request failed, libcurl error: 7 (Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 0 (Hostname api.epicgames.dev was found in DNS cache)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 1 (  Trying 104.18.124.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 2 (Immediate connect fail for 104.18.124.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 3 (  Trying 104.18.125.108:443...)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 4 (Immediate connect fail for 104.18.125.108: Connection refused)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 5 (Failed to connect to api.epicgames.dev port 443 after 4 ms: Couldn't connect to server)
+Epic Manager: Category - LogHttp Message - 00000229AA203070: libcurl info message cache 6 (Closing connection)
+Epic Manager: Category - LogHttp Message - Retry exhausted on https://api.epicgames.dev/sdk/v1/default?platformId=WIN
