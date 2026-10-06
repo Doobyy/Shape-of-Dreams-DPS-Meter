@@ -16,6 +16,7 @@ public sealed class DPSMeter : ModBehaviour
     private Hero _currentHero;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
+    private readonly HashSet<AbilityInstance> _tracedAbilityInstances = new HashSet<AbilityInstance>();
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
@@ -83,6 +84,7 @@ public sealed class DPSMeter : ModBehaviour
         _currentHero = hero;
         _skillScalingCache.Clear();
         _essenceScalingCache.Clear();
+        _tracedAbilityInstances.Clear();
         Debug.Log("[DPS Meter] Reset current damage window for hero ability change.");
     }
 
@@ -145,6 +147,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         bool isLocalPlayer = sourcePlayer == local;
+
+        TraceAbilitySource(info.actor);
 
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
         // An Essence can create its own AbilityInstance/child actor. In that
@@ -247,6 +251,34 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return scaling;
+    }
+
+    private void TraceAbilitySource(Actor actor)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            AbilityInstance instance = current as AbilityInstance;
+            if (instance != null && _tracedAbilityInstances.Add(instance))
+            {
+                Gem gem = instance.gem;
+                DamageInstance damageInstance = instance as DamageInstance;
+                ScalingValue scaling = damageInstance != null ? damageInstance.dmgFactor : null;
+
+                string gemName = gem != null ? gem.GetActorReadableName() : "none";
+                string typeName = instance.GetType().Name;
+                string scalingText = scaling != null
+                    ? $"ad={scaling.adFactor}, ap={scaling.apFactor}, addedHp={scaling.addedHpFactor}, base={scaling.baseValue}"
+                    : "no DamageInstance/dmgFactor";
+
+                Debug.Log($"[DPS Meter][v3.8 TRACE] AbilityInstance type={typeName} gem={gemName} scaling={scalingText}");
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
     }
 
     private static DpsData.DamageScalingType FindDamageScalingType(Actor actor)
