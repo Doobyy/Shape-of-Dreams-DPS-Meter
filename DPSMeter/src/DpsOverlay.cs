@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.20";
+    private const string DevelopmentVersion = "v4.21";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -304,9 +304,8 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         float reloadWidth = 74f;
-        float chevronWidth = 22f;
         float metricWidth = headerRect.width * 0.35f;
-        float titleWidth = headerRect.width - metricWidth - reloadWidth - chevronWidth - 8f;
+        float titleWidth = headerRect.width - metricWidth - reloadWidth - 6f;
 
         GUI.Label(
             new Rect(headerRect.x, headerRect.y, titleWidth, headerRect.height),
@@ -315,7 +314,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
         GUI.Label(
             new Rect(
-                headerRect.x + titleWidth + chevronWidth,
+                headerRect.x + titleWidth,
                 headerRect.y,
                 metricWidth,
                 headerRect.height),
@@ -324,21 +323,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (GUI.Button(
             new Rect(
-                headerRect.x + titleWidth,
-                headerRect.y + 1f,
-                chevronWidth,
-                headerRect.height - 2f),
-            (_showHealing && (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal)) ? "▼" : "▶"))
-        {
-            if (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal)
-            {
-                _showHealing = !_showHealing;
-            }
-        }
-
-        if (GUI.Button(
-            new Rect(
-                headerRect.x + titleWidth + chevronWidth + metricWidth + 6f,
+                headerRect.x + titleWidth + metricWidth + 6f,
                 headerRect.y + 1f,
                 reloadWidth,
                 headerRect.height - 2f),
@@ -433,12 +418,13 @@ public sealed class DpsOverlay : MonoBehaviour
         GUIStyle toggleStyle = new GUIStyle(_small)
         {
             alignment = TextAnchor.MiddleCenter,
-            fontSize = 9,
-            normal = { textColor = new Color(0.72f, 0.72f, 0.72f, 0.85f) },
+            fontSize = 13,
+            fontStyle = FontStyle.Bold,
+            normal = { textColor = new Color(0.80f, 0.80f, 0.80f, 0.95f) },
             hover = { textColor = Color.white }
         };
 
-        if (GUILayout.Button(_showHealing ? "▲" : "▼", toggleStyle, GUILayout.Height(10f)))
+        if (GUILayout.Button(_showHealing ? "▲" : "▼", toggleStyle, GUILayout.Height(16f)))
         {
             _showHealing = !_showHealing;
         }
@@ -469,11 +455,14 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             KeyValuePair<string, float> row = rows[i];
-            DrawHealingRow(row.Key, row.Value, total, maxAmount);
+            Sprite icon = _mode == DisplayMode.TotalHps || _mode == DisplayMode.DamageTotal
+                ? _data.GetCumulativeHealingIcon(row.Key)
+                : _data.GetCurrentHealingIcon(row.Key);
+            DrawHealingRow(row.Key, row.Value, total, maxAmount, icon);
         }
     }
 
-    private void DrawHealingRow(string name, float amount, float total, float maxAmount)
+    private void DrawHealingRow(string name, float amount, float total, float maxAmount, Sprite icon)
     {
         float ratio = maxAmount > 0f ? Mathf.Clamp01(amount / maxAmount) : 0f;
         float percent = total > 0f ? Mathf.Clamp01(amount / total) * 100f : 0f;
@@ -484,7 +473,22 @@ public sealed class DpsOverlay : MonoBehaviour
         rowRect.width = Mathf.Round(rowRect.width);
         rowRect.height = Mathf.Round(rowRect.height);
 
-        Rect barRect = rowRect;
+        float iconSize = rowRect.height;
+        float barX = rowRect.x;
+
+        if (icon != null)
+        {
+            Rect iconRect = new Rect(rowRect.x, rowRect.y, iconSize, iconSize);
+            DrawSprite(icon, iconRect);
+            barX = iconRect.xMax;
+        }
+
+        Rect barRect = new Rect(
+            barX,
+            rowRect.y,
+            Mathf.Max(0f, rowRect.xMax - barX),
+            rowRect.height);
+
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.DrawTexture(barRect, _whiteTexture);
 
