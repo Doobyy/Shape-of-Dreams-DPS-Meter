@@ -374,7 +374,7 @@ public sealed class DPSMeter : ModBehaviour
 
             if (pending.Frame != Time.frameCount)
             {
-                if (pending.Frame < Time.frameCount - 1)
+                if (pending.Frame < Time.frameCount - 3)
                 {
                     _pendingEssenceContributions.RemoveAt(i);
                 }
