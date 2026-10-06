@@ -47,7 +47,6 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _rowRight;
     private Texture2D _whiteTexture;
     private Sprite _basicAttackIcon;
-    private bool _basicAttackIconScanLogged;
 
     public bool Visible { get; set; } = true;
 
@@ -525,8 +524,6 @@ public sealed class DpsOverlay : MonoBehaviour
                 || (sprite.texture != null && IsBasicAttackAssetName(sprite.texture.name)))
             {
                 _basicAttackIcon = sprite;
-                Debug.Log("[DPS Meter][v4.10 TRACE] Basic Attack icon candidate sprite=" +
-                    sprite.name + " texture=" + (sprite.texture != null ? sprite.texture.name : "none"));
                 return _basicAttackIcon;
             }
         }
@@ -544,44 +541,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 new Vector2(0.5f, 0.5f),
                 100f);
 
-            Debug.Log("[DPS Meter][v4.10 TRACE] Basic Attack icon candidate texture=" +
-                texture.name + " size=" + texture.width + "x" + texture.height);
             return _basicAttackIcon;
-        }
-
-        // Do this once per overlay lifetime. The important part of this trace is
-        // that it tells us what Unity object names actually exist at runtime;
-        // we should not guess another file-loading API without that evidence.
-        if (!_basicAttackIconScanLogged)
-        {
-            _basicAttackIconScanLogged = true;
-            Debug.Log("[DPS Meter][v4.10 TRACE] Basic Attack source asset not found by loaded Sprite/Texture name. Candidate loaded assets:");
-
-            for (int i = 0; i < loadedSprites.Length; i++)
-            {
-                Sprite sprite = loadedSprites[i];
-                if (sprite == null)
-                    continue;
-
-                string name = sprite.name ?? string.Empty;
-                string textureName = sprite.texture != null ? sprite.texture.name : string.Empty;
-                if (ContainsBasicAttackTraceTerm(name) || ContainsBasicAttackTraceTerm(textureName))
-                {
-                    Debug.Log("[DPS Meter][v4.10 TRACE] Sprite candidate name=" + name +
-                        " texture=" + textureName +
-                        " size=" + (sprite.texture != null ? sprite.texture.width + "x" + sprite.texture.height : "none"));
-                }
-            }
-
-            for (int i = 0; i < loadedTextures.Length; i++)
-            {
-                Texture2D texture = loadedTextures[i];
-                if (texture == null || !ContainsBasicAttackTraceTerm(texture.name))
-                    continue;
-
-                Debug.Log("[DPS Meter][v4.10 TRACE] Texture candidate name=" + texture.name +
-                    " size=" + texture.width + "x" + texture.height);
-            }
         }
 
         return null;
@@ -593,18 +553,6 @@ public sealed class DpsOverlay : MonoBehaviour
             return false;
 
         return string.Equals(name, "2", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(name, "2.png", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool ContainsBasicAttackTraceTerm(string name)
-    {
-        if (string.IsNullOrEmpty(name))
-            return false;
-
-        return name.IndexOf("sword", StringComparison.OrdinalIgnoreCase) >= 0
-            || name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0
-            || name.IndexOf("basic", StringComparison.OrdinalIgnoreCase) >= 0
-            || string.Equals(name, "2", StringComparison.OrdinalIgnoreCase)
             || string.Equals(name, "2.png", StringComparison.OrdinalIgnoreCase);
     }
 
