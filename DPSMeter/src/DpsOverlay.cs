@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.19";
+    private const string DevelopmentVersion = "v4.20";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -387,7 +387,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 Name = StripRichTextTags(row.Key),
                 Amount = row.Value,
                 Scaling = _data.GetCurrentOtherScaling(row.Key),
-                Icon = row.Key == "Basic Attack" ? GetBasicAttackIcon() : null
+                Icon = row.Key == "Basic Attack" ? GetBasicAttackIcon() : _data.GetCurrentOtherIcon(row.Key)
             });
         }
 
