@@ -589,6 +589,13 @@ public sealed class DPSMeter : ModBehaviour
         // While the player is inside the Guidance zone, capture every heal
         // actor briefly so the actual runtime actor can be identified even if
         // the zone uses a different/generated name than the known status key.
+        Actor guidanceParent = info.actor.parentActor;
+        if (guidanceParent != null && rawName.IndexOf("Se_LingeringAuraOfGuidance", StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            Debug.Log("[DPS Meter][GUIDANCE TRACE] parentType=" + guidanceParent.GetType().FullName + " parentName=" + (guidanceParent.name ?? "<null>"));
+            TraceGuidanceParentFields(guidanceParent);
+        }
+
         Debug.Log(
             "[DPS Meter][HEAL SOURCE TRACE] actor=" + info.actor.GetType().FullName +
             " name=" + rawName +
@@ -610,6 +617,53 @@ public sealed class DPSMeter : ModBehaviour
         // contents of reference-type collections such as BasicEffect lists.
         TraceHealingEventReferences(info);
     }
+
+    private static void TraceGuidanceParentFields(Actor parent)
+    {
+        Type type = parent.GetType();
+        while (type != null && type != typeof(object))
+        {
+            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                if (field.IsStatic || field.FieldType.IsPrimitive || field.FieldType.IsEnum || field.FieldType == typeof(string) || field.FieldType == typeof(decimal))
+                    continue;
+
+                string fieldName = field.Name;
+                if (fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("caster", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("effect", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("mod", StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
+                try
+                {
+                    object value = field.GetValue(parent);
+                    if (value == null)
+                        continue;
+
+                    UnityEngine.Object unityObject = value as UnityEngine.Object;
+                    if (unityObject != null)
+                    {
+                        Debug.Log("[DPS Meter][GUIDANCE TRACE] field=" + fieldName + " type=" + field.FieldType.FullName + " valueType=" + value.GetType().FullName + " valueName=" + (unityObject.name ?? "<null>"));
+                    }
+                    else
+                    {
+                        Debug.Log("[DPS Meter][GUIDANCE TRACE] field=" + fieldName + " type=" + field.FieldType.FullName + " valueType=" + value.GetType().FullName);
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+            type = type.BaseType;
+        }
+    }
+
 
     private static void TraceHealingEventReferences(EventInfoHeal info)
     {
