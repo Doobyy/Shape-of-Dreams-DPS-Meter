@@ -212,6 +212,12 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             TraceHealingHeroMember(field.Name, field.FieldType, value);
+
+            if (value != null &&
+                field.FieldType.Name.IndexOf("ConstellationSettings", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                TraceHealingObjectMembers(field.Name, value);
+            }
         }
 
         PropertyInfo[] properties = type.GetProperties(
@@ -241,6 +247,55 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static void TraceHealingObjectMembers(string label, object value)
+    {
+        if (value == null)
+        {
+            return;
+        }
+
+        Type type = value.GetType();
+        Debug.Log("[DPS Meter][HEAL TRACE] OBJECT SCAN " + label + " type=" + type.FullName);
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+
+            try
+            {
+                object memberValue = field.GetValue(value);
+                TraceHealingReferenceMember(type, field.Name, memberValue);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+            {
+                continue;
+            }
+
+            try
+            {
+                object memberValue = property.GetValue(value, null);
+                TraceHealingReferenceMember(type, property.Name, memberValue);
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
     private static void TraceHealingHeroMember(string memberName, Type memberType, object value)
     {
         string name = memberName ?? string.Empty;
