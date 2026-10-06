@@ -348,7 +348,14 @@ public sealed class DpsOverlay : MonoBehaviour
             return 0f;
         }
 
-        float height = 16f;
+        float height = 0f;
+
+        if (!_showHealing && !_showBarrier)
+        {
+            return 0f;
+        }
+
+        height = 16f;
 
         if (_showHealing)
         {
