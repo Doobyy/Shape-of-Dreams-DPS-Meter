@@ -15,6 +15,7 @@ public sealed class DpsData
     }
     private readonly Dictionary<string, float> _currentPersonalSkills = new Dictionary<string, float>();
     private readonly Dictionary<string, Sprite> _skillIcons = new Dictionary<string, Sprite>();
+    private readonly Dictionary<string, string> _skillDisplayNames = new Dictionary<string, string>();
     private readonly Dictionary<string, Sprite> _otherIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalSkills = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentPersonalEssences = new Dictionary<string, float>();
@@ -35,6 +36,7 @@ public sealed class DpsData
     private readonly Dictionary<string, Sprite> _currentPersonalHealingIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalHealing = new Dictionary<string, float>();
     private readonly Dictionary<string, Sprite> _cumulativePersonalHealingIcons = new Dictionary<string, Sprite>();
+    private readonly Dictionary<string, string> _healingDisplayNames = new Dictionary<string, string>();
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
     private bool _pendingInstanceReset;
@@ -95,16 +97,52 @@ public sealed class DpsData
         CurrentHitCount == 0 ? 0f : CurrentInstancePartyAppliedDamage / CurrentDuration;
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalHealing =>
-        _currentPersonalHealing.OrderByDescending(pair => pair.Value).ToList();
+        _currentPersonalHealing
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new KeyValuePair<string, float>(GetHealingDisplayName(pair.Key), pair.Value))
+            .ToList();
+
+    public IReadOnlyList<BreakdownRow> CurrentPersonalHealingRows =>
+        _currentPersonalHealing
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new BreakdownRow { Identity = pair.Key, Name = GetHealingDisplayName(pair.Key), Amount = pair.Value })
+            .ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CumulativeHealingSources =>
-        _cumulativePersonalHealing.OrderByDescending(pair => pair.Value).ToList();
+        _cumulativePersonalHealing
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new KeyValuePair<string, float>(GetHealingDisplayName(pair.Key), pair.Value))
+            .ToList();
+
+    public IReadOnlyList<BreakdownRow> CumulativeHealingRows =>
+        _cumulativePersonalHealing
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new BreakdownRow { Identity = pair.Key, Name = GetHealingDisplayName(pair.Key), Amount = pair.Value })
+            .ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalSkills =>
-        _currentPersonalSkills.OrderByDescending(pair => pair.Value).ToList();
+        _currentPersonalSkills
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new KeyValuePair<string, float>(GetSkillDisplayName(pair.Key), pair.Value))
+            .ToList();
+
+    public IReadOnlyList<BreakdownRow> CurrentPersonalSkillRows =>
+        _currentPersonalSkills
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new BreakdownRow { Identity = pair.Key, Name = GetSkillDisplayName(pair.Key), Amount = pair.Value })
+            .ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CumulativePersonalSkills =>
-        _cumulativePersonalSkills.OrderByDescending(pair => pair.Value).ToList();
+        _cumulativePersonalSkills
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new KeyValuePair<string, float>(GetSkillDisplayName(pair.Key), pair.Value))
+            .ToList();
+
+    public IReadOnlyList<BreakdownRow> CumulativePersonalSkillRows =>
+        _cumulativePersonalSkills
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new BreakdownRow { Identity = pair.Key, Name = GetSkillDisplayName(pair.Key), Amount = pair.Value })
+            .ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalEssences =>
         _currentPersonalEssences.OrderByDescending(pair => pair.Value).ToList();
@@ -124,7 +162,7 @@ public sealed class DpsData
     public IReadOnlyList<KeyValuePair<string, float>> CumulativeParty =>
         _cumulativeParty.OrderByDescending(pair => pair.Value).ToList();
 
-    public void AddHealing(float healing, string sourceName, Sprite icon)
+    public void AddHealing(float healing, string sourceIdentity, string sourceName, Sprite icon)
     {
         if (healing <= 0f)
         {
@@ -222,13 +260,14 @@ public sealed class DpsData
         CurrentInstancePersonalOverkill += overkill;
         CumulativePersonalOverkill += overkill;
 
-        if (!string.IsNullOrEmpty(skillName))
+        if (!string.IsNullOrEmpty(skillIdentity))
         {
-            Add(_currentPersonalSkills, skillName, producedDamage);
-            Add(_cumulativePersonalSkills, skillName, producedDamage);
-            AddElement(_currentPersonalSkillElements, skillName, elemental, producedDamage);
-            AddScaling(_currentPersonalSkillScaling, skillName, scalingType, producedDamage);
-            AddElement(_cumulativePersonalSkillElements, skillName, elemental, producedDamage);
+            Add(_currentPersonalSkills, skillIdentity, producedDamage);
+            Add(_cumulativePersonalSkills, skillIdentity, producedDamage);
+            AddElement(_currentPersonalSkillElements, skillIdentity, elemental, producedDamage);
+            AddScaling(_currentPersonalSkillScaling, skillIdentity, scalingType, producedDamage);
+            AddElement(_cumulativePersonalSkillElements, skillIdentity, elemental, producedDamage);
+            _skillDisplayNames[skillIdentity] = string.IsNullOrEmpty(skillName) ? skillIdentity : skillName;
         }
         else if (!isDirectEssenceDamage)
         {
@@ -320,8 +359,10 @@ public sealed class DpsData
 
         _cumulativePersonalHealing.Clear();
         _cumulativePersonalHealingIcons.Clear();
+        _healingDisplayNames.Clear();
         _cumulativePersonalSkills.Clear();
         _skillIcons.Clear();
+        _skillDisplayNames.Clear();
         _otherIcons.Clear();
         _cumulativePersonalEssences.Clear();
         _cumulativePersonalEssenceScaling.Clear();
@@ -344,9 +385,9 @@ public sealed class DpsData
         map[key] = current + amount;
     }
 
-    public ElementalType? GetCurrentSkillElement(string skillName) => GetDominantElement(_currentPersonalSkillElements, skillName);
+    public ElementalType? GetCurrentSkillElement(string skillIdentity) => GetDominantElement(_currentPersonalSkillElements, skillIdentity);
 
-    public DamageScalingType GetCurrentSkillScaling(string skillName) => GetDominantScaling(_currentPersonalSkillScaling, skillName);
+    public DamageScalingType GetCurrentSkillScaling(string skillIdentity) => GetDominantScaling(_currentPersonalSkillScaling, skillIdentity);
 
     public DamageScalingType GetCurrentOtherScaling(string sourceName) => GetDominantScaling(_currentPersonalOtherScaling, sourceName);
 
@@ -485,6 +526,22 @@ public sealed class DpsData
         float current;
         elements.TryGetValue(elemental.Value, out current);
         elements[elemental.Value] = current + amount;
+    }
+
+    private string GetSkillDisplayName(string skillIdentity)
+    {
+        string name;
+        return !string.IsNullOrEmpty(skillIdentity) && _skillDisplayNames.TryGetValue(skillIdentity, out name) && !string.IsNullOrEmpty(name)
+            ? name
+            : skillIdentity;
+    }
+
+    private string GetHealingDisplayName(string sourceIdentity)
+    {
+        string name;
+        return !string.IsNullOrEmpty(sourceIdentity) && _healingDisplayNames.TryGetValue(sourceIdentity, out name) && !string.IsNullOrEmpty(name)
+            ? name
+            : sourceIdentity;
     }
 
     private static string GetEssenceKey(Gem gem)
