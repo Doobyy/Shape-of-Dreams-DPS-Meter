@@ -106,40 +106,8 @@ Recent verified work includes:
 - Damage scaling detection improvements.
 - Barrier event discovery diagnostics.
 
-## Barrier Work — Paused
-
-Barrier tracking is currently paused while the skill-gem identity regression is fixed.
-
-Runtime discovery confirmed:
-- ClientEventManager.OnTakeShield
-- SafeAction<EventInfoShield>
-- ClientEventManager.OnDamageNegatedByShield
-- EventInfoDamageNegatedByShield
-- EventInfoDamageNegatedByShield.shield : ShieldEffect
-- EventInfoShield
-- ShieldEffect
-
-Important distinction:
-- OnTakeShield is the likely generation event.
-- OnDamageNegatedByShield is for future barrier absorption/negation tracking, not generation.
-
-The broad barrier candidate scan was diagnostic only. Before implementing barrier generation, replace broad candidate logging with a focused OnTakeShield runtime trace and inspect the actual EventInfoShield fields from a real barrier event.
-
 ## Diagnostics / Logging
 
 Keep diagnostics focused and capped so normal game logs do not become flooded.
 
 Old healing diagnostics and resize diagnostics have been removed. Do not restore them unless specifically needed.
-
-## Important Recent Regression Lesson
-
-The meter previously handled skill upgrades by retaining the stable Q/E/R/RM skill-gem identity while allowing the displayed formatted name to change.
-
-A refactor/recent change caused formatted skill names to become the aggregation identity, producing separate rows for the same gem after an in-instance upgrade.
-
-This is exactly the kind of regression this file is intended to prevent.
-
-When changing skill attribution, always preserve:
-- stable skill-gem identity
-- display name as a separate concern
-- the same identity rules across damage and healing
