@@ -432,11 +432,14 @@ public sealed class DPSMeter : ModBehaviour
         int depth = 0;
         while (current != null && depth < 8)
         {
+            TraceCharcoalObject("Actor[" + depth + "]", current, 0);
+
             Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] actor depth=" + depth +
                 " type=" + current.GetType().Name +
                 " gem=" + ((current as AbilityInstance) != null && (current as AbilityInstance).gem != null
                     ? (current as AbilityInstance).gem.GetActorReadableName()
                     : "none"));
+
             current = current.parentActor;
             depth++;
         }
@@ -485,6 +488,19 @@ public sealed class DPSMeter : ModBehaviour
                 {
                     Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] " + label + "." + field.Name +
                         " read failed=" + ex.GetType().Name);
+                }
+            }
+            else if (field.FieldType == typeof(float) || field.FieldType == typeof(double) ||
+                     field.FieldType == typeof(int) || field.FieldType == typeof(decimal))
+            {
+                try
+                {
+                    object value = field.GetValue(target);
+                    Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] " + label + "." + field.Name +
+                        " numeric=" + value);
+                }
+                catch (Exception)
+                {
                 }
             }
         }
