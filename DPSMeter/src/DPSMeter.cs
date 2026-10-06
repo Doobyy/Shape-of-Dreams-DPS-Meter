@@ -786,6 +786,32 @@ public sealed class DPSMeter : ModBehaviour
         return null;
     }
 
+    private static Sprite FindSpriteMember(object target)
+    {
+        if (target == null)
+            return null;
+
+        Type type = target.GetType();
+
+        FieldInfo iconField = type.GetField("icon", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (iconField != null && typeof(Sprite).IsAssignableFrom(iconField.FieldType))
+            return iconField.GetValue(target) as Sprite;
+
+        PropertyInfo iconProperty = type.GetProperty("icon", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (iconProperty != null && typeof(Sprite).IsAssignableFrom(iconProperty.PropertyType))
+            return iconProperty.GetValue(target, null) as Sprite;
+
+        FieldInfo spriteField = type.GetField("sprite", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (spriteField != null && typeof(Sprite).IsAssignableFrom(spriteField.FieldType))
+            return spriteField.GetValue(target) as Sprite;
+
+        PropertyInfo spriteProperty = type.GetProperty("sprite", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (spriteProperty != null && typeof(Sprite).IsAssignableFrom(spriteProperty.PropertyType))
+            return spriteProperty.GetValue(target, null) as Sprite;
+
+        return null;
+    }
+
     private static Sprite FindSpriteInActorChain(Actor actor)
     {
         Actor current = actor;
