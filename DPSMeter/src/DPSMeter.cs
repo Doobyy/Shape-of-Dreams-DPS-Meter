@@ -344,6 +344,158 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static void ResolveBarrierSource(
+        object statusEffect,
+        out string sourceIdentity,
+        out string sourceName,
+        out Sprite icon)
+    {
+        sourceIdentity = null;
+        sourceName = null;
+        icon = null;
+
+        Actor statusActor = statusEffect as Actor;
+        if (statusActor == null)
+        {
+            sourceName = statusEffect == null ? null : statusEffect.GetType().Name;
+            icon = FindSpriteMember(statusEffect);
+            sourceIdentity = sourceName;
+            return;
+        }
+
+        // Prefer the Gem directly attached to the barrier status effect.
+        // This identifies the actual barrier creator rather than the skill
+        // that happened to trigger an Essence.
+        Gem directGem = FindDirectGemMember(statusActor);
+        if (directGem != null)
+        {
+            sourceIdentity = directGem.GetOriginalName();
+            if (string.IsNullOrEmpty(sourceIdentity))
+            {
+                sourceIdentity = string.IsNullOrEmpty(directGem.name)
+                    ? directGem.GetType().Name
+                    : directGem.name;
+            }
+
+            sourceName = sourceIdentity;
+            icon = FindSpriteMember(directGem);
+            return;
+        }
+
+        // Innate Memory barriers expose their originating skill through the
+        // status effect's parentActor chain.
+        Actor current = statusActor.parentActor;
+        int depth = 0;
+        while (current != null && depth < 8)
+        {
+            directGem = FindDirectGemMember(current);
+            if (directGem != null)
+            {
+                sourceIdentity = directGem.GetOriginalName();
+                if (string.IsNullOrEmpty(sourceIdentity))
+                {
+                    sourceIdentity = string.IsNullOrEmpty(directGem.name)
+                        ? directGem.GetType().Name
+                        : directGem.name;
+                }
+
+                sourceName = sourceIdentity;
+                icon = FindSpriteMember(directGem);
+                return;
+            }
+
+            SkillTrigger skill = current.firstTrigger as SkillTrigger;
+            if (skill != null)
+            {
+                sourceIdentity = GetSkillSlotIdentity(current, skill);
+                sourceName = skill.GetFormattedSkillTitle();
+                icon = FindSkillIcon(skill);
+
+                if (string.IsNullOrEmpty(sourceIdentity))
+                {
+                    sourceIdentity = sourceName;
+                }
+
+                return;
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        sourceName = statusActor.name;
+        icon = FindSpriteMember(statusActor);
+        sourceIdentity = sourceName;
+    }
+
+
+    private static void TraceHealingObjectMember(
+        Type ownerType,
+        string memberName,
+        Type declaredType,
+        object memberValue)
+    {
+        string declaredName = declaredType == null
+            ? "<unknown>"
+            : declaredType.FullName ?? declaredType.Name;
+
+        string valueType = memberValue == null
+            ? "null"
+            : memberValue.GetType().FullName;
+
+        Debug.Log(
+            "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
+            " declaredType=" + declaredName +
+            " valueType=" + valueType);
+
+        TraceHealingReferenceMember(ownerType, memberName, memberValue);
+
+        if (memberValue == null || memberValue is string)
+        {
+            return;
+        }
+
+        Type runtimeType = memberValue.GetType();
+        if (runtimeType.IsPrimitive || runtimeType.IsEnum)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
+                " value=" + memberValue);
+            return;
+        }
+
+        System.Collections.IEnumerable enumerable = memberValue as System.Collections.IEnumerable;
+        if (enumerable == null)
+        {
+            return;
+        }
+
+        int count = 0;
+        foreach (object item in enumerable)
+        {
+            if (item == null)
+            {
+                continue;
+            }
+
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
+                " item[" + count + "] type=" + item.GetType().FullName +
+                " value=" + item);
+
+            TraceHealingReferenceMember(item.GetType(), "item", item);
+
+            count++;
+            if (count >= 20)
+            {
+                Debug.Log(
+                    "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
+                    " item scan capped at 20");
+                break;
+            }
+        }
+    }
+
     private static string GetHealingSourceName(Actor source)
     {
         if (source == null)
