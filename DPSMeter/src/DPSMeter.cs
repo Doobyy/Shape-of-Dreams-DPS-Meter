@@ -191,42 +191,39 @@ public sealed class DPSMeter : ModBehaviour
                 + " | pending=" + _pendingEssenceContributions.Count);
         }
 
-        // v2.9 diagnostic: log every qualifying local-player damage event,
-        // not only direct Essence events. This lets us compare Memory hits
-        // with and without a modifier Essence present.
-        if (_diagnosticDamageEventLogs < 120 && isLocalPlayer)
+        // v3.0 diagnostic: specifically inspect Memory damage events for
+        // Essences that modify the Memory's own damage amount. Projectile/on-hit
+        // Essence damage is already solved and is excluded here.
+        if (_diagnosticDamageEventLogs < 80 && isLocalPlayer && !IsEssenceGem(directGem))
         {
-            List<string> reactionEssences = new List<string>();
+            List<string> essenceStates = new List<string>();
 
             foreach (Gem gem in _essenceProcessorHooks.Keys)
             {
-                if (gem != null && info.chain.DidReact(gem))
+                if (gem == null)
                 {
-                    reactionEssences.Add(gem.GetActorReadableName());
-                }
-            }
-
-            List<string> chainGems = new List<string>();
-            Actor chainActor = info.actor;
-            int chainDepth = 0;
-            while (chainActor != null && chainDepth < 12)
-            {
-                AbilityInstance chainInstance = chainActor as AbilityInstance;
-                if (chainInstance != null && chainInstance.gem != null)
-                {
-                    chainGems.Add(chainInstance.gem.GetActorReadableName());
+                    continue;
                 }
 
-                chainActor = chainActor.parentActor;
-                chainDepth++;
+                bool reacted = info.chain.DidReact(gem);
+                string state = gem.GetActorReadableName() + ":reacted=" + reacted;
+
+                if (reacted)
+                {
+                    state += ", locator=" + DescribeEssenceLocator(gem, info.actor);
+                }
+
+                essenceStates.Add(state);
             }
 
             _diagnosticDamageEventLogs++;
 
-            Debug.Log("[DPS Meter v2.9] Damage event trace: "
-                + "amount=" + info.damage.amount
+            Debug.Log("[DPS Meter v3.0] Memory modifier trace: "
+                + "skill=" + (skill != null ? skill.GetFormattedSkillTitle() : "null")
+                + " | amount=" + info.damage.amount
                 + " | discarded=" + info.damage.discardedAmount
                 + " | produced=" + producedDamage
+                + " | shieldNegated=" + info.negatedAmountByShield
                 + " | elemental=" + (info.damage.elemental.HasValue
                     ? info.damage.elemental.Value.ToString()
                     : "null")
@@ -234,14 +231,7 @@ public sealed class DPSMeter : ModBehaviour
                 + " | attributes=" + info.damage.attributes
                 + " | procCoefficient=" + info.damage.procCoefficient
                 + " | actor=" + DescribeActorChainDetailed(info.actor)
-                + " | directGem=" + (directGem != null
-                    ? directGem.GetActorReadableName()
-                    : "null")
-                + " | abilityGem=" + (abilityGem != null
-                    ? abilityGem.GetActorReadableName()
-                    : "null")
-                + " | reactionEssences=" + string.Join(", ", reactionEssences.ToArray())
-                + " | chainGems=" + string.Join(", ", chainGems.ToArray())
+                + " | reactionEssences=[" + string.Join(" ; ", essenceStates.ToArray()) + "]"
                 + " | reactionChain=" + info.chain.ToString());
         }
 
@@ -572,6 +562,32 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return null;
+    }
+
+
+    private static string DescribeEssenceLocator(Gem gem, Actor damageActor)
+    {
+        if (gem == null || damageActor == null)
+        {
+            return "not-found";
+        }
+
+        Actor current = damageActor;
+        int depth = 0;
+
+        while (current != null && depth < 12)
+        {
+            AbilityInstance instance = current as AbilityInstance;
+            if (instance != null && instance.gem == gem)
+            {
+                return "actor-depth=" + depth + ":" + instance.GetActorReadableName();
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return "reaction-only";
     }
 
     private static string DescribeActorChain(Actor actor)
