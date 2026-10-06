@@ -386,33 +386,87 @@ public sealed class DPSMeter : ModBehaviour
 
     private static DpsData.DamageScalingType FindConfiguredGemScaling(Gem gem)
     {
-        if (gem == null || gem.skill == null || gem.skill.currentConfig == null)
+        if (gem == null)
         {
             return DpsData.DamageScalingType.None;
         }
 
-        AbilityInstance configured = gem.skill.currentConfig.spawnedInstance;
-
-        if (configured != null && configured.GetType().Name == "Ai_E_MysticDagger")
+        try
         {
-            System.Reflection.FieldInfo damageField = configured.GetType().GetField(
-                "damage",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+            UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] FindConfiguredGemScaling gem=" + gem + " type=" + gem.GetType().Name);
 
-            if (damageField != null && damageField.FieldType == typeof(ScalingValue))
+            if (gem.skill == null)
             {
-                return GetScalingType((ScalingValue)damageField.GetValue(configured));
+                UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] gem.skill=null");
+                return DpsData.DamageScalingType.None;
             }
+
+            if (gem.skill.currentConfig == null)
+            {
+                UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] gem.skill.currentConfig=null");
+                return DpsData.DamageScalingType.None;
+            }
+
+            AbilityInstance configured = gem.skill.currentConfig.spawnedInstance;
+
+            if (configured == null)
+            {
+                UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] spawnedInstance=null");
+                return DpsData.DamageScalingType.None;
+            }
+
+            UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] configured type=" + configured.GetType().Name);
+
+            if (configured.GetType().Name == "Ai_E_MysticDagger")
+            {
+                System.Reflection.FieldInfo damageField = configured.GetType().GetField(
+                    "damage",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+
+                if (damageField == null)
+                {
+                    UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] Mystic Dagger damage field=null");
+                    return DpsData.DamageScalingType.None;
+                }
+
+                object value = damageField.GetValue(configured);
+
+                if (!(value is ScalingValue))
+                {
+                    UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] Mystic Dagger damage field type=" + damageField.FieldType);
+                    return DpsData.DamageScalingType.None;
+                }
+
+                ScalingValue scaling = (ScalingValue)value;
+
+                UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] Mystic Dagger damage scaling=ad=" +
+                    scaling.adFactor + ", ap=" + scaling.apFactor + ", addedHp=" + scaling.addedHpFactor +
+                    ", base=" + scaling.baseValue);
+
+                return GetScalingType(scaling);
+            }
+
+            DamageInstance damageInstance = configured as DamageInstance;
+
+            if (damageInstance == null)
+            {
+                UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] configured has no DamageInstance");
+                return DpsData.DamageScalingType.None;
+            }
+
+            ScalingValue damageScaling = damageInstance.dmgFactor;
+
+            UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] configured DamageInstance scaling=ad=" +
+                damageScaling.adFactor + ", ap=" + damageScaling.apFactor +
+                ", addedHp=" + damageScaling.addedHpFactor + ", base=" + damageScaling.baseValue);
+
+            return GetScalingType(damageScaling);
         }
-
-        DamageInstance damageInstance = configured as DamageInstance;
-
-        if (damageInstance == null)
+        catch (System.Exception ex)
         {
+            UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] FindConfiguredGemScaling exception=" + ex.GetType().Name + ": " + ex.Message);
             return DpsData.DamageScalingType.None;
         }
-
-        return GetScalingType(damageInstance.dmgFactor);
     }
 
     private void TraceAbilityChildren(AbilityInstance source)
