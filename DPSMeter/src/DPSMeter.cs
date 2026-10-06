@@ -14,6 +14,7 @@ public sealed class DPSMeter : ModBehaviour
     private DpsOverlay _overlay;
     private bool _subscribed;
     private Hero _currentHero;
+    private int _lastTravelTargetNode = int.MinValue;
 
     private void Awake()
     {
@@ -90,6 +91,28 @@ public sealed class DPSMeter : ModBehaviour
         // active manager so damage events continue reaching the meter.
         AttachToClientEvents();
         AttachToZoneManager();
+    }
+
+    private void Update()
+    {
+        Rift_RoomExit exit = Rift_RoomExit.softInstance;
+        if (exit == null)
+        {
+            return;
+        }
+
+        int targetNode = exit.nextNodeIndex;
+        if (targetNode == _lastTravelTargetNode)
+        {
+            return;
+        }
+
+        _lastTravelTargetNode = targetNode;
+        if (_data.CurrentHitCount > 0)
+        {
+            _data.ResetCurrentInstance();
+            Debug.Log("[DPS Meter] Reset current damage window for node transition target " + targetNode + ".");
+        }
     }
 
     private void OnTakeDamage(EventInfoDamage info)
