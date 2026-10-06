@@ -524,7 +524,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private static void TraceUnresolvedHealingSource(EventInfoHeal info, Gem resolvedGem, string resolvedName)
     {
-        if (info == null || info.actor == null)
+        if (info.actor == null)
         {
             return;
         }
