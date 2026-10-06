@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.21";
+    private const string DevelopmentVersion = "v4.22";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -42,6 +42,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Vector2 _resizeStartSize;
     private bool _headerMoved;
     private bool _showHealing;
+    private float _collapsedWindowHeight;
 
     private GUIStyle _header;
     private GUIStyle _row;
@@ -67,7 +68,14 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         EnsureStyles();
+
+        if (_collapsedWindowHeight <= 0f)
+        {
+            _collapsedWindowHeight = _windowRect.height;
+        }
+
         HandleWindowInput();
+        UpdateWindowHeightForHealing();
 
         GUI.color = WindowFillColor;
         GUI.DrawTexture(_windowRect, _whiteTexture);
@@ -127,8 +135,19 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
         }
 
+        GUILayout.EndScrollView();
+        GUILayout.EndArea();
+
         if (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal)
         {
+            Rect healingRect = new Rect(
+                _windowRect.x + 6f,
+                _windowRect.y + _collapsedWindowHeight - 32f,
+                _windowRect.width - 12f,
+                Mathf.Max(20f, _windowRect.height - _collapsedWindowHeight + 32f));
+
+            GUILayout.BeginArea(healingRect);
+
             DrawHealingToggle();
 
             if (_showHealing)
@@ -141,10 +160,9 @@ public sealed class DpsOverlay : MonoBehaviour
                         ? _data.CurrentInstancePersonalHealing
                         : _data.CumulativePersonalHealing);
             }
-        }
 
-        GUILayout.EndScrollView();
-        GUILayout.EndArea();
+            GUILayout.EndArea();
+        }
 
         DrawResizeGrip();
     }
@@ -215,6 +233,11 @@ public sealed class DpsOverlay : MonoBehaviour
                     90f,
                     Mathf.Max(90f, Screen.height - _windowRect.y - 10f));
 
+                if (!_showHealing)
+                {
+                    _collapsedWindowHeight = _windowRect.height;
+                }
+
                 e.Use();
                 return;
             }
@@ -263,6 +286,31 @@ public sealed class DpsOverlay : MonoBehaviour
                 e.Use();
             }
         }
+    }
+
+    private void UpdateWindowHeightForHealing()
+    {
+        if (!_showHealing
+            || (_mode != DisplayMode.CurrentDps && _mode != DisplayMode.DamageTotal))
+        {
+            _windowRect.height = _collapsedWindowHeight;
+            return;
+        }
+
+        IReadOnlyList<KeyValuePair<string, float>> rows =
+            _mode == DisplayMode.CurrentDps
+                ? _data.CurrentPersonalHealing
+                : _data.CumulativeHealingSources;
+
+        int rowCount = rows != null ? rows.Count : 0;
+        float healingHeight = 16f + 22f + 22f + (rowCount * 22f) + 4f;
+        float maxHeight = Mathf.Max(
+            _collapsedWindowHeight,
+            Screen.height - _windowRect.y - 10f);
+
+        _windowRect.height = Mathf.Min(
+            _collapsedWindowHeight + healingHeight,
+            maxHeight);
     }
 
     private void DrawHeader(Rect headerRect)
