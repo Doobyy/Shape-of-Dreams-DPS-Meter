@@ -18,8 +18,9 @@ public sealed class DPSMeter : ModBehaviour
     private Hero _currentHero;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
-    private readonly HashSet<AbilityInstance> _tracedAbilityInstances = new HashSet<AbilityInstance>();
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
+    private bool _healingDiagnosticLogged;
+    private bool _damageEventDiagnosticLogged;
     private void Awake()
     {
         Instance = this;
@@ -56,6 +57,7 @@ public sealed class DPSMeter : ModBehaviour
         _clientEvents.OnTakeDamage += OnTakeDamage;
         _clientEvents.OnLocalHeroAbilityChanged += OnLocalHeroAbilityChanged;
         _subscribed = true;
+        LogHealingEventCandidates();
         Debug.Log("[DPS Meter] Damage event listener attached.");
     }
 
@@ -86,7 +88,6 @@ public sealed class DPSMeter : ModBehaviour
         _currentHero = hero;
         _skillScalingCache.Clear();
         _essenceScalingCache.Clear();
-        _tracedAbilityInstances.Clear();
         Debug.Log("[DPS Meter] Reset current damage window for hero ability change.");
     }
 
@@ -114,6 +115,12 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeDamage(EventInfoDamage info)
     {
+        if (!_damageEventDiagnosticLogged)
+        {
+            _damageEventDiagnosticLogged = true;
+            TraceDamageEvent(info);
+        }
+
         if (info.actor == null || info.victim == null)
         {
             return;
@@ -244,6 +251,201 @@ public sealed class DPSMeter : ModBehaviour
             playerName,
             isDirectEssenceDamage,
             scalingType);
+    }
+
+    private void LogHealingEventCandidates()
+    {
+        if (_healingDiagnosticLogged || _clientEvents == null)
+        {
+            return;
+        }
+
+        _healingDiagnosticLogged = true;
+        Type managerType = _clientEvents.GetType();
+
+        Debug.Log("[DPS Meter][HEAL TRACE] ClientEventManager=" + managerType.FullName);
+
+        EventInfo[] events = managerType.GetEvents(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < events.Length; i++)
+        {
+            EventInfo eventInfo = events[i];
+            if (eventInfo == null || eventInfo.Name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                continue;
+            }
+
+            Debug.Log("[DPS Meter][HEAL TRACE] Event candidate: " + eventInfo.Name +
+                " handler=" + (eventInfo.EventHandlerType != null ? eventInfo.EventHandlerType.FullName : "unknown"));
+        }
+
+        FieldInfo[] fields = managerType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field == null || field.Name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                continue;
+            }
+
+            Debug.Log("[DPS Meter][HEAL TRACE] Field candidate: " + field.Name +
+                " type=" + field.FieldType.FullName);
+        }
+
+        PropertyInfo[] properties = managerType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property == null || property.Name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                continue;
+            }
+
+            Debug.Log("[DPS Meter][HEAL TRACE] Property candidate: " + property.Name +
+                " type=" + property.PropertyType.FullName);
+        }
+
+        Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+        for (int i = 0; i < assemblies.Length; i++)
+        {
+            Type[] types;
+            try
+            {
+                types = assemblies[i].GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                types = ex.Types;
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            for (int j = 0; j < types.Length; j++)
+            {
+                Type type = types[j];
+                if (type == null)
+                {
+                    continue;
+                }
+
+                string name = type.Name;
+                if (name.IndexOf("EventInfo", StringComparison.OrdinalIgnoreCase) < 0 ||
+                    name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                Debug.Log("[DPS Meter][HEAL TRACE] Runtime type candidate: " + type.FullName);
+            }
+        }
+    }
+
+    private static void TraceDamageEvent(EventInfoDamage info)
+    {
+        Debug.Log("[DPS Meter][HEAL TRACE] EventInfoDamage runtime type=" +
+            info.GetType().FullName);
+
+        Type eventType = info.GetType();
+        FieldInfo[] fields = eventType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field == null)
+            {
+                continue;
+            }
+
+            string name = field.Name;
+            if (name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("health", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("restore", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("amount", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("value", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("victim", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                continue;
+            }
+
+            object value = null;
+            try
+            {
+                value = field.GetValue(info);
+            }
+            catch (Exception)
+            {
+            }
+
+            Debug.Log("[DPS Meter][HEAL TRACE] EventInfoDamage." + name +
+                " type=" + field.FieldType.FullName +
+                " value=" + DescribeDiagnosticValue(value));
+        }
+
+        PropertyInfo[] properties = eventType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property == null || !property.CanRead)
+            {
+                continue;
+            }
+
+            string name = property.Name;
+            if (name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("health", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("restore", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("amount", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("value", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("victim", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                continue;
+            }
+
+            object value = null;
+            try
+            {
+                value = property.GetValue(info, null);
+            }
+            catch (Exception)
+            {
+            }
+
+            Debug.Log("[DPS Meter][HEAL TRACE] EventInfoDamage." + name +
+                " type=" + property.PropertyType.FullName +
+                " value=" + DescribeDiagnosticValue(value));
+        }
+
+        Actor current = info.actor;
+        int depth = 0;
+        while (current != null && depth < 8)
+        {
+            Debug.Log("[DPS Meter][HEAL TRACE] Damage actor[" + depth + "] type=" +
+                current.GetType().FullName +
+                " name=" + current.name);
+
+            current = current.parentActor;
+            depth++;
+        }
+    }
+
+    private static string DescribeDiagnosticValue(object value)
+    {
+        if (value == null)
+        {
+            return "null";
+        }
+
+        Actor actor = value as Actor;
+        if (actor != null)
+        {
+            return actor.GetType().FullName + " name=" + actor.name;
+        }
+
+        return value.ToString();
     }
 
     private DpsData.DamageScalingType GetCachedSkillScaling(string skillName, SkillTrigger skill, Actor actor)
