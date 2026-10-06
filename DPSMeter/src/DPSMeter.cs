@@ -176,6 +176,8 @@ public sealed class DPSMeter : ModBehaviour
             _data.RegisterSkillIcon(skillName, icon);
         }
 
+        TraceMysticDaggerDamage(info.actor, info.damage);
+
         ElementalType? elementalType = info.damage.elemental;
         DpsData.DamageScalingType scalingType = DpsData.DamageScalingType.None;
 
@@ -251,6 +253,29 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return scaling;
+    }
+
+    private void TraceMysticDaggerDamage(Actor actor, FinalDamageData damage)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 12)
+        {
+            AbilityInstance instance = current as AbilityInstance;
+            if (instance != null)
+            {
+                DamageInstance damageInstance = instance as DamageInstance;
+                if (damageInstance != null)
+                {
+                    ScalingValue scaling = damageInstance.dmgFactor;
+                    Debug.Log($"[DPS Meter][v3.8 TRACE] Damage ancestry depth={depth} type={instance.GetType().Name} gem={(instance.gem != null ? instance.gem.GetActorReadableName() : "none")} scaling=ad={scaling.adFactor}, ap={scaling.apFactor}, addedHp={scaling.addedHpFactor}, base={scaling.baseValue} elemental={damageInstance.elemental}");
+                }
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
     }
 
     private void TraceAbilityChildren(AbilityInstance source)
