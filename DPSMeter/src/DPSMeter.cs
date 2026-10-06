@@ -596,6 +596,22 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static string DescribeHealingObject(Actor actor)
+    {
+        if (actor == null)
+        {
+            return "null";
+        }
+
+        string actorName = actor.name;
+        if (string.IsNullOrEmpty(actorName))
+        {
+            actorName = "<no-name>";
+        }
+
+        return "type=" + actor.GetType().FullName + " name=" + actorName;
+    }
+
     private static string GetHealingSourceName(Actor source)
     {
         if (source == null)
