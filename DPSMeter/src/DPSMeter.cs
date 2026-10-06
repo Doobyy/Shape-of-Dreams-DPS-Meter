@@ -19,7 +19,7 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private readonly HashSet<AbilityInstance> _tracedAbilityInstances = new HashSet<AbilityInstance>();
-    private readonly HashSet<Gem> _tracedGems = new HashSet<Gem>();
+    private readonly HashSet<Gem> _tracedCharcoalGems = new HashSet<Gem>();
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
@@ -151,14 +151,16 @@ public sealed class DPSMeter : ModBehaviour
 
         bool isLocalPlayer = sourcePlayer == local;
 
-        TraceAbilitySource(info.actor);
-        TraceGemSource(FindDamageSourceEssence(info.actor));
 
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
         // An Essence can create its own AbilityInstance/child actor. In that
         // case the damage event's actor chain can contain the Gem even when
         // the first AbilityInstance is not the Essence's instance.
         Gem directGem = FindDamageSourceEssence(info.actor);
+        if (isLocalPlayer && directGem != null)
+        {
+            TraceCharcoalScaling(directGem, info.actor);
+        }
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
         bool isDirectEssenceDamage = directGem != null;
 
@@ -180,8 +182,6 @@ public sealed class DPSMeter : ModBehaviour
             if (basicAttackIcon != null)
             {
                 _overlay.SetBasicAttackIcon(basicAttackIcon);
-                Debug.Log("[DPS Meter][v4.11 TRACE] Basic Attack icon captured from actor chain sprite=" + basicAttackIcon.name +
-                    " texture=" + (basicAttackIcon.texture != null ? basicAttackIcon.texture.name : "none"));
             }
         }
 
@@ -209,16 +209,8 @@ public sealed class DPSMeter : ModBehaviour
             _data.RegisterSkillIcon(skillName, icon);
         }
 
-        TraceMysticDaggerDamage(info.actor, info.damage);
-
         ElementalType? elementalType = info.damage.elemental;
         DpsData.DamageScalingType scalingType = DpsData.DamageScalingType.None;
-
-        Debug.Log("[DPS Meter][v4.5 TRACE] damage skill=" +
-            (skillName ?? sourceName) +
-            " directEssence=" + isDirectEssenceDamage +
-            " directGem=" + (directGem != null ? directGem.GetActorReadableName() : "none") +
-            " elemental=" + (elementalType.HasValue ? elementalType.Value.ToString() : "none"));
 
         // The final damage event tells us the actual elemental result. Only
         // fall back to source scaling when no elemental result was produced.
@@ -243,9 +235,6 @@ public sealed class DPSMeter : ModBehaviour
                 scalingType = FindDamageScalingType(info.actor);
             }
         }
-
-        Debug.Log("[DPS Meter][v4.5 TRACE] resolved scaling=" + scalingType +
-            " skill=" + (skillName ?? sourceName));
 
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
 
@@ -312,11 +301,8 @@ public sealed class DPSMeter : ModBehaviour
         HeroSkillLocation location;
         if (!hero.Skill.TryGetSkillLocation(skill, out location))
         {
-            Debug.Log("[DPS Meter][v4.8 TRACE] SkillTrigger location lookup failed skill=" + skill.GetFormattedSkillTitle());
             return null;
         }
-
-        Debug.Log("[DPS Meter][v4.4 TRACE] SkillTrigger location=" + location + " skill=" + skill.GetFormattedSkillTitle());
 
         IEnumerable<Gem> gems = hero.Skill.GetGemsInSkill(location);
         if (gems == null)
@@ -368,103 +354,11 @@ public sealed class DPSMeter : ModBehaviour
         return scaling;
     }
 
-    private void TraceMysticDaggerDamage(Actor actor, FinalDamageData damage)
-    {
-        Actor current = actor;
-        int depth = 0;
 
-        while (current != null && depth < 12)
-        {
-            AbilityInstance instance = current as AbilityInstance;
-            if (instance != null)
-            {
-                DamageInstance damageInstance = instance as DamageInstance;
-                if (damageInstance != null)
-                {
-                    ScalingValue scaling = damageInstance.dmgFactor;
-                    Debug.Log($"[DPS Meter][v3.9 TRACE] Damage ancestry depth={depth} type={instance.GetType().Name} gem={(instance.gem != null ? instance.gem.GetActorReadableName() : "none")} scaling=ad={scaling.adFactor}, ap={scaling.apFactor}, addedHp={scaling.addedHpFactor}, base={scaling.baseValue} elemental={damageInstance.elemental}");
-                }
-            }
 
-            current = current.parentActor;
-            depth++;
-        }
-    }
 
-    private void TraceGemSource(Gem gem)
-    {
-        if (gem == null || !_tracedGems.Add(gem))
-        {
-            return;
-        }
 
-        SkillTrigger skill = gem.skill;
-        if (skill == null)
-        {
-            Debug.Log("[DPS Meter][v3.9 TRACE] Gem has no SkillTrigger: " + gem.GetActorReadableName());
-            return;
-        }
 
-        TriggerConfig config = skill.currentConfig;
-        if (config == null)
-        {
-            Debug.Log("[DPS Meter][v3.9 TRACE] Gem skill has no current config: " + gem.GetActorReadableName());
-            return;
-        }
-
-        AbilityInstance configured = config.spawnedInstance;
-        string configuredName = configured != null ? configured.GetType().Name : "none";
-
-        Debug.Log("[DPS Meter][v3.9 TRACE] Gem source=" + gem.GetActorReadableName()
-            + " level=" + gem.effectiveLevel
-            + " skill=" + skill.GetFormattedSkillTitle()
-            + " configIndex=" + skill.currentConfigIndex
-            + " spawnedInstance=" + configuredName);
-
-        TraceConfiguredAbilityInstance(configured, 0);
-    }
-
-    private void TraceConfiguredAbilityInstance(AbilityInstance instance, int depth)
-    {
-        if (instance == null || depth > 4)
-        {
-            return;
-        }
-
-        DamageInstance damageInstance = instance as DamageInstance;
-        if (damageInstance != null)
-        {
-            ScalingValue scaling = damageInstance.dmgFactor;
-            Debug.Log("[DPS Meter][v3.9 TRACE] Configured ability depth=" + depth
-                + " type=" + instance.GetType().Name
-                + " scaling=ad=" + scaling.adFactor
-                + ", ap=" + scaling.apFactor
-                + ", addedHp=" + scaling.addedHpFactor
-                + ", base=" + scaling.baseValue
-                + " elemental=" + damageInstance.elemental);
-        }
-        else
-        {
-            Debug.Log("[DPS Meter][v3.9 TRACE] Configured ability depth=" + depth
-                + " type=" + instance.GetType().Name
-                + " no DamageInstance");
-        }
-
-        List<Actor> children = instance.children;
-        if (children == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < children.Count; i++)
-        {
-            AbilityInstance child = children[i] as AbilityInstance;
-            if (child != null)
-            {
-                TraceConfiguredAbilityInstance(child, depth + 1);
-            }
-        }
-    }
 
     private static DpsData.DamageScalingType FindConfiguredAbilityScaling(AbilityInstance instance, int depth)
     {
@@ -507,6 +401,118 @@ public sealed class DPSMeter : ModBehaviour
         return DpsData.DamageScalingType.None;
     }
 
+    private void TraceCharcoalScaling(Gem gem, Actor damageActor)
+    {
+        if (gem == null || _tracedCharcoalGems.Contains(gem))
+            return;
+
+        string name = gem.GetActorReadableName();
+        string originalName = gem.GetOriginalName();
+        if ((name == null || name.IndexOf("Charcoal", StringComparison.OrdinalIgnoreCase) < 0) &&
+            (originalName == null || originalName.IndexOf("Charcoal", StringComparison.OrdinalIgnoreCase) < 0))
+            return;
+
+        _tracedCharcoalGems.Add(gem);
+
+        Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] gem=" + name +
+            " originalName=" + originalName +
+            " gemType=" + gem.GetType().Name);
+
+        TraceCharcoalObject("Gem", gem, 0);
+        TraceCharcoalObject("SkillTrigger", gem.skill, 0);
+        TraceCharcoalObject("TriggerConfig", gem.skill != null ? gem.skill.currentConfig : null, 0);
+
+        AbilityInstance configured = gem.skill != null && gem.skill.currentConfig != null
+            ? gem.skill.currentConfig.spawnedInstance
+            : null;
+
+        TraceCharcoalAbilityTree(configured, 0);
+
+        Actor current = damageActor;
+        int depth = 0;
+        while (current != null && depth < 8)
+        {
+            Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] actor depth=" + depth +
+                " type=" + current.GetType().Name +
+                " gem=" + ((current as AbilityInstance) != null && (current as AbilityInstance).gem != null
+                    ? (current as AbilityInstance).gem.GetActorReadableName()
+                    : "none"));
+            current = current.parentActor;
+            depth++;
+        }
+    }
+
+    private static void TraceCharcoalAbilityTree(AbilityInstance instance, int depth)
+    {
+        if (instance == null || depth > 6)
+            return;
+
+        TraceCharcoalObject("Ability[" + depth + "]", instance, depth);
+
+        List<Actor> children = instance.children;
+        if (children == null)
+            return;
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child != null)
+                TraceCharcoalAbilityTree(child, depth + 1);
+        }
+    }
+
+    private static void TraceCharcoalObject(string label, object target, int depth)
+    {
+        if (target == null || depth > 2)
+            return;
+
+        Type type = target.GetType();
+        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field.FieldType == typeof(ScalingValue))
+            {
+                try
+                {
+                    ScalingValue scaling = (ScalingValue)field.GetValue(target);
+                    Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] " + label + "." + field.Name +
+                        " ScalingValue ad=" + scaling.adFactor + " ap=" + scaling.apFactor +
+                        " addedHp=" + scaling.addedHpFactor + " base=" + scaling.baseValue +
+                        " armor=" + scaling.armorFactor + " crit=" + scaling.critPercentageFactor);
+                }
+                catch (Exception ex)
+                {
+                    Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] " + label + "." + field.Name +
+                        " read failed=" + ex.GetType().Name);
+                }
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property.PropertyType != typeof(ScalingValue) ||
+                property.GetIndexParameters().Length != 0 || !property.CanRead)
+                continue;
+
+            try
+            {
+                ScalingValue scaling = (ScalingValue)property.GetValue(target, null);
+                Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] " + label + "." + property.Name +
+                    " [property] ScalingValue ad=" + scaling.adFactor + " ap=" + scaling.apFactor +
+                    " addedHp=" + scaling.addedHpFactor + " base=" + scaling.baseValue +
+                    " armor=" + scaling.armorFactor + " crit=" + scaling.critPercentageFactor);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] " + label + "." + property.Name +
+                    " [property] read failed=" + ex.GetType().Name);
+            }
+        }
+    }
+
     private static DpsData.DamageScalingType GetScalingType(ScalingValue scaling)
     {
         float ad = Mathf.Max(0f, scaling.adFactor);
@@ -540,17 +546,13 @@ public sealed class DPSMeter : ModBehaviour
 
         try
         {
-            UnityEngine.Debug.Log("[DPS Meter][v4.8 TRACE] FindConfiguredGemScaling gem=" + gem + " type=" + gem.GetType().Name + " originalName=" + gem.GetOriginalName());
-
-            if (gem.skill == null)
+                        if (gem.skill == null)
             {
-                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] gem.skill=null");
                 return DpsData.DamageScalingType.None;
             }
 
             if (gem.skill.currentConfig == null)
             {
-                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] gem.skill.currentConfig=null");
                 return DpsData.DamageScalingType.None;
             }
 
@@ -558,11 +560,8 @@ public sealed class DPSMeter : ModBehaviour
 
             if (configured == null)
             {
-                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] spawnedInstance=null");
                 return DpsData.DamageScalingType.None;
             }
-
-            UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] configured type=" + configured.GetType().Name);
 
             if (configured.GetType().Name == "Ai_E_MysticDagger")
             {
@@ -572,7 +571,6 @@ public sealed class DPSMeter : ModBehaviour
 
                 if (damageField == null)
                 {
-                    UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] Mystic Dagger damage field=null");
                     return DpsData.DamageScalingType.None;
                 }
 
@@ -580,15 +578,10 @@ public sealed class DPSMeter : ModBehaviour
 
                 if (!(value is ScalingValue))
                 {
-                    UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] Mystic Dagger damage field type=" + damageField.FieldType);
                     return DpsData.DamageScalingType.None;
                 }
 
                 ScalingValue scaling = (ScalingValue)value;
-
-                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] Mystic Dagger damage scaling=ad=" +
-                    scaling.adFactor + ", ap=" + scaling.apFactor + ", addedHp=" + scaling.addedHpFactor +
-                    ", base=" + scaling.baseValue);
 
                 return GetScalingType(scaling);
             }
@@ -598,10 +591,6 @@ public sealed class DPSMeter : ModBehaviour
             if (damageInstance != null)
             {
                 ScalingValue damageScaling = damageInstance.dmgFactor;
-
-                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] configured DamageInstance scaling=ad=" +
-                    damageScaling.adFactor + ", ap=" + damageScaling.apFactor +
-                    ", addedHp=" + damageScaling.addedHpFactor + ", base=" + damageScaling.baseValue);
 
                 DpsData.DamageScalingType directScaling = GetScalingType(damageScaling);
                 if (directScaling != DpsData.DamageScalingType.None)
@@ -620,168 +609,21 @@ public sealed class DPSMeter : ModBehaviour
                 return childScaling;
             }
 
-            UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] configured has no usable DamageInstance scaling");
             return DpsData.DamageScalingType.None;
         }
         catch (System.Exception ex)
         {
-            UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] FindConfiguredGemScaling exception=" + ex.GetType().Name + ": " + ex.Message);
             return DpsData.DamageScalingType.None;
         }
     }
 
-    private static void TraceIdentityScaling(Gem gem, AbilityInstance configured)
-    {
-        if (gem == null || configured == null)
-        {
-            return;
-        }
 
-        string gemName = gem.GetActorReadableName();
-        string originalName = gem.GetOriginalName();
-        string skillName = gem.skill != null ? gem.skill.GetFormattedSkillTitle() : "none";
 
-        Debug.Log("[DPS Meter][v4.8 IDENTITY TRACE] gem=" + gemName
-            + " originalName=" + originalName
-            + " gemType=" + gem.GetType().Name
-            + " skill=" + skillName
-            + " configIndex=" + (gem.skill != null ? gem.skill.currentConfigIndex.ToString() : "none")
-            + " configuredType=" + configured.GetType().Name);
 
-        TraceScalingFields("Gem", gem);
-        TraceScalingFields("SkillTrigger", gem.skill);
-        TraceScalingFields("TriggerConfig", gem.skill != null ? gem.skill.currentConfig : null);
-        TraceScalingFields("Configured", configured);
-    }
 
-    private static void TraceScalingFields(string label, object target)
-    {
-        if (target == null)
-        {
-            return;
-        }
 
-        Type type = target.GetType();
-        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-            if (field.FieldType != typeof(ScalingValue))
-            {
-                continue;
-            }
 
-            try
-            {
-                ScalingValue scaling = (ScalingValue)field.GetValue(target);
-                Debug.Log("[DPS Meter][v4.8 IDENTITY TRACE] " + label
-                    + "." + field.Name
-                    + " scaling=ad=" + scaling.adFactor
-                    + ", ap=" + scaling.apFactor
-                    + ", addedHp=" + scaling.addedHpFactor
-                    + ", base=" + scaling.baseValue
-                    + ", armor=" + scaling.armorFactor
-                    + ", crit=" + scaling.critPercentageFactor);
-            }
-            catch (Exception ex)
-            {
-                Debug.Log("[DPS Meter][v4.8 IDENTITY TRACE] " + label
-                    + "." + field.Name
-                    + " read failed=" + ex.GetType().Name + ": " + ex.Message);
-            }
-        }
-
-        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < properties.Length; i++)
-        {
-            PropertyInfo property = properties[i];
-            if (property.PropertyType != typeof(ScalingValue)
-                || property.GetIndexParameters().Length != 0
-                || !property.CanRead)
-            {
-                continue;
-            }
-
-            try
-            {
-                ScalingValue scaling = (ScalingValue)property.GetValue(target, null);
-                Debug.Log("[DPS Meter][v4.8 IDENTITY TRACE] " + label
-                    + "." + property.Name + " [property]"
-                    + " scaling=ad=" + scaling.adFactor
-                    + ", ap=" + scaling.apFactor
-                    + ", addedHp=" + scaling.addedHpFactor
-                    + ", base=" + scaling.baseValue
-                    + ", armor=" + scaling.armorFactor
-                    + ", crit=" + scaling.critPercentageFactor);
-            }
-            catch (Exception ex)
-            {
-                Debug.Log("[DPS Meter][v4.8 IDENTITY TRACE] " + label
-                    + "." + property.Name + " [property] read failed="
-                    + ex.GetType().Name + ": " + ex.Message);
-            }
-        }
-    }
-
-    private void TraceAbilityChildren(AbilityInstance source)
-    {
-        List<Actor> children = source.children;
-        if (children == null)
-            return;
-
-        foreach (Actor child in children)
-        {
-            AbilityInstance instance = child as AbilityInstance;
-            if (instance == null)
-                continue;
-
-            DamageInstance damageInstance = instance as DamageInstance;
-            Gem gem = instance.gem;
-            string gemName = gem != null ? gem.GetActorReadableName() : "none";
-
-            if (damageInstance != null)
-            {
-                ScalingValue scaling = damageInstance.dmgFactor;
-                Debug.Log($"[DPS Meter][v3.8 TRACE] MysticDagger child type={instance.GetType().Name} gem={gemName} scaling=ad={scaling.adFactor}, ap={scaling.apFactor}, addedHp={scaling.addedHpFactor}, base={scaling.baseValue} elemental={damageInstance.elemental}");
-            }
-            else
-            {
-                Debug.Log($"[DPS Meter][v3.8 TRACE] MysticDagger child type={instance.GetType().Name} gem={gemName} no DamageInstance");
-            }
-        }
-    }
-
-    private void TraceAbilitySource(Actor actor)
-    {
-        Actor current = actor;
-        int depth = 0;
-
-        while (current != null && depth < 8)
-        {
-            AbilityInstance instance = current as AbilityInstance;
-            if (instance != null && _tracedAbilityInstances.Add(instance))
-            {
-                Gem gem = instance.gem;
-                DamageInstance damageInstance = instance as DamageInstance;
-                ScalingValue scaling = damageInstance != null ? damageInstance.dmgFactor : default(ScalingValue);
-
-                string gemName = gem != null ? gem.GetActorReadableName() : "none";
-                string typeName = instance.GetType().Name;
-                string scalingText = damageInstance != null
-                    ? $"ad={scaling.adFactor}, ap={scaling.apFactor}, addedHp={scaling.addedHpFactor}, base={scaling.baseValue}"
-                    : "no DamageInstance/dmgFactor";
-
-                Debug.Log($"[DPS Meter][v3.8 TRACE] AbilityInstance type={typeName} gem={gemName} scaling={scalingText}");
-
-                if (typeName == "Ai_E_MysticDagger")
-                    TraceAbilityChildren(instance);
-            }
-
-            current = current.parentActor;
-            depth++;
-        }
-    }
 
     private static DpsData.DamageScalingType FindDamageScalingType(Actor actor)
     {
