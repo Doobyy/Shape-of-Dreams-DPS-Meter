@@ -269,7 +269,7 @@ public sealed class DPSMeter : ModBehaviour
 
                 string gemName = gem != null ? gem.GetActorReadableName() : "none";
                 string typeName = instance.GetType().Name;
-                string scalingText = scaling != null
+                string scalingText = damageInstance != null
                     ? $"ad={scaling.adFactor}, ap={scaling.apFactor}, addedHp={scaling.addedHpFactor}, base={scaling.baseValue}"
                     : "no DamageInstance/dmgFactor";
 
