@@ -182,6 +182,26 @@ public sealed class DPSMeter : ModBehaviour
             }
         }
 
+        // Damage events carry the reaction chain that produced the hit. This
+        // is different from the actor parent/ancestor tree: an Essence can
+        // contribute to a reaction without being an ancestor of the actor
+        // reported by OnTakeDamage.
+        //
+        // If exactly one equipped Essence is recorded in the reaction chain
+        // and we have not already attributed this hit through the processor
+        // hooks, treat the actual produced damage as that Essence's damage.
+        // This is especially important for Essence effects that spawn their
+        // own projectile/damage while the game's ledger still reports the
+        // Memory as the actor.
+        if (essenceContributions.Count == 0)
+        {
+            Gem reactionGem = FindSingleReactionEssence(info.actor, info.chain, sourceHero);
+            if (reactionGem != null)
+            {
+                essenceContributions[reactionGem] = producedDamage;
+            }
+        }
+
         string skillName = skill != null
             ? skill.GetFormattedSkillTitle()
             : null;
@@ -297,6 +317,42 @@ public sealed class DPSMeter : ModBehaviour
 
         _essenceDamageHandlers[gem] = damageHandler;
         _essenceProcessorStarts[gem] = new Stack<float>();
+    }
+
+    private Gem FindSingleReactionEssence(Actor damageActor, ReactionChain chain, Hero sourceHero)
+    {
+        if (sourceHero == null || sourceHero.Skill == null || sourceHero.Skill.gems == null)
+        {
+            return null;
+        }
+
+        Gem found = null;
+
+        foreach (Gem gem in sourceHero.Skill.gems.Values)
+        {
+            if (!IsEssenceGem(gem))
+            {
+                continue;
+            }
+
+            if (!chain.DidReact(gem))
+            {
+                continue;
+            }
+
+            if (found != null && found != gem)
+            {
+                // More than one Essence participated in this reaction. We do
+                // not guess how the final damage should be divided between
+                // them. A later patch can use the processor/origin data for
+                // that case.
+                return null;
+            }
+
+            found = gem;
+        }
+
+        return found;
     }
 
     private static bool IsEssenceGem(Gem gem)
