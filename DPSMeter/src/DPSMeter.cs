@@ -574,121 +574,111 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
+    private static readonly HashSet<string> _healingNameTraceCache = new HashSet<string>();
+
     private static void TraceUnresolvedHealingSource(EventInfoHeal info, Gem resolvedGem, string resolvedName)
     {
         if (info.actor == null)
             return;
 
         string rawName = info.actor.name ?? string.Empty;
-
-        if (rawName.IndexOf("Se_LingeringAuraOfGuidance", StringComparison.OrdinalIgnoreCase) >= 0)
-        {
-            Debug.Log("[DPS Meter][HEAL NAME INVESTIGATION] source=guidance actor=" + rawName +
-                " parent=" + (info.actor.parentActor == null ? "<null>" : info.actor.parentActor.name));
-            TraceHealingIdentityMetadata(info.actor);
-            TraceHealingIdentityMetadata(info.actor.parentActor);
-        }
-
-        if (rawName.IndexOf("Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase) >= 0)
-        {
-            Debug.Log("[DPS Meter][HEAL NAME INVESTIGATION] source=generic actor=" + rawName +
-                " parent=" + (info.actor.parentActor == null ? "<null>" : info.actor.parentActor.name));
-
-            Actor current = info.actor;
-            int depth = 0;
-            while (current != null && depth < 4)
-            {
-                Debug.Log("[DPS Meter][GENERIC HEAL CHAIN] depth=" + depth +
-                    " type=" + current.GetType().FullName + " name=" + current.name);
-                TraceHealingIdentityMetadata(current);
-                current = current.parentActor;
-                depth++;
-            }
-        }
-    }
-
-    private static void TraceHealingIdentityMetadata(Actor actor)
-    {
-        AbilityInstance ability = actor as AbilityInstance;
-        if (ability == null)
+        bool guidance = rawName.IndexOf("Se_LingeringAuraOfGuidance", StringComparison.OrdinalIgnoreCase) >= 0;
+        bool generic = rawName.IndexOf("Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase) >= 0;
+        if (!guidance && !generic)
             return;
 
-        Type type = ability.GetType();
-        Debug.Log("[DPS Meter][HEAL IDENTITY] actor=" + actor.name +
-            " runtimeType=" + type.FullName +
-            " gem=" + (ability.gem == null ? "<null>" : ability.gem.name));
+        string cacheKey = (guidance ? "guidance:" : "generic:") + rawName;
+        if (!_healingNameTraceCache.Add(cacheKey))
+            return;
 
+        Debug.Log("[DPS Meter][HEAL NAME TRACE] source=" + (guidance ? "guidance" : "generic") +
+            " actor=" + rawName +
+            " parent=" + (info.actor.parentActor == null ? "<null>" : info.actor.parentActor.name));
+
+        TraceHealingNameSource(info.actor, guidance ? "guidance actor" : "generic actor");
+
+        if (info.actor.parentActor != null)
+            TraceHealingNameSource(info.actor.parentActor, guidance ? "guidance parent" : "generic parent");
+    }
+
+    private static void TraceHealingNameSource(Actor actor, string label)
+    {
+        if (actor == null)
+            return;
+
+        Debug.Log("[DPS Meter][HEAL NAME OBJECT] label=" + label +
+            " type=" + actor.GetType().FullName +
+            " name=" + (actor.name ?? "<null>") +
+            " originalName=" + (actor.GetOriginalName() ?? "<null>"));
+
+        SkillTrigger skill = actor.firstTrigger as SkillTrigger;
+        if (skill != null)
+        {
+            try
+            {
+                Debug.Log("[DPS Meter][HEAL NAME SKILL] label=" + label +
+                    " skillType=" + skill.GetType().FullName +
+                    " formattedTitle=" + (skill.GetFormattedSkillTitle() ?? "<null>") +
+                    " currentConfig=" + (skill.currentConfig == null ? "<null>" : skill.currentConfig.name));
+            }
+            catch (Exception)
+            {
+                Debug.Log("[DPS Meter][HEAL NAME SKILL] label=" + label + " inspection=threw");
+            }
+        }
+
+        TraceHealingNameMethods(actor, label);
+    }
+
+    private static void TraceHealingNameMethods(object target, string label)
+    {
+        if (target == null)
+            return;
+
+        Type type = target.GetType();
         for (Type currentType = type; currentType != null && currentType != typeof(object); currentType = currentType.BaseType)
         {
-            FieldInfo[] fields = currentType.GetFields(
+            MethodInfo[] methods = currentType.GetMethods(
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
 
-            for (int i = 0; i < fields.Length; i++)
+            for (int i = 0; i < methods.Length; i++)
             {
-                FieldInfo field = fields[i];
-                if (field.IsStatic || !IsHealingIdentityMember(field.Name))
+                MethodInfo method = methods[i];
+                if (method.IsStatic || method.GetParameters().Length != 0 || !IsHealingNameMethod(method.Name))
+                    continue;
+
+                Type returnType = method.ReturnType;
+                if (returnType != typeof(string) && !typeof(UnityEngine.Object).IsAssignableFrom(returnType))
                     continue;
 
                 try
                 {
-                    LogHealingIdentityValue("field", field.Name, field.FieldType, field.GetValue(ability));
+                    object value = method.Invoke(target, null);
+                    UnityEngine.Object unityObject = value as UnityEngine.Object;
+                    string rendered = value == null
+                        ? "<null>"
+                        : (unityObject != null ? unityObject.name : value.ToString());
+                    Debug.Log("[DPS Meter][HEAL NAME METHOD] label=" + label +
+                        " method=" + method.Name +
+                        " returnType=" + returnType.FullName +
+                        " value=" + rendered);
                 }
                 catch (Exception)
                 {
-                }
-            }
-
-            PropertyInfo[] properties = currentType.GetProperties(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-            for (int i = 0; i < properties.Length; i++)
-            {
-                PropertyInfo property = properties[i];
-                if (property.GetIndexParameters().Length != 0 ||
-                    property.GetMethod == null ||
-                    property.GetMethod.IsStatic ||
-                    !IsHealingIdentityMember(property.Name))
-                    continue;
-
-                try
-                {
-                    LogHealingIdentityValue("property", property.Name, property.PropertyType,
-                        property.GetValue(ability, null));
-                }
-                catch (Exception)
-                {
+                    Debug.Log("[DPS Meter][HEAL NAME METHOD] label=" + label +
+                        " method=" + method.Name + " invocation=threw");
                 }
             }
         }
     }
 
-    private static bool IsHealingIdentityMember(string memberName)
+    private static bool IsHealingNameMethod(string methodName)
     {
-        return memberName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            memberName.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            memberName.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            memberName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            memberName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            memberName.IndexOf("text", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            memberName.IndexOf("description", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            memberName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            memberName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            memberName.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            memberName.IndexOf("definition", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            memberName.IndexOf("config", StringComparison.OrdinalIgnoreCase) >= 0;
-    }
-
-    private static void LogHealingIdentityValue(string kind, string name, Type declaredType, object value)
-    {
-        if (value == null)
-            return;
-
-        UnityEngine.Object unityObject = value as UnityEngine.Object;
-        Debug.Log("[DPS Meter][HEAL IDENTITY MEMBER] kind=" + kind +
-            " name=" + name +
-            " declaredType=" + declaredType.FullName +
-            " valueType=" + value.GetType().FullName +
-            " value=" + (unityObject != null ? unityObject.name : value.ToString()));
+        return methodName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            methodName.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            methodName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            methodName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            methodName.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
 
