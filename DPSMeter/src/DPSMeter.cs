@@ -720,14 +720,6 @@ public sealed class DPSMeter : ModBehaviour
         {
             scalingType = GetCachedEssenceScaling(directGem, info.actor);
 
-            if (directGem != null)
-            {
-                Debug.Log("[DPS Meter][ESSENCE SCALING TRACE] gemType=" +
-                    directGem.GetType().FullName +
-                    " gemName=" + (directGem.name ?? "<null>") +
-                    " original=" + (directGem.GetOriginalName() ?? "<null>") +
-                    " resolved=" + scalingType);
-            }
         }
         else if (!string.IsNullOrEmpty(skillName))
         {
@@ -864,35 +856,10 @@ public sealed class DPSMeter : ModBehaviour
             return cached;
         }
 
-        // Resolve Essence scaling only from the configured data associated
-        // with this Gem. The current runtime structure is still ambiguous, so
-        // trace only Charcoal here to identify whether its configured instance
-        // is the Essence or the host skill.
+        // Resolve Essence scaling only from configured Essence data. Do not
+        // fall back to the runtime actor chain because a socketed Essence can
+        // share the host skill's actor ancestry and inherit its scaler.
         DpsData.DamageScalingType scaling = FindConfiguredGemScaling(gem);
-
-        if (string.Equals(gem.GetOriginalName(), "E_Charcoal", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(gem.name, "E_Charcoal", StringComparison.OrdinalIgnoreCase))
-        {
-            Debug.Log("[DPS Meter][CHARCOAL TRACE] gemType=" + gem.GetType().FullName +
-                " gemName=" + (gem.name ?? "<null>") +
-                " original=" + (gem.GetOriginalName() ?? "<null>"));
-
-            if (gem.skill != null && gem.skill.currentConfig != null)
-            {
-                AbilityInstance configured = gem.skill.currentConfig.spawnedInstance;
-                Debug.Log("[DPS Meter][CHARCOAL TRACE] configuredType=" +
-                    (configured == null ? "<null>" : configured.GetType().FullName) +
-                    " configuredName=" + (configured == null ? "<null>" : configured.name) +
-                    " configuredGem=" + (configured == null || configured.gem == null
-                        ? "<null>"
-                        : configured.gem.GetOriginalName()));
-
-                if (configured != null)
-                {
-                    LogCharcoalScalingFields(configured, 0);
-                }
-            }
-        }
 
         if (scaling != DpsData.DamageScalingType.None)
         {
@@ -901,11 +868,6 @@ public sealed class DPSMeter : ModBehaviour
 
         return scaling;
     }
-
-
-
-
-
 
 
     private static DpsData.DamageScalingType FindConfiguredGemScaling(Gem gem)
