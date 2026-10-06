@@ -305,6 +305,123 @@ public sealed class DPSMeter : ModBehaviour
         return null;
     }
 
+    private static string GetSkillSlotIdentity(Actor source)
+    {
+        if (source == null)
+        {
+            return null;
+        }
+
+        SkillTrigger skill = source.firstTrigger as SkillTrigger;
+        if (skill == null)
+        {
+            Gem gem = source as Gem;
+            if (gem != null)
+            {
+                skill = gem.skill;
+            }
+        }
+
+        return GetSkillSlotIdentity(source, skill);
+    }
+
+    private static string GetSkillSlotIdentity(Actor source, SkillTrigger skill)
+    {
+        if (source == null || skill == null)
+        {
+            return null;
+        }
+
+        Hero hero = source.firstEntity as Hero;
+        if (hero == null || hero.Skill == null)
+        {
+            return null;
+        }
+
+        HeroSkillLocation location;
+        if (!hero.Skill.TryGetSkillLocation(skill, out location))
+        {
+            return null;
+        }
+
+        return location.ToString();
+    }
+
+    private static string GetHealingSourceName(Actor source)
+    {
+        if (source == null)
+        {
+            return "Unknown Healing";
+        }
+
+        Gem gem = source as Gem;
+        if (gem != null)
+        {
+            string gemKey = gem.GetOriginalName();
+            if (!string.IsNullOrEmpty(gemKey))
+            {
+                return gemKey;
+            }
+
+            return string.IsNullOrEmpty(gem.name) ? gem.GetType().Name : gem.name;
+        }
+
+        SkillTrigger skill = source.firstTrigger as SkillTrigger;
+        if (skill != null)
+        {
+            string skillName = skill.GetFormattedSkillTitle();
+            if (!string.IsNullOrEmpty(skillName))
+            {
+                return skillName;
+            }
+        }
+
+        string actorName = source.name;
+        if (!string.IsNullOrEmpty(actorName))
+        {
+            actorName = actorName.Replace("(Adjusted)", string.Empty)
+                .Replace("(Clone)", string.Empty)
+                .Trim();
+
+            if (!string.IsNullOrEmpty(actorName))
+            {
+                return actorName;
+            }
+        }
+
+        return source.GetType().Name;
+    }
+
+    private static Sprite FindHealingIcon(Actor source)
+    {
+        if (source == null)
+        {
+            return null;
+        }
+
+        Gem gem = source as Gem;
+        if (gem != null)
+        {
+            Sprite icon = FindSpriteMember(gem);
+            if (icon != null)
+            {
+                return icon;
+            }
+        }
+
+        SkillTrigger skill = source.firstTrigger as SkillTrigger;
+        if (skill != null)
+        {
+            Sprite icon = FindSkillIcon(skill);
+            if (icon != null)
+            {
+                return icon;
+            }
+        }
+
+        return FindSpriteInActorChain(source);
+    }
+
     private void OnTakeDamage(EventInfoDamage info)
     {
         if (info.actor == null || info.victim == null)
