@@ -719,6 +719,15 @@ public sealed class DPSMeter : ModBehaviour
         if (isDirectEssenceDamage)
         {
             scalingType = GetCachedEssenceScaling(directGem, info.actor);
+
+            if (directGem != null)
+            {
+                Debug.Log("[DPS Meter][ESSENCE SCALING TRACE] gemType=" +
+                    directGem.GetType().FullName +
+                    " gemName=" + (directGem.name ?? "<null>") +
+                    " original=" + (directGem.GetOriginalName() ?? "<null>") +
+                    " resolved=" + scalingType);
+            }
         }
         else if (!string.IsNullOrEmpty(skillName))
         {
