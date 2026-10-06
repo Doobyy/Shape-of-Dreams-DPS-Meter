@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -40,6 +41,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _barBackground;
     private GUIStyle _barFill;
     private GUIStyle _rowRight;
+    private Texture2D _whiteTexture;
 
     public bool Visible { get; set; } = true;
 
@@ -362,17 +364,16 @@ public sealed class DpsOverlay : MonoBehaviour
         Rect rowRect = GUILayoutUtility.GetRect(0f, 22f, GUILayout.ExpandWidth(true));
 
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
-        GUI.Box(rowRect, GUIContent.none, _barBackground);
+        GUI.DrawTexture(rowRect, _whiteTexture);
 
         GUI.color = GetBarColor(elemental);
-        GUI.Box(
+        GUI.DrawTexture(
             new Rect(
                 rowRect.x,
                 rowRect.y,
                 rowRect.width * ratio,
                 rowRect.height),
-            GUIContent.none,
-            _barFill);
+            _whiteTexture);
 
         GUI.color = Color.white;
 
@@ -429,10 +430,44 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private static Sprite GetIcon(SkillTrigger skill)
     {
-        if (skill == null || skill.currentConfig == null)
+        if (skill == null)
             return null;
 
-        return skill.currentConfig.triggerIcon;
+        Sprite icon = FindSpriteMember(skill);
+        if (icon != null)
+            return icon;
+
+        icon = FindSpriteMember(skill.currentConfig);
+        if (icon != null)
+            return icon;
+
+        return FindSpriteMember(skill.worldModel);
+    }
+
+    private static Sprite FindSpriteMember(object target)
+    {
+        if (target == null)
+            return null;
+
+        Type type = target.GetType();
+
+        FieldInfo iconField = type.GetField("icon", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (iconField != null && typeof(Sprite).IsAssignableFrom(iconField.FieldType))
+            return iconField.GetValue(target) as Sprite;
+
+        PropertyInfo iconProperty = type.GetProperty("icon", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (iconProperty != null && typeof(Sprite).IsAssignableFrom(iconProperty.PropertyType))
+            return iconProperty.GetValue(target, null) as Sprite;
+
+        FieldInfo spriteField = type.GetField("sprite", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (spriteField != null && typeof(Sprite).IsAssignableFrom(spriteField.FieldType))
+            return spriteField.GetValue(target) as Sprite;
+
+        PropertyInfo spriteProperty = type.GetProperty("sprite", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (spriteProperty != null && typeof(Sprite).IsAssignableFrom(spriteProperty.PropertyType))
+            return spriteProperty.GetValue(target, null) as Sprite;
+
+        return null;
     }
 
     private string GetSkillLabel(SkillTrigger skill)
@@ -443,6 +478,14 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         string title = skill.GetFormattedSkillTitle();
+        int end = title.LastIndexOf(']');
+        if (end == title.Length - 1)
+        {
+            int start = title.LastIndexOf('[');
+            if (start >= 0)
+                title = title.Substring(0, start).TrimEnd();
+        }
+
         return title;
     }
 
@@ -514,5 +557,8 @@ public sealed class DpsOverlay : MonoBehaviour
 
         _barBackground = new GUIStyle(GUI.skin.box);
         _barFill = new GUIStyle(GUI.skin.box);
+        _whiteTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        _whiteTexture.SetPixel(0, 0, Color.white);
+        _whiteTexture.Apply();
     }
 }
