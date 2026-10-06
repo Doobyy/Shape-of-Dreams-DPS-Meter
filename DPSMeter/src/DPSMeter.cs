@@ -96,6 +96,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnZoneLoadStarted(EventInfoLoadZone info)
     {
+        _healingEventDiagnosticCount = 0;
         _data.ResetCurrentInstance();
         _currentHero = null;
 
