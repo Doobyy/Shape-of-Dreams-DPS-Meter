@@ -29,6 +29,7 @@ public sealed class DpsData
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalEssenceScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<string, Sprite> _currentPersonalEssenceIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalEssences = new Dictionary<string, float>();
+    private readonly Dictionary<string, string> _essenceDisplayNames = new Dictionary<string, string>();
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _cumulativePersonalEssenceScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<string, Sprite> _cumulativePersonalEssenceIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _currentOtherPersonal = new Dictionary<string, float>();
@@ -188,10 +189,16 @@ public sealed class DpsData
             .ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalEssences =>
-        _currentPersonalEssences.OrderByDescending(pair => pair.Value).ToList();
+        _currentPersonalEssences
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new KeyValuePair<string, float>(GetEssenceDisplayName(pair.Key), pair.Value))
+            .ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CumulativePersonalEssences =>
-        _cumulativePersonalEssences.OrderByDescending(pair => pair.Value).ToList();
+        _cumulativePersonalEssences
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new KeyValuePair<string, float>(GetEssenceDisplayName(pair.Key), pair.Value))
+            .ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalOther =>
         _currentOtherPersonal.OrderByDescending(pair => pair.Value).ToList();
@@ -384,6 +391,7 @@ public sealed class DpsData
                     continue;
 
                 Add(_currentPersonalEssences, essenceKey, contribution);
+                _essenceDisplayNames[essenceKey] = GetLocalizedEssenceName(essence);
                 Add(_cumulativePersonalEssences, essenceKey, contribution);
                 AddElement(_currentPersonalEssenceElements, essenceKey, elemental, contribution);
                 AddScaling(_currentPersonalEssenceScaling, essenceKey, scalingType, contribution);
@@ -470,6 +478,7 @@ public sealed class DpsData
         _skillDisplayNames.Clear();
         _otherIcons.Clear();
         _cumulativePersonalEssences.Clear();
+        _essenceDisplayNames.Clear();
         _cumulativePersonalEssenceScaling.Clear();
         _cumulativePersonalEssenceIcons.Clear();
         _cumulativePersonalSkillElements.Clear();
@@ -667,6 +676,30 @@ public sealed class DpsData
         return !string.IsNullOrEmpty(sourceIdentity) && _healingDisplayNames.TryGetValue(sourceIdentity, out name) && !string.IsNullOrEmpty(name)
             ? name
             : sourceIdentity;
+    }
+
+    private string GetEssenceDisplayName(string essenceKey)
+    {
+        string name;
+        return !string.IsNullOrEmpty(essenceKey) && _essenceDisplayNames.TryGetValue(essenceKey, out name) && !string.IsNullOrEmpty(name)
+            ? name
+            : essenceKey;
+    }
+
+    private static string GetLocalizedEssenceName(Gem gem)
+    {
+        if (gem == null)
+            return null;
+
+        try
+        {
+            string name = DewLocalization.GetGemName(gem);
+            return string.IsNullOrEmpty(name) ? null : name;
+        }
+        catch (System.Exception)
+        {
+            return null;
+        }
     }
 
     private static string GetEssenceKey(Gem gem)
