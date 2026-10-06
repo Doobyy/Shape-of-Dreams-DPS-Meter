@@ -760,81 +760,144 @@ public sealed class DPSMeter : ModBehaviour
 
     private static void TraceHealingReferenceMembers(object target, string path)
     {
-        if (target == null)
+        var seen = new List<object>();
+        TraceHealingReferenceMembersRecursive(target, path, 0, seen);
+    }
+
+    private static void TraceHealingReferenceMembersRecursive(
+        object target,
+        string path,
+        int depth,
+        List<object> seen)
+    {
+        if (target == null || depth > 3)
         {
             return;
         }
 
+        for (int i = 0; i < seen.Count; i++)
+        {
+            if (object.ReferenceEquals(seen[i], target))
+            {
+                return;
+            }
+        }
+
+        seen.Add(target);
+
         Type type = target.GetType();
 
-        FieldInfo[] fields = type.GetFields(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        for (int i = 0; i < fields.Length; i++)
+        while (type != null && type != typeof(object))
         {
-            FieldInfo field = fields[i];
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
 
-            if (field.IsStatic || field.FieldType.IsPrimitive ||
-                field.FieldType.IsEnum || field.FieldType == typeof(string) ||
-                field.FieldType == typeof(decimal) ||
-                typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType))
+            for (int i = 0; i < fields.Length; i++)
             {
-                continue;
-            }
+                FieldInfo field = fields[i];
 
-            try
-            {
-                object value = field.GetValue(target);
-                if (value != null)
+                if (field.IsStatic || field.FieldType.IsPrimitive ||
+                    field.FieldType.IsEnum || field.FieldType == typeof(string) ||
+                    field.FieldType == typeof(decimal) ||
+                    typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType) ||
+                    typeof(Delegate).IsAssignableFrom(field.FieldType))
                 {
-                    Debug.Log(
-                        "[DPS Meter][HEAL EVENT REF DETAIL] " +
-                        "path=" + path + "." + field.Name +
-                        " declaredType=" + (field.FieldType.FullName ?? field.FieldType.Name) +
-                        " valueType=" + (value.GetType().FullName ?? value.GetType().Name));
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(target);
+                    TraceHealingReferenceValue(
+                        value,
+                        path + "." + field.Name,
+                        field.FieldType,
+                        depth,
+                        seen);
+                }
+                catch (Exception)
+                {
                 }
             }
-            catch (Exception)
-            {
-            }
-        }
 
-        PropertyInfo[] properties = type.GetProperties(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        for (int i = 0; i < properties.Length; i++)
-        {
-            PropertyInfo property = properties[i];
-
-            if (property.GetIndexParameters().Length != 0 ||
-                property.GetMethod == null ||
-                property.GetMethod.IsStatic ||
-                property.PropertyType.IsPrimitive ||
-                property.PropertyType.IsEnum ||
-                property.PropertyType == typeof(string) ||
-                property.PropertyType == typeof(decimal) ||
-                typeof(UnityEngine.Object).IsAssignableFrom(property.PropertyType))
-            {
-                continue;
-            }
-
-            try
-            {
-                object value = property.GetValue(target, null);
-                if (value != null)
-                {
-                    Debug.Log(
-                        "[DPS Meter][HEAL EVENT REF DETAIL] " +
-                        "path=" + path + "." + property.Name +
-                        " declaredType=" + (property.PropertyType.FullName ?? property.PropertyType.Name) +
-                        " valueType=" + (value.GetType().FullName ?? value.GetType().Name));
-                }
-            }
-            catch (Exception)
-            {
-            }
+            type = type.BaseType;
         }
     }
+
+    private static void TraceHealingReferenceValue(
+        object value,
+        string path,
+        Type declaredType,
+        int depth,
+        List<object> seen)
+    {
+        if (value == null)
+        {
+            return;
+        }
+
+        string valueType = value.GetType().FullName ?? value.GetType().Name;
+
+        Debug.Log(
+            "[DPS Meter][HEAL EVENT REF DETAIL] " +
+            "path=" + path +
+            " declaredType=" + (declaredType.FullName ?? declaredType.Name) +
+            " valueType=" + valueType);
+
+        if (depth >= 3)
+        {
+            return;
+        }
+
+        if (value is System.Collections.IEnumerable enumerable &&
+            !(value is string))
+        {
+            int index = 0;
+            foreach (object item in enumerable)
+            {
+                if (item != null)
+                {
+                    Debug.Log(
+                        "[DPS Meter][HEAL EVENT REF ITEM] " +
+                        "path=" + path +
+                        " index=" + index +
+                        " itemType=" + (item.GetType().FullName ?? item.GetType().Name));
+
+                    TraceHealingReferenceMembersRecursive(
+                        item,
+                        path + "[" + index + "]",
+                        depth + 1,
+                        seen);
+                }
+
+                index++;
+                if (index >= 16)
+                {
+                    break;
+                }
+            }
+
+            return;
+        }
+
+        if (value.GetType().IsPrimitive ||
+            value.GetType().IsEnum ||
+            value is string ||
+            value is decimal ||
+            value is Delegate ||
+            typeof(UnityEngine.Object).IsAssignableFrom(value.GetType()))
+        {
+            return;
+        }
+
+        TraceHealingReferenceMembersRecursive(
+            value,
+            path,
+            depth + 1,
+            seen);
+    }
+
 
     private static string GetEssenceIdentity(Gem gem)
     {
