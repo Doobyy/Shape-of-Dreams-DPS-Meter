@@ -146,7 +146,7 @@ public sealed class DPSMeter : ModBehaviour
         // An Essence can create its own AbilityInstance/child actor. In that
         // case the damage event's actor chain can contain the Gem even when
         // the first AbilityInstance is not the Essence's instance.
-        Gem directGem = FindDamageSourceEssence(info.actor);
+        Gem directGem = FindDamageSourceEssence(info.actor);\n        DamageScalingType scalingType = FindDamageScalingType(info.actor);
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
         bool isDirectEssenceDamage = directGem != null;
 
