@@ -255,7 +255,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void TraceAbilityChildren(AbilityInstance source)
     {
-        Actor[] children = source.children;
+        List<Actor> children = source.children;
         if (children == null)
             return;
 
