@@ -574,18 +574,22 @@ public sealed class DPSMeter : ModBehaviour
         return source.GetType().Name;
     }
 
+    private static bool _healingLocalizationProbeRan;
+
     private static string TryGetLocalizedHealingActorName(Actor source)
     {
-        if (source == null)
+        if (source == null || _healingLocalizationProbeRan)
             return null;
 
+        _healingLocalizationProbeRan = true;
+
+        string originalName = null;
         string skillKey = null;
 
         try
         {
+            originalName = source.GetOriginalName();
             skillKey = DewLocalization.GetSkillKey(source.GetType());
-            if (string.IsNullOrEmpty(skillKey))
-                skillKey = DewLocalization.GetSkillKey(source.GetOriginalName());
         }
         catch (Exception)
         {
@@ -597,8 +601,7 @@ public sealed class DPSMeter : ModBehaviour
 
         try
         {
-            Type localizationType = typeof(DewLocalization);
-            MethodInfo[] methods = localizationType.GetMethods(
+            MethodInfo[] methods = typeof(DewLocalization).GetMethods(
                 BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
             for (int i = 0; i < methods.Length; i++)
@@ -606,46 +609,47 @@ public sealed class DPSMeter : ModBehaviour
                 MethodInfo method = methods[i];
                 string lower = (method.Name ?? string.Empty).ToLowerInvariant();
 
-                if (method.ReturnType != typeof(string) ||
-                    lower.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0)
+                if (method.ReturnType != typeof(string))
+                    continue;
+
+                if (lower.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    lower.IndexOf("text", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    lower.IndexOf("string", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    lower.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    lower.IndexOf("display", StringComparison.OrdinalIgnoreCase) < 0)
                     continue;
 
                 ParameterInfo[] parameters = method.GetParameters();
-                if (parameters.Length != 1)
+                if (parameters.Length != 1 || parameters[0].ParameterType != typeof(string))
                     continue;
 
-                Type parameterType = parameters[0].ParameterType;
-                object argument;
+                string[] candidates = new[] { skillKey, originalName };
 
-                if (parameterType == typeof(string))
-                    argument = skillKey;
-                else if (parameterType == typeof(Type))
-                    argument = source.GetType();
-                else if (parameterType.IsInstanceOfType(source))
-                    argument = source;
-                else
-                    continue;
-
-                try
+                for (int c = 0; c < candidates.Length; c++)
                 {
-                    object result = method.Invoke(null, new object[] { argument });
-                    string text = result as string;
+                    string argument = candidates[c];
+                    if (string.IsNullOrEmpty(argument))
+                        continue;
 
-                    Debug.Log("[DPS Meter][HEAL SKILL LOCALIZATION] method=" + method.Name +
-                        " parameterType=" + parameterType.FullName +
-                        " argument=" + argument +
-                        " result=" + (text ?? "<null>"));
-
-                    if (!string.IsNullOrEmpty(text) &&
-                        !string.Equals(text, skillKey, StringComparison.OrdinalIgnoreCase) &&
-                        text.IndexOf("!Se_", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        text.IndexOf("!.", StringComparison.OrdinalIgnoreCase) < 0)
+                    try
                     {
-                        return text;
+                        string result = method.Invoke(null, new object[] { argument }) as string;
+
+                        Debug.Log("[DPS Meter][HEAL LOCALIZATION CANDIDATE] method=" +
+                            method.Name + " argument=" + argument +
+                            " result=" + (result ?? "<null>"));
+
+                        if (!string.IsNullOrEmpty(result) &&
+                            !string.Equals(result, argument, StringComparison.OrdinalIgnoreCase) &&
+                            result.IndexOf("!Se_", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            result.IndexOf("!.", StringComparison.OrdinalIgnoreCase) < 0)
+                        {
+                            return result;
+                        }
                     }
-                }
-                catch (Exception)
-                {
+                    catch (Exception)
+                    {
+                    }
                 }
             }
         }
@@ -655,8 +659,6 @@ public sealed class DPSMeter : ModBehaviour
 
         return null;
     }
-
-
 
     private static void TraceHealingNameMethods(object target, string label)
     {
