@@ -22,7 +22,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.68f);
     private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.68f);
     private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.68f);
-    private const string DevelopmentVersion = "v1.0";
+    private const string DevelopmentVersion = "v1.1";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -139,6 +139,15 @@ public sealed class DpsOverlay : MonoBehaviour
             16f,
             16f);
 
+        float reloadWidth = 74f;
+        float metricWidth = headerRect.width * 0.35f;
+        float titleWidth = headerRect.width - metricWidth - reloadWidth - 6f;
+        Rect reloadRect = new Rect(
+            headerRect.x + titleWidth + metricWidth + 6f,
+            headerRect.y + 1f,
+            reloadWidth,
+            headerRect.height - 2f);
+
         if (e.type == EventType.MouseDown && e.button == 0)
         {
             if (resizeRect.Contains(e.mousePosition))
@@ -147,6 +156,11 @@ public sealed class DpsOverlay : MonoBehaviour
                 _resizeStartMouse = e.mousePosition;
                 _resizeStartSize = _windowRect.size;
                 e.Use();
+                return;
+            }
+
+            if (reloadRect.Contains(e.mousePosition))
+            {
                 return;
             }
 
