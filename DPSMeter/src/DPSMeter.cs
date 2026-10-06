@@ -627,17 +627,7 @@ public sealed class DPSMeter : ModBehaviour
             for (int i = 0; i < fields.Length; i++)
             {
                 FieldInfo field = fields[i];
-                if (field.IsStatic || field.FieldType.IsPrimitive || field.FieldType.IsEnum || field.FieldType == typeof(string) || field.FieldType == typeof(decimal))
-                    continue;
-
-                string fieldName = field.Name;
-                if (fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    fieldName.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    fieldName.IndexOf("caster", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    fieldName.IndexOf("effect", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    fieldName.IndexOf("mod", StringComparison.OrdinalIgnoreCase) < 0)
+                if (field.IsStatic || typeof(Delegate).IsAssignableFrom(field.FieldType))
                     continue;
 
                 try
@@ -649,11 +639,12 @@ public sealed class DPSMeter : ModBehaviour
                     UnityEngine.Object unityObject = value as UnityEngine.Object;
                     if (unityObject != null)
                     {
-                        Debug.Log("[DPS Meter][GUIDANCE TRACE] field=" + fieldName + " type=" + field.FieldType.FullName + " valueType=" + value.GetType().FullName + " valueName=" + (unityObject.name ?? "<null>"));
+                        Debug.Log("[DPS Meter][GUIDANCE FIELD] " + field.Name + " type=" + field.FieldType.FullName + " valueType=" + value.GetType().FullName + " valueName=" + (unityObject.name ?? "<null>"));
                     }
                     else
                     {
-                        Debug.Log("[DPS Meter][GUIDANCE TRACE] field=" + fieldName + " type=" + field.FieldType.FullName + " valueType=" + value.GetType().FullName);
+                        string textValue = value is string ? (string)value : Convert.ToString(value);
+                        Debug.Log("[DPS Meter][GUIDANCE FIELD] " + field.Name + " type=" + field.FieldType.FullName + " value=" + (textValue ?? "<null>"));
                     }
                 }
                 catch (Exception)
