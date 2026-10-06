@@ -268,6 +268,7 @@ public sealed class DPSMeter : ModBehaviour
                         value.name);
 
                     TraceHealingStarEffectHierarchy(value);
+                    TraceHealingStarOwner(value);
                 }
             }
         }
@@ -276,6 +277,146 @@ public sealed class DPSMeter : ModBehaviour
             Debug.Log(
                 "[DPS Meter][HEAL TRACE] STAR EFFECT LIVE SCAN ERROR " +
                 exception.GetType().Name + ": " + exception.Message);
+        }
+    }
+
+    private static void TraceHealingStarOwner(object value)
+    {
+        if (value == null)
+        {
+            return;
+        }
+
+        Type type = value.GetType();
+        PropertyInfo playerProperty = type.GetProperty(
+            "player",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        if (playerProperty == null || playerProperty.GetMethod == null)
+        {
+            return;
+        }
+
+        object player;
+        try
+        {
+            player = playerProperty.GetValue(value, null);
+        }
+        catch (Exception)
+        {
+            return;
+        }
+
+        if (player == null)
+        {
+            return;
+        }
+
+        Debug.Log(
+            "[DPS Meter][HEAL TRACE] STAR OWNER type=" +
+            (player.GetType().FullName ?? player.GetType().Name));
+
+        Type currentType = player.GetType();
+        int depth = 0;
+
+        while (currentType != null && depth < 8)
+        {
+            FieldInfo[] fields = currentType.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                string name = field.Name ?? string.Empty;
+                string fieldType = field.FieldType == null
+                    ? string.Empty
+                    : field.FieldType.FullName ?? field.FieldType.Name;
+
+                if (name.IndexOf("star", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("profile", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("loadout", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldType.IndexOf("Star", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldType.IndexOf("Profile", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldType.IndexOf("Loadout", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object memberValue = field.GetValue(player);
+                    Debug.Log(
+                        "[DPS Meter][HEAL TRACE] STAR OWNER MEMBER " +
+                        field.Name +
+                        " declaredType=" + fieldType +
+                        " valueType=" +
+                        (memberValue == null ? "null" : memberValue.GetType().FullName));
+
+                    if (memberValue != null)
+                    {
+                        TraceHealingObjectMembers(
+                            "StarOwner:" + field.Name,
+                            memberValue);
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            PropertyInfo[] properties = currentType.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < properties.Length; i++)
+            {
+                PropertyInfo property = properties[i];
+
+                if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+                {
+                    continue;
+                }
+
+                string name = property.Name ?? string.Empty;
+                string propertyType = property.PropertyType == null
+                    ? string.Empty
+                    : property.PropertyType.FullName ?? property.PropertyType.Name;
+
+                if (name.IndexOf("star", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("profile", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("loadout", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    propertyType.IndexOf("Star", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    propertyType.IndexOf("Profile", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    propertyType.IndexOf("Loadout", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object memberValue = property.GetValue(player, null);
+                    Debug.Log(
+                        "[DPS Meter][HEAL TRACE] STAR OWNER PROPERTY " +
+                        property.Name +
+                        " declaredType=" + propertyType +
+                        " valueType=" +
+                        (memberValue == null ? "null" : memberValue.GetType().FullName));
+
+                    if (memberValue != null)
+                    {
+                        TraceHealingObjectMembers(
+                            "StarOwnerProperty:" + property.Name,
+                            memberValue);
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            currentType = currentType.BaseType;
+            depth++;
         }
     }
 
