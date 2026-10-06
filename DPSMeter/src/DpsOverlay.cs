@@ -21,7 +21,10 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.68f);
     private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.68f);
     private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.68f);
-    private const string DevelopmentVersion = "v3.5";
+    private static readonly Color AdScalingBarColor = new Color(0.55f, 0.36f, 0.18f, 0.68f);
+    private static readonly Color ApScalingBarColor = new Color(0.18f, 0.50f, 0.55f, 0.68f);
+    private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
+    private const string DevelopmentVersion = "v3.6";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -293,6 +296,7 @@ public sealed class DpsOverlay : MonoBehaviour
         public string Name;
         public float Amount;
         public ElementalType? Elemental;
+        public DpsData.DamageScalingType Scaling;
         public Sprite Icon;
     }
 
@@ -312,6 +316,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 Name = row.Key,
                 Amount = row.Value,
                 Elemental = _data.GetCurrentSkillElement(row.Key),
+                Scaling = _data.GetCurrentSkillScaling(row.Key),
                 Icon = _data.GetSkillIcon(row.Key)
             });
         }
@@ -322,7 +327,8 @@ public sealed class DpsOverlay : MonoBehaviour
             rows.Add(new DamageRow
             {
                 Name = row.Key,
-                Amount = row.Value
+                Amount = row.Value,
+                Scaling = _data.GetCurrentOtherScaling(row.Key)
             });
         }
 
@@ -337,6 +343,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 Name = GetEssenceDisplayName(row.Key),
                 Amount = row.Value,
                 Elemental = _data.GetCurrentEssenceElement(row.Key),
+                Scaling = _data.GetCurrentEssenceScaling(row.Key),
                 Icon = row.Key.icon
             });
         }
