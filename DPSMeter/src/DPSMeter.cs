@@ -136,9 +136,52 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         string sourceName = GetHealingSourceName(info.actor);
+        string sourceIdentity = GetSkillSlotIdentity(info.actor);
         Sprite healingIcon = FindHealingIcon(info.actor);
-        _data.AddHealing(healing, sourceName, healingIcon);
+        _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
 
+    }
+
+    private static string GetSkillSlotIdentity(Actor source)
+    {
+        if (source == null)
+        {
+            return null;
+        }
+
+        SkillTrigger skill = source.firstTrigger as SkillTrigger;
+        if (skill == null)
+        {
+            Gem gem = source as Gem;
+            if (gem != null)
+            {
+                skill = gem.skill;
+            }
+        }
+
+        return GetSkillSlotIdentity(source, skill);
+    }
+
+    private static string GetSkillSlotIdentity(Actor source, SkillTrigger skill)
+    {
+        if (source == null || skill == null)
+        {
+            return null;
+        }
+
+        Hero hero = source.firstEntity as Hero;
+        if (hero == null || hero.Skill == null)
+        {
+            return null;
+        }
+
+        HeroSkillLocation location;
+        if (!hero.Skill.TryGetSkillLocation(skill, out location))
+        {
+            return null;
+        }
+
+        return location.ToString();
     }
 
     private static string GetHealingSourceName(Actor source)
@@ -272,6 +315,7 @@ public sealed class DPSMeter : ModBehaviour
         // Do not also attribute that same hit to the parent Memory/Skill.
 
         string skillName = null;
+        string skillIdentity = null;
         string sourceName = "Other";
         bool isBasicAttack = !isDirectEssenceDamage && skill == null;
 
@@ -288,6 +332,7 @@ public sealed class DPSMeter : ModBehaviour
         {
             if (skill != null)
             {
+                skillIdentity = GetSkillSlotIdentity(info.actor, skill);
                 string formattedSkillName = skill.GetFormattedSkillTitle();
 
                 if (!string.IsNullOrEmpty(formattedSkillName))
@@ -305,7 +350,7 @@ public sealed class DPSMeter : ModBehaviour
         if (isLocalPlayer && skill != null && !string.IsNullOrEmpty(skillName))
         {
             Sprite icon = FindSkillIcon(skill);
-            _data.RegisterSkillIcon(skillName, icon);
+            _data.RegisterSkillIcon(skillIdentity, icon);
         }
 
         ElementalType? elementalType = info.damage.elemental;
@@ -323,7 +368,7 @@ public sealed class DPSMeter : ModBehaviour
             }
             else if (!string.IsNullOrEmpty(skillName))
             {
-                scalingType = GetCachedSkillScaling(skillName, skill, info.actor);
+                scalingType = GetCachedSkillScaling(skillIdentity, skill, info.actor);
             }
             else if (isBasicAttack)
             {
@@ -346,6 +391,7 @@ public sealed class DPSMeter : ModBehaviour
             producedDamage,
             appliedDamage,
             isLocalPlayer,
+            skillIdentity,
             skillName,
             sourceName,
             essenceContributions,
@@ -488,10 +534,10 @@ public sealed class DPSMeter : ModBehaviour
                name.IndexOf("ward", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
-    private DpsData.DamageScalingType GetCachedSkillScaling(string skillName, SkillTrigger skill, Actor actor)
+    private DpsData.DamageScalingType GetCachedSkillScaling(string skillIdentity, SkillTrigger skill, Actor actor)
     {
         DpsData.DamageScalingType cached;
-        if (_skillScalingCache.TryGetValue(skillName, out cached))
+        if (_skillScalingCache.TryGetValue(skillIdentity, out cached))
         {
             return cached;
         }
@@ -516,7 +562,7 @@ public sealed class DPSMeter : ModBehaviour
 
         if (scaling != DpsData.DamageScalingType.None)
         {
-            _skillScalingCache[skillName] = scaling;
+            _skillScalingCache[skillIdentity] = scaling;
         }
 
         return scaling;
