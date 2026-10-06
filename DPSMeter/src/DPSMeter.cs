@@ -19,6 +19,7 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<Gem, System.Action<EventInfoDamage>> _essenceDamageHandlers = new Dictionary<Gem, System.Action<EventInfoDamage>>();
     private readonly List<EssenceContribution> _pendingEssenceContributions = new List<EssenceContribution>();
     private float _nextEssenceProcessorRefreshTime;
+    private int _diagnosticDamageLogs;
 
     private sealed class EssenceProcessorHooks
     {
@@ -168,6 +169,15 @@ public sealed class DPSMeter : ModBehaviour
         // case the damage event's actor chain can contain the Gem even when
         // the first AbilityInstance is not the Essence's instance.
         Gem directGem = info.actor.FindFirstOfType<Gem>();
+        if (_diagnosticDamageLogs < 12)
+        {
+            _diagnosticDamageLogs++;
+            Debug.Log("[DPS Meter v2.2] Damage actor=" + DescribeActorChain(info.actor)
+                + " | trigger=" + (skill != null ? skill.GetActorReadableName() : "null")
+                + " | directGem=" + (directGem != null ? directGem.GetActorReadableName() : "null")
+                + " | pending=" + _pendingEssenceContributions.Count);
+        }
+
         Dictionary<Gem, float> essenceContributions = ConsumeEssenceContributions(
             info.actor,
             info.victim,
@@ -351,6 +361,10 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
+        Debug.Log("[DPS Meter v2.2] Essence processor contribution: "
+            + gem.GetActorReadableName() + " +" + contribution
+            + " | from=" + DescribeActorChain(from));
+
         _pendingEssenceContributions.Add(new EssenceContribution
         {
             Source = from,
@@ -413,6 +427,26 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return result;
+    }
+
+    private static string DescribeActorChain(Actor actor)
+    {
+        if (actor == null)
+        {
+            return "null";
+        }
+
+        List<string> names = new List<string>();
+        Actor current = actor;
+        int depth = 0;
+        while (current != null && depth < 8)
+        {
+            names.Add(current.GetActorReadableName());
+            current = current.parentActor;
+            depth++;
+        }
+
+        return string.Join(" <- ", names.ToArray());
     }
 
     private static bool AreActorsRelated(Actor a, Actor b)
