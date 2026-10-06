@@ -908,221 +908,6 @@ public sealed class DPSMeter : ModBehaviour
 
 
 
-    private static void LogCharcoalScalingFields(AbilityInstance instance, int depth)
-    {
-        if (instance == null || depth > 4)
-        {
-            return;
-        }
-
-        Type type = instance.GetType();
-        string gemName = instance.gem == null ? "<null>" : instance.gem.GetOriginalName();
-
-        Debug.Log("[DPS Meter][CHARCOAL TRACE] depth=" + depth +
-            " type=" + type.FullName +
-            " name=" + instance.name +
-            " gem=" + gemName);
-
-        FieldInfo[] fields = type.GetFields(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-            if (field.FieldType != typeof(ScalingValue))
-            {
-                continue;
-            }
-
-            try
-            {
-                ScalingValue value = (ScalingValue)field.GetValue(instance);
-                Debug.Log("[DPS Meter][CHARCOAL TRACE] depth=" + depth +
-                    " scalingField=" + field.Name +
-                    " value=" + value);
-            }
-            catch (Exception)
-            {
-            }
-        }
-
-        List<Actor> children = instance.children;
-        if (children == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < children.Count; i++)
-        {
-            AbilityInstance child = children[i] as AbilityInstance;
-            if (child != null)
-            {
-                LogCharcoalScalingFields(child, depth + 1);
-            }
-        }
-    }
-
-    private static DpsData.DamageScalingType FindConfiguredGemAbilityScaling(
-        AbilityInstance instance,
-        Gem gem,
-        int depth)
-    {
-        if (instance == null || gem == null || depth > 8)
-        {
-            return DpsData.DamageScalingType.None;
-        }
-
-        if (instance.gem == gem)
-        {
-            DamageInstance damageInstance = instance as DamageInstance;
-            if (damageInstance != null)
-            {
-                DpsData.DamageScalingType scaling = GetScalingType(damageInstance.dmgFactor);
-                if (scaling != DpsData.DamageScalingType.None)
-                {
-                    return scaling;
-                }
-            }
-
-            FieldInfo dmgFactorField = instance.GetType().GetField(
-                "dmgFactor",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            if (dmgFactorField != null && dmgFactorField.FieldType == typeof(ScalingValue))
-            {
-                try
-                {
-                    ScalingValue configuredScaling = (ScalingValue)dmgFactorField.GetValue(instance);
-                    DpsData.DamageScalingType scaling = GetScalingType(configuredScaling);
-                    if (scaling != DpsData.DamageScalingType.None)
-                    {
-                        return scaling;
-                    }
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            DpsData.DamageScalingType nestedScaling = FindConfiguredAbilityScaling(instance, 0);
-            if (nestedScaling != DpsData.DamageScalingType.None)
-            {
-                return nestedScaling;
-            }
-        }
-
-        List<Actor> children = instance.children;
-        if (children == null)
-        {
-            return DpsData.DamageScalingType.None;
-        }
-
-        for (int i = 0; i < children.Count; i++)
-        {
-            AbilityInstance child = children[i] as AbilityInstance;
-            if (child == null)
-            {
-                continue;
-            }
-
-            DpsData.DamageScalingType scaling = FindConfiguredGemAbilityScaling(child, gem, depth + 1);
-            if (scaling != DpsData.DamageScalingType.None)
-            {
-                return scaling;
-            }
-        }
-
-        return DpsData.DamageScalingType.None;
-    }
-
-    private static DpsData.DamageScalingType FindConfiguredAbilityScaling(AbilityInstance instance, int depth)
-    {
-        if (instance == null || depth > 6)
-        {
-            return DpsData.DamageScalingType.None;
-        }
-
-        DamageInstance damageInstance = instance as DamageInstance;
-        if (damageInstance != null)
-        {
-            DpsData.DamageScalingType scaling = GetScalingType(damageInstance.dmgFactor);
-            if (scaling != DpsData.DamageScalingType.None)
-            {
-                return scaling;
-            }
-        }
-
-        // Character-specific ability instances can carry the same dmgFactor
-        // directly without deriving from DamageInstance. Valiant Heart is one
-        // example: its configured Ai_QR_ValiantHeart exposes a 2.4ad dmgFactor.
-        FieldInfo dmgFactorField = instance.GetType().GetField(
-            "dmgFactor",
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        if (dmgFactorField != null && dmgFactorField.FieldType == typeof(ScalingValue))
-        {
-            try
-            {
-                ScalingValue configuredScaling = (ScalingValue)dmgFactorField.GetValue(instance);
-                DpsData.DamageScalingType scaling = GetScalingType(configuredScaling);
-                if (scaling != DpsData.DamageScalingType.None)
-                {
-                    return scaling;
-                }
-            }
-            catch (Exception)
-            {
-            }
-        }
-
-        List<Actor> children = instance.children;
-        if (children == null)
-        {
-            return DpsData.DamageScalingType.None;
-        }
-
-        for (int i = 0; i < children.Count; i++)
-        {
-            AbilityInstance child = children[i] as AbilityInstance;
-            if (child == null)
-            {
-                continue;
-            }
-
-            DpsData.DamageScalingType scaling = FindConfiguredAbilityScaling(child, depth + 1);
-            if (scaling != DpsData.DamageScalingType.None)
-            {
-                return scaling;
-            }
-        }
-
-        return DpsData.DamageScalingType.None;
-    }
-
-    private static DpsData.DamageScalingType GetScalingType(ScalingValue scaling)
-    {
-        float ad = Mathf.Max(0f, scaling.adFactor);
-        float ap = Mathf.Max(0f, scaling.apFactor);
-        float hp = Mathf.Max(0f, scaling.addedHpFactor);
-
-        if (ad <= 0f && ap <= 0f && hp <= 0f)
-        {
-            return DpsData.DamageScalingType.None;
-        }
-
-        if (ap > ad && ap >= hp)
-        {
-            return DpsData.DamageScalingType.Ap;
-        }
-
-        if (hp > ad && hp > ap)
-        {
-            return DpsData.DamageScalingType.Hp;
-        }
-
-        return DpsData.DamageScalingType.Ad;
-    }
-
     private static DpsData.DamageScalingType FindConfiguredGemScaling(Gem gem)
     {
         if (gem == null)
@@ -1132,61 +917,78 @@ public sealed class DPSMeter : ModBehaviour
 
         try
         {
-                        if (gem.skill == null)
-            {
-                return DpsData.DamageScalingType.None;
-            }
-
-            if (gem.skill.currentConfig == null)
+            if (gem.skill == null || gem.skill.currentConfig == null)
             {
                 return DpsData.DamageScalingType.None;
             }
 
             AbilityInstance configured = gem.skill.currentConfig.spawnedInstance;
-
             if (configured == null)
             {
                 return DpsData.DamageScalingType.None;
             }
 
-            // The configured root belongs to the host skill. When an Essence
-            // is socketed into that skill, reading the root dmgFactor would
-            // incorrectly inherit the host scaler (for example, Valiant Heart's
-            // 2.4ad). Find the AbilityInstance actually owned by this Gem first.
-            DpsData.DamageScalingType essenceScaling = FindConfiguredGemAbilityScaling(configured, gem, 0);
-
-            // Never fall back to the host skill's scaler here. An Essence can
-            // be socketed into a skill whose root uses a different scaler
-            // (for example Valiant Heart = AD), which would falsely label the
-            // Essence as AD.
-            if (essenceScaling != DpsData.DamageScalingType.None)
+            // Mystic Dagger stores its configured scaling directly on the
+            // configured Essence ability rather than a DamageInstance child.
+            if (configured.GetType().Name == "Ai_E_MysticDagger")
             {
-                return essenceScaling;
+                FieldInfo damageField = configured.GetType().GetField(
+                    "damage",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                if (damageField != null && damageField.FieldType == typeof(ScalingValue))
+                {
+                    ScalingValue scaling = (ScalingValue)damageField.GetValue(configured);
+                    DpsData.DamageScalingType result = GetScalingType(scaling);
+                    if (result != DpsData.DamageScalingType.None)
+                    {
+                        return result;
+                    }
+                }
             }
 
-            if (gem.GetType().Name.IndexOf("Charcoal", StringComparison.OrdinalIgnoreCase) >= 0)
+            // If the configured root is actually owned by this Gem, its
+            // direct scaler is authoritative.
+            if (configured.gem == gem)
             {
-                Debug.Log("[DPS Meter][CHARCOAL TRACE v4.71] configuredType=" +
-                    configured.GetType().FullName +
-                    " configuredName=" + (configured.name ?? "<null>") +
-                    " configuredGem=" + (configured.gem == null ? "<null>" : configured.gem.GetOriginalName()));
-                LogCharcoalScalingFields(configured, 0);
+                DpsData.DamageScalingType directScaling = FindConfiguredAbilityScaling(configured, 0);
+                if (directScaling != DpsData.DamageScalingType.None)
+                {
+                    return directScaling;
+                }
+            }
+
+            // Some Essences expose their real damage scaler on a child
+            // DamageInstance/AbilityInstance. Search the configured tree,
+            // but deliberately skip the host skill's root so a character
+            // skill such as Valiant Heart cannot donate its 2.4ad scaler to
+            // an AP Essence socketed inside it.
+            List<Actor> children = configured.children;
+            if (children != null)
+            {
+                for (int i = 0; i < children.Count; i++)
+                {
+                    AbilityInstance child = children[i] as AbilityInstance;
+                    if (child == null)
+                    {
+                        continue;
+                    }
+
+                    DpsData.DamageScalingType childScaling = FindConfiguredAbilityScaling(child, 0);
+                    if (childScaling != DpsData.DamageScalingType.None)
+                    {
+                        return childScaling;
+                    }
+                }
             }
 
             return DpsData.DamageScalingType.None;
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             return DpsData.DamageScalingType.None;
         }
     }
-
-
-
-
-
-
-
 
 
     private static DpsData.DamageScalingType FindDamageScalingType(Actor actor)
