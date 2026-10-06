@@ -433,17 +433,34 @@ public sealed class DpsOverlay : MonoBehaviour
             textX = rowRect.x + 24f;
         }
 
-        GUI.Label(
-            new Rect(textX, rowRect.y, rowRect.width - (textX - rowRect.x) - 7f, rowRect.height),
-            name,
-            _row);
+        Rect nameRect = new Rect(
+            textX,
+            rowRect.y,
+            rowRect.width - (textX - rowRect.x) - 7f,
+            rowRect.height);
 
-        GUI.Label(
-            new Rect(rowRect.x + 7f, rowRect.y, rowRect.width - 14f, rowRect.height),
-            FormatNumber(amount) + "  " + percent.ToString("0.0") + "%",
-            _rowRight);
+        Rect valueRect = new Rect(
+            rowRect.x + 7f,
+            rowRect.y,
+            rowRect.width - 14f,
+            rowRect.height);
+
+        DrawCrispWeightedLabel(nameRect, name, _row, false);
+        DrawCrispWeightedLabel(valueRect, FormatNumber(amount) + "  " + percent.ToString("0.0"), _rowRight, true);
 
         GUI.color = Color.white;
+    }
+
+    private static void DrawCrispWeightedLabel(Rect rect, string text, GUIStyle style, bool rightAligned)
+    {
+        // Unity IMGUI's Bold font can make small text look soft. A one-pixel
+        // integer-offset duplicate adds a little weight while keeping the
+        // original glyph rendering crisp.
+        Rect weightRect = rect;
+        weightRect.x += rightAligned ? -1f : 1f;
+
+        GUI.Label(weightRect, text, style);
+        GUI.Label(rect, text, style);
     }
 
     private static string StripRichTextTags(string text)
@@ -508,7 +525,7 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             byte[] bytes = File.ReadAllBytes(iconPath);
             Texture2D loaded = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            if (!ImageConversion.LoadImage(loaded, bytes))
+            if (!loaded.LoadImage(bytes))
             {
                 Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack icon failed to load from " + iconPath);
                 UnityEngine.Object.Destroy(loaded);
