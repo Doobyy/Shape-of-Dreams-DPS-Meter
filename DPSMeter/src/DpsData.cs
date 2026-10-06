@@ -19,6 +19,7 @@ public sealed class DpsData
     private readonly Dictionary<string, float> _cumulativeOtherPersonal = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
+    private bool _pendingInstanceReset;
 
     public float CurrentInstancePersonalDamage { get; private set; }
     public float CumulativePersonalDamage { get; private set; }
@@ -94,6 +95,12 @@ public sealed class DpsData
             return;
         }
 
+        if (_pendingInstanceReset)
+        {
+            ClearCurrentInstance();
+            _pendingInstanceReset = false;
+        }
+
         float overkill = Mathf.Max(0f, producedDamage - appliedDamage);
         float now = Time.time;
 
@@ -158,6 +165,11 @@ public sealed class DpsData
 
     public void ResetCurrentInstance()
     {
+        _pendingInstanceReset = true;
+    }
+
+    private void ClearCurrentInstance()
+    {
         CurrentInstancePersonalDamage = 0f;
         CurrentInstancePersonalAppliedDamage = 0f;
         CurrentInstancePersonalOverkill = 0f;
@@ -178,7 +190,8 @@ public sealed class DpsData
 
     public void Reset()
     {
-        ResetCurrentInstance();
+        ClearCurrentInstance();
+        _pendingInstanceReset = false;
 
         CumulativePersonalDamage = 0f;
         CumulativePersonalAppliedDamage = 0f;
