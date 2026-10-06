@@ -303,11 +303,6 @@ public sealed class DpsOverlay : MonoBehaviour
 
                 _windowRect.height = _collapsedWindowHeight + _resizeStartHealingHeight;
 
-                Debug.Log(
-                    "[DPSMeter] Overlay diagnostic size: " +
-                    "width=" + _windowRect.width.ToString("0") +
-                    ", height=" + _collapsedWindowHeight.ToString("0"));
-
                 e.Use();
                 return;
             }
