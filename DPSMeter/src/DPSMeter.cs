@@ -574,7 +574,47 @@ public sealed class DPSMeter : ModBehaviour
         return source.GetType().Name;
     }
 
-    private static bool _healingLocalizationProbeRan;
+    private static string TryGetLocalizedHealingActorName(Actor source)
+    {
+        if (source == null)
+        {
+            return null;
+        }
+
+        string skillKey;
+        try
+        {
+            skillKey = DewLocalization.GetSkillKey(source.GetType());
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrEmpty(skillKey))
+        {
+            return null;
+        }
+
+        // Healing status-effect actors are not SkillTrigger instances, but
+        // DewLocalization exposes the same skill-name lookup by localization
+        // key. Use the key produced by GetSkillKey(Type), not GetSkillKey(string),
+        // because the latter treats its input as a raw actor name.
+        try
+        {
+            string displayName = DewLocalization.GetSkillName(skillKey, 0);
+            if (!string.IsNullOrEmpty(displayName) &&
+                !displayName.StartsWith("!", StringComparison.Ordinal))
+            {
+                return displayName;
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        return null;
+    }
 
     private static string TryGetLocalizedHealingActorName(Actor source)
     {
