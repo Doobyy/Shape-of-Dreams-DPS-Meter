@@ -386,7 +386,7 @@ public sealed class DpsOverlay : MonoBehaviour
             new Rect(
                 rowRect.x,
                 rowRect.y,
-                rowRect.width * visualRatio,
+                rowRect.width * ratio,
                 rowRect.height),
             _whiteTexture);
 
