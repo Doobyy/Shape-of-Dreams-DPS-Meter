@@ -32,7 +32,9 @@ public sealed class DpsData
     private readonly Dictionary<string, Dictionary<ElementalType, float>> _cumulativePersonalEssenceElements = new Dictionary<string, Dictionary<ElementalType, float>>();
     private readonly Dictionary<string, float> _cumulativeOtherPersonal = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentPersonalHealing = new Dictionary<string, float>();
+    private readonly Dictionary<string, Sprite> _currentPersonalHealingIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalHealing = new Dictionary<string, float>();
+    private readonly Dictionary<string, Sprite> _cumulativePersonalHealingIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
     private bool _pendingInstanceReset;
@@ -122,7 +124,7 @@ public sealed class DpsData
     public IReadOnlyList<KeyValuePair<string, float>> CumulativeParty =>
         _cumulativeParty.OrderByDescending(pair => pair.Value).ToList();
 
-    public void AddHealing(float healing, string sourceName)
+    public void AddHealing(float healing, string sourceName, Sprite icon)
     {
         if (healing <= 0f)
         {
@@ -156,6 +158,12 @@ public sealed class DpsData
 
         Add(_currentPersonalHealing, sourceName, healing);
         Add(_cumulativePersonalHealing, sourceName, healing);
+
+        if (icon != null && !string.IsNullOrEmpty(sourceName))
+        {
+            _currentPersonalHealingIcons[sourceName] = icon;
+            _cumulativePersonalHealingIcons[sourceName] = icon;
+        }
     }
 
     public void AddDamage(
@@ -282,6 +290,7 @@ public sealed class DpsData
         CurrentHitCount = 0;
 
         _currentPersonalHealing.Clear();
+        _currentPersonalHealingIcons.Clear();
         _currentPersonalSkills.Clear();
         _currentPersonalEssences.Clear();
         _currentPersonalSkillElements.Clear();
@@ -310,6 +319,7 @@ public sealed class DpsData
         CumulativePartyOverkill = 0f;
 
         _cumulativePersonalHealing.Clear();
+        _cumulativePersonalHealingIcons.Clear();
         _cumulativePersonalSkills.Clear();
         _skillIcons.Clear();
         _otherIcons.Clear();
@@ -354,6 +364,18 @@ public sealed class DpsData
     {
         Sprite icon;
         return !string.IsNullOrEmpty(essenceKey) && _cumulativePersonalEssenceIcons.TryGetValue(essenceKey, out icon) ? icon : null;
+    }
+
+    public Sprite GetCurrentHealingIcon(string sourceName)
+    {
+        Sprite icon;
+        return !string.IsNullOrEmpty(sourceName) && _currentPersonalHealingIcons.TryGetValue(sourceName, out icon) ? icon : null;
+    }
+
+    public Sprite GetCumulativeHealingIcon(string sourceName)
+    {
+        Sprite icon;
+        return !string.IsNullOrEmpty(sourceName) && _cumulativePersonalHealingIcons.TryGetValue(sourceName, out icon) ? icon : null;
     }
 
     public Sprite GetSkillIcon(string skillName)
