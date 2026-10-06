@@ -148,7 +148,7 @@ public sealed class DPSMeter : ModBehaviour
         // the first AbilityInstance is not the Essence's instance.
         Gem directGem = FindDamageSourceEssence(info.actor);
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
-        bool isDirectEssenceDamage = IsEssenceGem(directGem);
+        bool isDirectEssenceDamage = directGem != null;
 
         if (isDirectEssenceDamage)
         {
@@ -217,7 +217,7 @@ public sealed class DPSMeter : ModBehaviour
         while (current != null && depth < 8)
         {
             AbilityInstance instance = current as AbilityInstance;
-            if (instance != null && IsEssenceGem(instance.gem))
+            if (instance != null && instance.gem != null)
             {
                 return instance.gem;
             }
