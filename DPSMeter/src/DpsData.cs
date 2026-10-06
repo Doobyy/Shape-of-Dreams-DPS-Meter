@@ -7,6 +7,7 @@ namespace DPSMeter;
 public sealed class DpsData
 {
     private readonly Dictionary<string, float> _currentPersonalSkills = new Dictionary<string, float>();
+    private readonly Dictionary<string, Sprite> _skillIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalSkills = new Dictionary<string, float>();
     private readonly Dictionary<Gem, float> _currentPersonalEssences = new Dictionary<Gem, float>();
     private readonly Dictionary<Gem, float> _cumulativePersonalEssences = new Dictionary<Gem, float>();
@@ -187,6 +188,7 @@ public sealed class DpsData
         CumulativePartyOverkill = 0f;
 
         _cumulativePersonalSkills.Clear();
+        _skillIcons.Clear();
         _cumulativePersonalEssences.Clear();
         _cumulativePersonalSkillElements.Clear();
         _cumulativePersonalEssenceElements.Clear();
@@ -207,6 +209,20 @@ public sealed class DpsData
     }
 
     public ElementalType? GetCurrentSkillElement(string skillName) => GetDominantElement(_currentPersonalSkillElements, skillName);
+
+    public Sprite GetSkillIcon(string skillName)
+    {
+        Sprite icon;
+        return !string.IsNullOrEmpty(skillName) && _skillIcons.TryGetValue(skillName, out icon) ? icon : null;
+    }
+
+    public void RegisterSkillIcon(string skillName, Sprite icon)
+    {
+        if (string.IsNullOrEmpty(skillName) || icon == null)
+            return;
+
+        _skillIcons[skillName] = icon;
+    }
 
     public ElementalType? GetCurrentEssenceElement(Gem gem) => GetDominantElement(_currentPersonalEssenceElements, gem);
 
