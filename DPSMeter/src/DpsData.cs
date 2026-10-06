@@ -88,7 +88,8 @@ public sealed class DpsData
         string sourceName,
         IReadOnlyDictionary<Gem, float> essenceContributions,
         ElementalType? elemental,
-        string playerName)
+        string playerName,
+        bool isDirectEssenceDamage)
     {
         if (producedDamage <= 0f)
         {
@@ -141,7 +142,7 @@ public sealed class DpsData
             AddElement(_currentPersonalSkillElements, skillName, elemental, producedDamage);
             AddElement(_cumulativePersonalSkillElements, skillName, elemental, producedDamage);
         }
-        else
+        else if (!isDirectEssenceDamage)
         {
             Add(_currentOtherPersonal, sourceName, producedDamage);
             Add(_cumulativeOtherPersonal, sourceName, producedDamage);
