@@ -165,9 +165,9 @@ public sealed class DPSMeter : ModBehaviour
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
         AbilityInstance ability = info.actor.FindFirstOfType<AbilityInstance>();
         Gem directGem = ability != null ? ability.gem : null;
-        Dictionary<Gem, float> essenceContributions = ConsumeEssenceContributions(info.actor, info.victim, directGem, producedDamage);
+        Dictionary<Gem, float> essenceContributions = ConsumeEssenceContributions(info.actor, info.victim);
 
-        if (directGem != null)
+        if (IsEssenceGem(directGem))
         {
             float directAmount;
             if (!essenceContributions.TryGetValue(directGem, out directAmount))
@@ -288,6 +288,11 @@ public sealed class DPSMeter : ModBehaviour
         _essenceProcessorStarts[gem] = new Stack<float>();
     }
 
+    private static bool IsEssenceGem(Gem gem)
+    {
+        return gem != null && gem.location.index > 0;
+    }
+
     private void OnEssenceProcessorBefore(Gem gem, ref DamageData data)
     {
         Stack<float> starts;
@@ -328,9 +333,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private Dictionary<Gem, float> ConsumeEssenceContributions(
         Actor source,
-        Entity victim,
-        Gem directGem,
-        float producedDamage)
+        Entity victim)
     {
         Dictionary<Gem, float> result = new Dictionary<Gem, float>();
 
@@ -355,7 +358,7 @@ public sealed class DPSMeter : ModBehaviour
 
             _pendingEssenceContributions.RemoveAt(i);
 
-            if (pending.Essence == null || pending.Essence == directGem)
+            if (pending.Essence == null)
             {
                 continue;
             }
