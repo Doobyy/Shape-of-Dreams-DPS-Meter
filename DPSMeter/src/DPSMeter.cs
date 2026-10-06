@@ -19,7 +19,6 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private readonly HashSet<AbilityInstance> _tracedAbilityInstances = new HashSet<AbilityInstance>();
-    private readonly HashSet<Gem> _tracedCharcoalGems = new HashSet<Gem>();
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
@@ -157,10 +156,6 @@ public sealed class DPSMeter : ModBehaviour
         // case the damage event's actor chain can contain the Gem even when
         // the first AbilityInstance is not the Essence's instance.
         Gem directGem = FindDamageSourceEssence(info.actor);
-        if (isLocalPlayer && directGem != null)
-        {
-            TraceCharcoalScaling(directGem, info.actor);
-        }
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
         bool isDirectEssenceDamage = directGem != null;
 
@@ -401,134 +396,6 @@ public sealed class DPSMeter : ModBehaviour
         return DpsData.DamageScalingType.None;
     }
 
-    private void TraceCharcoalScaling(Gem gem, Actor damageActor)
-    {
-        if (gem == null || _tracedCharcoalGems.Contains(gem))
-            return;
-
-        string name = gem.GetActorReadableName();
-        string originalName = gem.GetOriginalName();
-        if ((name == null || name.IndexOf("Charcoal", StringComparison.OrdinalIgnoreCase) < 0) &&
-            (originalName == null || originalName.IndexOf("Charcoal", StringComparison.OrdinalIgnoreCase) < 0))
-            return;
-
-        _tracedCharcoalGems.Add(gem);
-
-        Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] gem=" + name +
-            " originalName=" + originalName +
-            " gemType=" + gem.GetType().Name);
-
-        TraceCharcoalObject("Gem", gem, 0);
-        TraceCharcoalObject("SkillTrigger", gem.skill, 0);
-        TraceCharcoalObject("TriggerConfig", gem.skill != null ? gem.skill.currentConfig : null, 0);
-
-        AbilityInstance configured = gem.skill != null && gem.skill.currentConfig != null
-            ? gem.skill.currentConfig.spawnedInstance
-            : null;
-
-        TraceCharcoalAbilityTree(configured, 0);
-
-        Actor current = damageActor;
-        int depth = 0;
-        while (current != null && depth < 8)
-        {
-            TraceCharcoalObject("Actor[" + depth + "]", current, 0);
-
-            Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] actor depth=" + depth +
-                " type=" + current.GetType().Name +
-                " gem=" + ((current as AbilityInstance) != null && (current as AbilityInstance).gem != null
-                    ? (current as AbilityInstance).gem.GetActorReadableName()
-                    : "none"));
-
-            current = current.parentActor;
-            depth++;
-        }
-    }
-
-    private static void TraceCharcoalAbilityTree(AbilityInstance instance, int depth)
-    {
-        if (instance == null || depth > 6)
-            return;
-
-        TraceCharcoalObject("Ability[" + depth + "]", instance, depth);
-
-        List<Actor> children = instance.children;
-        if (children == null)
-            return;
-
-        for (int i = 0; i < children.Count; i++)
-        {
-            AbilityInstance child = children[i] as AbilityInstance;
-            if (child != null)
-                TraceCharcoalAbilityTree(child, depth + 1);
-        }
-    }
-
-    private static void TraceCharcoalObject(string label, object target, int depth)
-    {
-        if (target == null || depth > 2)
-            return;
-
-        Type type = target.GetType();
-        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-            if (field.FieldType == typeof(ScalingValue))
-            {
-                try
-                {
-                    ScalingValue scaling = (ScalingValue)field.GetValue(target);
-                    Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] " + label + "." + field.Name +
-                        " ScalingValue ad=" + scaling.adFactor + " ap=" + scaling.apFactor +
-                        " addedHp=" + scaling.addedHpFactor + " base=" + scaling.baseValue +
-                        " armor=" + scaling.armorFactor + " crit=" + scaling.critPercentageFactor);
-                }
-                catch (Exception ex)
-                {
-                    Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] " + label + "." + field.Name +
-                        " read failed=" + ex.GetType().Name);
-                }
-            }
-            else if (field.FieldType == typeof(float) || field.FieldType == typeof(double) ||
-                     field.FieldType == typeof(int) || field.FieldType == typeof(decimal))
-            {
-                try
-                {
-                    object value = field.GetValue(target);
-                    Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] " + label + "." + field.Name +
-                        " numeric=" + value);
-                }
-                catch (Exception)
-                {
-                }
-            }
-        }
-
-        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < properties.Length; i++)
-        {
-            PropertyInfo property = properties[i];
-            if (property.PropertyType != typeof(ScalingValue) ||
-                property.GetIndexParameters().Length != 0 || !property.CanRead)
-                continue;
-
-            try
-            {
-                ScalingValue scaling = (ScalingValue)property.GetValue(target, null);
-                Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] " + label + "." + property.Name +
-                    " [property] ScalingValue ad=" + scaling.adFactor + " ap=" + scaling.apFactor +
-                    " addedHp=" + scaling.addedHpFactor + " base=" + scaling.baseValue +
-                    " armor=" + scaling.armorFactor + " crit=" + scaling.critPercentageFactor);
-            }
-            catch (Exception ex)
-            {
-                Debug.Log("[DPS Meter][v4.14 CHARCOAL TRACE] " + label + "." + property.Name +
-                    " [property] read failed=" + ex.GetType().Name);
-            }
-        }
-    }
-
     private static DpsData.DamageScalingType GetScalingType(ScalingValue scaling)
     {
         float ad = Mathf.Max(0f, scaling.adFactor);
@@ -645,33 +512,86 @@ public sealed class DPSMeter : ModBehaviour
     {
         DamageInstance damageInstance = FindDamageInstance(actor);
 
-        if (damageInstance == null)
+        if (damageInstance != null)
         {
-            return DpsData.DamageScalingType.None;
+            DpsData.DamageScalingType scaling = GetScalingType(damageInstance.dmgFactor);
+            if (scaling != DpsData.DamageScalingType.None)
+            {
+                return scaling;
+            }
         }
 
-        ScalingValue scaling = damageInstance.dmgFactor;
-
-        float ad = Mathf.Max(0f, scaling.adFactor);
-        float ap = Mathf.Max(0f, scaling.apFactor);
-        float hp = Mathf.Max(0f, scaling.addedHpFactor);
-
-        if (ad <= 0f && ap <= 0f && hp <= 0f)
+        // Some runtime projectile/skill actors are not DamageInstance subclasses.
+        // Their actual damage scaling is exposed as a ScalingValue field on the
+        // actor itself (for example, a field named "damage"). Prefer that exact
+        // runtime damage field before broader damage fields such as normalDamage
+        // so a parent projectile's metadata does not win over the hit actor.
+        DpsData.DamageScalingType runtimeScaling = FindRuntimeDamageScaling(actor, "damage");
+        if (runtimeScaling != DpsData.DamageScalingType.None)
         {
-            return DpsData.DamageScalingType.None;
+            return runtimeScaling;
         }
 
-        if (ap > ad && ap >= hp)
+        runtimeScaling = FindRuntimeDamageScaling(actor, "normalDamage");
+        if (runtimeScaling != DpsData.DamageScalingType.None)
         {
-            return DpsData.DamageScalingType.Ap;
+            return runtimeScaling;
         }
 
-        if (hp > ad && hp > ap)
+        return FindRuntimeDamageScaling(actor, null);
+    }
+
+    private static DpsData.DamageScalingType FindRuntimeDamageScaling(Actor actor, string preferredFieldName)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
         {
-            return DpsData.DamageScalingType.Hp;
+            FieldInfo[] fields = current.GetType().GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+
+                if (field.FieldType != typeof(ScalingValue))
+                {
+                    continue;
+                }
+
+                if (preferredFieldName != null &&
+                    !string.Equals(field.Name, preferredFieldName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (preferredFieldName == null &&
+                    field.Name.IndexOf("damage", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    ScalingValue scaling = (ScalingValue)field.GetValue(current);
+                    DpsData.DamageScalingType result = GetScalingType(scaling);
+
+                    if (result != DpsData.DamageScalingType.None)
+                    {
+                        return result;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            current = current.parentActor;
+            depth++;
         }
 
-        return DpsData.DamageScalingType.Ad;
+        return DpsData.DamageScalingType.None;
     }
 
     private static DamageInstance FindDamageInstance(Actor actor)
