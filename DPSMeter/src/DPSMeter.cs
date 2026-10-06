@@ -496,6 +496,106 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static Gem FindDirectGemMember(object value)
+    {
+        if (value == null)
+        {
+            return null;
+        }
+
+        Type type = value.GetType();
+        PropertyInfo gemProperty = type.GetProperty(
+            "gem",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        if (gemProperty != null &&
+            gemProperty.GetIndexParameters().Length == 0 &&
+            gemProperty.GetMethod != null)
+        {
+            try
+            {
+                Gem gem = gemProperty.GetValue(value, null) as Gem;
+                if (gem != null)
+                {
+                    return gem;
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        FieldInfo gemField = type.GetField(
+            "_gem",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        if (gemField != null)
+        {
+            try
+            {
+                Gem gem = gemField.GetValue(value) as Gem;
+                if (gem != null)
+                {
+                    return gem;
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        return null;
+    }
+
+
+    private static void TraceHealingReferenceMember(Type ownerType, string memberName, object memberValue)
+    {
+        if (memberValue == null)
+        {
+            return;
+        }
+
+        Gem gem = memberValue as Gem;
+        if (gem != null)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
+                " -> Gem type=" + gem.GetType().Name +
+                " name=" + gem.name +
+                " original=" + gem.GetOriginalName());
+            return;
+        }
+
+        Actor actor = memberValue as Actor;
+        if (actor != null)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
+                " -> Actor " + DescribeHealingObject(actor));
+            return;
+        }
+
+        SkillTrigger skill = memberValue as SkillTrigger;
+        if (skill != null)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
+                " -> SkillTrigger name=" + skill.GetFormattedSkillTitle());
+            return;
+        }
+
+        string stringValue = memberValue as string;
+        if (!string.IsNullOrEmpty(stringValue) &&
+            (memberName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+             memberName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+             memberName.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0))
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
+                " -> string=\"" + stringValue + "\"");
+        }
+    }
+
     private static string GetHealingSourceName(Actor source)
     {
         if (source == null)
