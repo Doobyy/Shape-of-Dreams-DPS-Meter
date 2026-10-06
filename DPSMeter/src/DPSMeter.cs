@@ -186,6 +186,64 @@ public sealed class DPSMeter : ModBehaviour
             scalingType);
     }
 
+    private static DpsData.DamageScalingType FindDamageScalingType(Actor actor)
+    {
+        DamageInstance damageInstance = FindDamageInstance(actor);
+
+        if (damageInstance == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        ScalingValue scaling = damageInstance.dmgFactor;
+
+        float ad = Mathf.Max(0f, scaling.adFactor);
+        float ap = Mathf.Max(0f, scaling.apFactor);
+        float hp = Mathf.Max(0f, scaling.addedHpFactor);
+
+        if (ad <= 0f && ap <= 0f && hp <= 0f)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        if (ap > ad && ap >= hp)
+        {
+            return DpsData.DamageScalingType.Ap;
+        }
+
+        if (hp > ad && hp > ap)
+        {
+            return DpsData.DamageScalingType.Hp;
+        }
+
+        return DpsData.DamageScalingType.Ad;
+    }
+
+    private static DamageInstance FindDamageInstance(Actor actor)
+    {
+        if (actor == null)
+        {
+            return null;
+        }
+
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            DamageInstance damageInstance = current as DamageInstance;
+            if (damageInstance != null)
+            {
+                return damageInstance;
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
     private static Sprite FindSkillIcon(SkillTrigger skill)
     {
         if (skill == null)
