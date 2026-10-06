@@ -160,6 +160,12 @@ public sealed class DPSMeter : ModBehaviour
             sourceIdentity = GetEssenceIdentity(healingGem);
             sourceName = GetLocalizedEssenceName(healingGem) ?? sourceName;
         }
+
+        // Keep the raw healing event traceable for the known unresolved
+        // non-Essence healing sources while we identify their player-facing
+        // names and icons (Health Orb / Shrine of Guidance / Power of Guidance).
+        TraceUnresolvedHealingSource(info.actor, healingGem, sourceName);
+
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
         _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
 
@@ -512,6 +518,53 @@ public sealed class DPSMeter : ModBehaviour
         catch (Exception)
         {
             return null;
+        }
+    }
+
+
+    private static void TraceUnresolvedHealingSource(Actor source, Gem resolvedGem, string resolvedName)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        string rawName = source.name ?? string.Empty;
+        bool trace = rawName.IndexOf("se_generichealovertime", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            rawName.IndexOf("Hero_Bismuth", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        if (!trace)
+        {
+            return;
+        }
+
+        Debug.Log(
+            "[DPS Meter][HEAL TRACE] eventActor=" + source.GetType().FullName +
+            " name=" + rawName +
+            " resolvedGem=" + (resolvedGem == null ? "<null>" : GetEssenceIdentity(resolvedGem)) +
+            " resolvedName=" + (resolvedName ?? "<null>"));
+
+        Actor current = source;
+        int depth = 0;
+        while (current != null && depth < 8)
+        {
+            Gem directGem = FindDirectGemMember(current);
+            SkillTrigger skill = current.firstTrigger as SkillTrigger;
+
+            string starName = TryGetStarDisplayName(current);
+            string skillName = skill == null ? null : skill.GetFormattedSkillTitle();
+
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] depth=" + depth +
+                " actor=" + current.GetType().FullName +
+                " name=" + (current.name ?? "<null>") +
+                " parent=" + (current.parentActor == null ? "<null>" : current.parentActor.name) +
+                " gem=" + (directGem == null ? "<null>" : GetEssenceIdentity(directGem)) +
+                " star=" + (starName ?? "<null>") +
+                " skill=" + (skillName ?? "<null>"));
+
+            current = current.parentActor;
+            depth++;
         }
     }
 
