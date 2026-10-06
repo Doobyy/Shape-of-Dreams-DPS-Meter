@@ -221,6 +221,129 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
+    private void OnTakeShield(EventInfoShield info)
+    {
+        DewPlayer local = DewPlayer.local;
+
+        if (local == null || local.hero == null || info.target == null)
+        {
+            return;
+        }
+
+        if (info.target != local.hero)
+        {
+            return;
+        }
+
+        float barrier = Mathf.Max(0f, info.finalAmount);
+        if (barrier <= 0f)
+        {
+            return;
+        }
+
+        string sourceIdentity;
+        string sourceName;
+        Sprite icon;
+        ResolveBarrierSource(info.statusEffect, out sourceIdentity, out sourceName, out icon);
+
+        _data.AddBarrier(barrier, sourceIdentity, sourceName, icon);
+    }
+
+
+    private static string GetSkillSlotIdentity(Actor source)
+    {
+        if (source == null)
+        {
+            return null;
+        }
+
+        SkillTrigger skill = source.firstTrigger as SkillTrigger;
+        if (skill == null)
+        {
+            Gem gem = source as Gem;
+            if (gem != null)
+            {
+                skill = gem.skill;
+            }
+        }
+
+        return GetSkillSlotIdentity(source, skill);
+    }
+
+
+    private static string GetSkillSlotIdentity(Actor source, SkillTrigger skill)
+    {
+        if (source == null || skill == null)
+        {
+            return null;
+        }
+
+        Hero hero = source.firstEntity as Hero;
+        if (hero == null || hero.Skill == null)
+        {
+            return null;
+        }
+
+        HeroSkillLocation location;
+        if (!hero.Skill.TryGetSkillLocation(skill, out location))
+        {
+            return null;
+        }
+
+        return location.ToString();
+    }
+
+
+    private static void TraceHealingObjectMembers(string label, object value)
+    {
+        if (value == null)
+        {
+            return;
+        }
+
+        Type type = value.GetType();
+        Debug.Log("[DPS Meter][HEAL TRACE] OBJECT SCAN " + label + " type=" + type.FullName);
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+
+            try
+            {
+                object memberValue = field.GetValue(value);
+                TraceHealingObjectMember(type, field.Name, field.FieldType, memberValue);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+            {
+                continue;
+            }
+
+            try
+            {
+                object memberValue = property.GetValue(value, null);
+                TraceHealingObjectMember(type, property.Name, property.PropertyType, memberValue);
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
     private static string GetHealingSourceName(Actor source)
     {
         if (source == null)
