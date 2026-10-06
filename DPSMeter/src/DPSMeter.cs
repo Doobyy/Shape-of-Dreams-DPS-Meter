@@ -1154,19 +1154,23 @@ public sealed class DPSMeter : ModBehaviour
             // incorrectly inherit the host scaler (for example, Valiant Heart's
             // 2.4ad). Find the AbilityInstance actually owned by this Gem first.
             DpsData.DamageScalingType essenceScaling = FindConfiguredGemAbilityScaling(configured, gem, 0);
+
+            // Never fall back to the host skill's scaler here. An Essence can
+            // be socketed into a skill whose root uses a different scaler
+            // (for example Valiant Heart = AD), which would falsely label the
+            // Essence as AD.
             if (essenceScaling != DpsData.DamageScalingType.None)
             {
                 return essenceScaling;
             }
 
-            // Some Essences expose their scaling on a child DamageInstance or
-            // another child ability even when the Gem itself is not directly
-            // attached to the damage node. Search the configured tree only
-            // after the Gem-specific match.
-            DpsData.DamageScalingType childScaling = FindConfiguredAbilityScaling(configured, 0);
-            if (childScaling != DpsData.DamageScalingType.None)
+            if (gem.GetType().Name.IndexOf("Charcoal", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                return childScaling;
+                Debug.Log("[DPS Meter][CHARCOAL TRACE v4.71] configuredType=" +
+                    configured.GetType().FullName +
+                    " configuredName=" + (configured.name ?? "<null>") +
+                    " configuredGem=" + (configured.gem == null ? "<null>" : configured.gem.GetOriginalName()));
+                LogCharcoalScalingFields(configured, 0);
             }
 
             return DpsData.DamageScalingType.None;
