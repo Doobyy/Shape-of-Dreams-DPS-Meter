@@ -18,6 +18,7 @@ public sealed class DPSMeter : ModBehaviour
     private Hero _currentHero;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
+    private static int _barrierTraceCount;
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
@@ -157,6 +158,7 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         float barrier = Mathf.Max(0f, info.finalAmount);
+        TraceBarrierStatusEffect(info.statusEffect);
         if (barrier <= 0f)
         {
             return;
@@ -168,6 +170,90 @@ public sealed class DPSMeter : ModBehaviour
         ResolveBarrierSource(info.statusEffect, out sourceIdentity, out sourceName, out icon);
 
         _data.AddBarrier(barrier, sourceIdentity, sourceName, icon);
+    }
+
+    private static void TraceBarrierStatusEffect(object statusEffect)
+    {
+        if (statusEffect == null || _barrierTraceCount >= 12)
+        {
+            return;
+        }
+
+        _barrierTraceCount++;
+        Type type = statusEffect.GetType();
+        Debug.Log("[DPS Meter][BARRIER TRACE] statusEffect=" + statusEffect + " type=" + type.FullName);
+
+        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field == null)
+            {
+                continue;
+            }
+
+            object value;
+            try
+            {
+                value = field.GetValue(statusEffect);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            if (value == null)
+            {
+                continue;
+            }
+
+            Type valueType = value.GetType();
+            if (value is Gem || value is Actor || value is SkillTrigger || value is AbilityInstance ||
+                field.Name.IndexOf("gem", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                field.Name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                field.Name.IndexOf("owner", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                field.Name.IndexOf("caster", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                field.Name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                field.Name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                Debug.Log("[DPS Meter][BARRIER TRACE] field " + field.Name + " type=" + valueType.FullName + " value=" + value);
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property == null || property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+            {
+                continue;
+            }
+
+            if (property.Name.IndexOf("gem", StringComparison.OrdinalIgnoreCase) < 0 &&
+                property.Name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                property.Name.IndexOf("owner", StringComparison.OrdinalIgnoreCase) < 0 &&
+                property.Name.IndexOf("caster", StringComparison.OrdinalIgnoreCase) < 0 &&
+                property.Name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) < 0 &&
+                property.Name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                continue;
+            }
+
+            object value;
+            try
+            {
+                value = property.GetValue(statusEffect, null);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            if (value != null)
+            {
+                Debug.Log("[DPS Meter][BARRIER TRACE] property " + property.Name + " type=" + value.GetType().FullName + " value=" + value);
+            }
+        }
     }
 
     private static void ResolveBarrierSource(
