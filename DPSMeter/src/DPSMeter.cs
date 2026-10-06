@@ -529,12 +529,9 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        Actor source = info.actor;
-        string rawName = source.name ?? string.Empty;
+        string rawName = info.actor.name ?? string.Empty;
         bool targeted = rawName.IndexOf("Hero_Bismuth", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            rawName.IndexOf("Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            rawName.IndexOf("Pickup_RegenOrb", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            rawName.IndexOf("Ai_RegenOrb_Projectile", StringComparison.OrdinalIgnoreCase) >= 0;
+            rawName.IndexOf("Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase) >= 0;
 
         if (!targeted)
         {
@@ -542,50 +539,23 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         Debug.Log(
-            "[DPS Meter][HEAL TRACE] eventActor=" + source.GetType().FullName +
+            "[DPS Meter][HEAL TRACE] eventActor=" + info.actor.GetType().FullName +
             " name=" + rawName +
             " resolvedGem=" + (resolvedGem == null ? "<null>" : GetEssenceIdentity(resolvedGem)) +
             " resolvedName=" + (resolvedName ?? "<null>") +
             " infoType=" + info.GetType().FullName);
 
-        Actor current = source;
-        int depth = 0;
-        while (current != null && depth < 8)
-        {
-            Gem directGem = FindDirectGemMember(current);
-            SkillTrigger skill = current.firstTrigger as SkillTrigger;
-            string starName = TryGetStarDisplayName(current);
-            string skillName = skill == null ? null : skill.GetFormattedSkillTitle();
-
-            Debug.Log(
-                "[DPS Meter][HEAL TRACE] depth=" + depth +
-                " actor=" + current.GetType().FullName +
-                " name=" + (current.name ?? "<null>") +
-                " parent=" + (current.parentActor == null ? "<null>" : current.parentActor.name) +
-                " gem=" + (directGem == null ? "<null>" : GetEssenceIdentity(directGem)) +
-                " star=" + (starName ?? "<null>") +
-                " skill=" + (skillName ?? "<null>"));
-
-            TraceHealingMembers(current, depth);
-            TraceHealingReferences(current, depth);
-            current = current.parentActor;
-            depth++;
-        }
-
-        TraceHealingMembers(info, -1);
+        // The actor/parent dumps above were useful for finding the generic
+        // Health Orb chain, but they did not identify the originating effect.
+        // Trace only the EventInfoHeal reference fields now, including the
+        // contents of reference-type collections such as BasicEffect lists.
+        TraceHealingEventReferences(info);
     }
 
-    private static void TraceHealingReferences(object target, int depth)
+    private static void TraceHealingEventReferences(EventInfoHeal info)
     {
-        if (target == null)
-        {
-            return;
-        }
-
-        Type type = target.GetType();
-        string prefix = depth < 0
-            ? "[DPS Meter][HEAL EVENT REF]"
-            : "[DPS Meter][HEAL ACTOR REF]";
+        object boxedInfo = info;
+        Type type = boxedInfo.GetType();
 
         FieldInfo[] fields = type.GetFields(
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -604,8 +574,8 @@ public sealed class DPSMeter : ModBehaviour
 
             try
             {
-                object value = field.GetValue(target);
-                LogHealingReference(prefix, "field", field.Name, field.FieldType, value);
+                object value = field.GetValue(boxedInfo);
+                LogHealingEventReference("field", field.Name, field.FieldType, value);
             }
             catch (Exception)
             {
@@ -633,8 +603,8 @@ public sealed class DPSMeter : ModBehaviour
 
             try
             {
-                object value = property.GetValue(target, null);
-                LogHealingReference(prefix, "property", property.Name, property.PropertyType, value);
+                object value = property.GetValue(boxedInfo, null);
+                LogHealingEventReference("property", property.Name, property.PropertyType, value);
             }
             catch (Exception)
             {
@@ -642,8 +612,7 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void LogHealingReference(
-        string prefix,
+    private static void LogHealingEventReference(
         string memberKind,
         string memberName,
         Type declaredType,
@@ -675,38 +644,69 @@ public sealed class DPSMeter : ModBehaviour
         {
         }
 
-        string lower = (memberName + " " + declaredType.Name + " " + valueType + " " + (valueName ?? string.Empty))
-            .ToLowerInvariant();
-
-        bool interesting =
-            lower.Contains("skill") ||
-            lower.Contains("ability") ||
-            lower.Contains("passive") ||
-            lower.Contains("effect") ||
-            lower.Contains("status") ||
-            lower.Contains("buff") ||
-            lower.Contains("heal") ||
-            lower.Contains("guidance") ||
-            lower.Contains("shrine") ||
-            lower.Contains("source") ||
-            lower.Contains("star") ||
-            lower.Contains("gem") ||
-            lower.Contains("essence");
-
-        if (!interesting)
-        {
-            return;
-        }
-
         Debug.Log(
-            prefix +
-            " " + memberKind + "=" + memberName +
+            "[DPS Meter][HEAL EVENT REF] " +
+            memberKind + "=" + memberName +
             " declaredType=" + (declaredType.FullName ?? declaredType.Name) +
             " valueType=" + valueType +
             " valueName=" + (valueName ?? "<null>"));
+
+        if (value is System.Collections.IEnumerable enumerable &&
+            !(value is string))
+        {
+            int index = 0;
+            foreach (object item in enumerable)
+            {
+                if (item == null)
+                {
+                    index++;
+                    continue;
+                }
+
+                Type itemType = item.GetType();
+                string itemName = null;
+
+                try
+                {
+                    PropertyInfo itemNameProperty = itemType.GetProperty(
+                        "name",
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                    if (itemNameProperty != null &&
+                        itemNameProperty.GetIndexParameters().Length == 0 &&
+                        itemNameProperty.GetMethod != null &&
+                        itemNameProperty.PropertyType == typeof(string))
+                    {
+                        itemName = itemNameProperty.GetValue(item, null) as string;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+
+                Debug.Log(
+                    "[DPS Meter][HEAL EVENT REF ITEM] " +
+                    "member=" + memberName +
+                    " index=" + index +
+                    " itemType=" + (itemType.FullName ?? itemType.Name) +
+                    " itemName=" + (itemName ?? "<null>"));
+
+                TraceHealingReferenceMembers(item, memberName + "[" + index + "]");
+                index++;
+
+                if (index >= 16)
+                {
+                    break;
+                }
+            }
+        }
+        else
+        {
+            TraceHealingReferenceMembers(value, memberName);
+        }
     }
 
-    private static void TraceHealingMembers(object target, int depth)
+    private static void TraceHealingReferenceMembers(object target, string path)
     {
         if (target == null)
         {
@@ -714,9 +714,6 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         Type type = target.GetType();
-        string prefix = depth < 0
-            ? "[DPS Meter][HEAL EVENT]"
-            : "[DPS Meter][HEAL ACTOR]";
 
         FieldInfo[] fields = type.GetFields(
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -725,15 +722,10 @@ public sealed class DPSMeter : ModBehaviour
         {
             FieldInfo field = fields[i];
 
-            if (field.IsStatic || field.FieldType == typeof(Delegate) ||
+            if (field.IsStatic || field.FieldType.IsPrimitive ||
+                field.FieldType.IsEnum || field.FieldType == typeof(string) ||
+                field.FieldType == typeof(decimal) ||
                 typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType))
-            {
-                continue;
-            }
-
-            Type valueType = field.FieldType;
-            if (!valueType.IsPrimitive && valueType != typeof(string) &&
-                !valueType.IsEnum && valueType != typeof(decimal))
             {
                 continue;
             }
@@ -741,10 +733,14 @@ public sealed class DPSMeter : ModBehaviour
             try
             {
                 object value = field.GetValue(target);
-                Debug.Log(
-                    prefix + " field=" + field.Name +
-                    " type=" + valueType.FullName +
-                    " value=" + (value == null ? "<null>" : value.ToString()));
+                if (value != null)
+                {
+                    Debug.Log(
+                        "[DPS Meter][HEAL EVENT REF DETAIL] " +
+                        "path=" + path + "." + field.Name +
+                        " declaredType=" + (field.FieldType.FullName ?? field.FieldType.Name) +
+                        " valueType=" + (value.GetType().FullName ?? value.GetType().Name));
+                }
             }
             catch (Exception)
             {
@@ -761,14 +757,11 @@ public sealed class DPSMeter : ModBehaviour
             if (property.GetIndexParameters().Length != 0 ||
                 property.GetMethod == null ||
                 property.GetMethod.IsStatic ||
+                property.PropertyType.IsPrimitive ||
+                property.PropertyType.IsEnum ||
+                property.PropertyType == typeof(string) ||
+                property.PropertyType == typeof(decimal) ||
                 typeof(UnityEngine.Object).IsAssignableFrom(property.PropertyType))
-            {
-                continue;
-            }
-
-            Type valueType = property.PropertyType;
-            if (!valueType.IsPrimitive && valueType != typeof(string) &&
-                !valueType.IsEnum && valueType != typeof(decimal))
             {
                 continue;
             }
@@ -776,64 +769,19 @@ public sealed class DPSMeter : ModBehaviour
             try
             {
                 object value = property.GetValue(target, null);
-                Debug.Log(
-                    prefix + " property=" + property.Name +
-                    " type=" + valueType.FullName +
-                    " value=" + (value == null ? "<null>" : value.ToString()));
+                if (value != null)
+                {
+                    Debug.Log(
+                        "[DPS Meter][HEAL EVENT REF DETAIL] " +
+                        "path=" + path + "." + property.Name +
+                        " declaredType=" + (property.PropertyType.FullName ?? property.PropertyType.Name) +
+                        " valueType=" + (value.GetType().FullName ?? value.GetType().Name));
+                }
             }
             catch (Exception)
             {
             }
         }
-    } private static string GetHealingSourceName(Actor source)
-    {
-        string starName = TryGetStarDisplayName(source);
-        if (!string.IsNullOrEmpty(starName))
-        {
-            return starName;
-        }
-
-        if (source == null)
-        {
-            return "Unknown Healing";
-        }
-
-        Gem gem = source as Gem;
-        if (gem != null)
-        {
-            string gemKey = gem.GetOriginalName();
-            if (!string.IsNullOrEmpty(gemKey))
-            {
-                return gemKey;
-            }
-
-            return string.IsNullOrEmpty(gem.name) ? gem.GetType().Name : gem.name;
-        }
-
-        SkillTrigger skill = source.firstTrigger as SkillTrigger;
-        if (skill != null)
-        {
-            string skillName = skill.GetFormattedSkillTitle();
-            if (!string.IsNullOrEmpty(skillName))
-            {
-                return skillName;
-            }
-        }
-
-        string actorName = source.name;
-        if (!string.IsNullOrEmpty(actorName))
-        {
-            actorName = actorName.Replace("(Adjusted)", string.Empty)
-                .Replace("(Clone)", string.Empty)
-                .Trim();
-
-            if (!string.IsNullOrEmpty(actorName))
-            {
-                return actorName;
-            }
-        }
-
-        return source.GetType().Name;
     }
 
     private static string GetEssenceIdentity(Gem gem)
