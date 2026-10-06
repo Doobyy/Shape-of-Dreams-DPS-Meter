@@ -277,7 +277,7 @@ public sealed class DPSMeter : ModBehaviour
         {
             Debug.Log(
                 "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
-                " -> string="" + stringValue + """);
+                " -> string=\"" + stringValue + "\"");
         }
     }
 
