@@ -99,7 +99,8 @@ public sealed class DpsData
         IReadOnlyDictionary<Gem, float> essenceContributions,
         ElementalType? elemental,
         string playerName,
-        bool isDirectEssenceDamage)
+        bool isDirectEssenceDamage,
+        DamageScalingType scalingType)
     {
         if (producedDamage <= 0f)
         {
