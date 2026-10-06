@@ -14,7 +14,7 @@ public sealed class DPSMeter : ModBehaviour
     private DpsOverlay _overlay;
     private bool _subscribed;
     private Hero _currentHero;
-    private readonly System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
+    private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
 
     private void Awake()
     {
