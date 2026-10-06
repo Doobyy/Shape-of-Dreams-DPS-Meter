@@ -22,7 +22,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.68f);
     private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.68f);
     private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.68f);
-    private const string DevelopmentVersion = "v1.1";
+    private const string DevelopmentVersion = "v1.2";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -318,7 +318,7 @@ public sealed class DpsOverlay : MonoBehaviour
     }
 
     private void DrawRows(
-        IReadOnlyList<KeyValuePair<SkillTrigger, float>> rows,
+        IReadOnlyList<KeyValuePair<string, float>> rows,
         float total,
         int indexOffset = 0)
     {
@@ -330,8 +330,8 @@ public sealed class DpsOverlay : MonoBehaviour
 
         for (int i = 0; i < rows.Count; i++)
         {
-            KeyValuePair<SkillTrigger, float> row = rows[i];
-            DrawDamageRow(GetSkillLabel(row.Key), row.Value, total, indexOffset + i, _data.GetCurrentSkillElement(row.Key), GetIcon(row.Key));
+            KeyValuePair<string, float> row = rows[i];
+            DrawDamageRow(row.Key, row.Value, total, indexOffset + i, _data.GetCurrentSkillElement(row.Key), null);
         }
     }
 
