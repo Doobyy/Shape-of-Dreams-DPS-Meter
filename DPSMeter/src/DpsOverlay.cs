@@ -441,7 +441,7 @@ public sealed class DpsOverlay : MonoBehaviour
         if (icon != null)
             return icon;
 
-        return FindSpriteMember(skill.worldModel);
+        return null;
     }
 
     private static Sprite FindSpriteMember(object target)
