@@ -138,7 +138,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         string sourceName = GetHealingSourceName(info.actor);
-        _data.AddHealing(healing, sourceName);
+        Sprite healingIcon = FindHealingIcon(info.actor);
+        _data.AddHealing(healing, sourceName, healingIcon);
 
         const int maxEvents = 20;
         if (_healingEventDiagnosticCount < maxEvents)
@@ -191,6 +192,36 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return source.GetType().Name;
+    }
+
+    private static Sprite FindHealingIcon(Actor source)
+    {
+        if (source == null)
+        {
+            return null;
+        }
+
+        Gem gem = source as Gem;
+        if (gem != null)
+        {
+            Sprite icon = FindSpriteMember(gem);
+            if (icon != null)
+            {
+                return icon;
+            }
+        }
+
+        SkillTrigger skill = source.firstTrigger as SkillTrigger;
+        if (skill != null)
+        {
+            Sprite icon = FindSkillIcon(skill);
+            if (icon != null)
+            {
+                return icon;
+            }
+        }
+
+        return FindSpriteInActorChain(source);
     }
 
     private void OnTakeDamage(EventInfoDamage info)
