@@ -183,7 +183,8 @@ public sealed class DPSMeter : ModBehaviour
         Actor sourceActor = FindBarrierSourceActor(statusEffect, 0);
         if (sourceActor != null)
         {
-            SkillTrigger skill = sourceActor.firstTrigger as SkillTrigger;
+            Gem gem = sourceActor as Gem;
+            SkillTrigger skill = gem != null ? gem.skill : sourceActor.firstTrigger as SkillTrigger;
             sourceIdentity = GetSkillSlotIdentity(sourceActor, skill);
 
             if (skill != null)
@@ -192,14 +193,10 @@ public sealed class DPSMeter : ModBehaviour
                 icon = FindSkillIcon(skill);
             }
 
-            if (string.IsNullOrEmpty(sourceName))
+            if (string.IsNullOrEmpty(sourceName) && gem != null)
             {
-                Gem gem = sourceActor as Gem;
-                if (gem != null)
-                {
-                    sourceName = gem.GetOriginalName();
-                    icon = FindSpriteMember(gem);
-                }
+                sourceName = gem.GetOriginalName();
+                icon = FindSpriteMember(gem);
             }
 
             if (string.IsNullOrEmpty(sourceName))
@@ -580,139 +577,6 @@ public sealed class DPSMeter : ModBehaviour
             playerName,
             isDirectEssenceDamage,
             scalingType);
-    }
-
-    private void LogBarrierEventCandidates()
-    {
-        if (_barrierDiagnosticLogged || _clientEvents == null)
-        {
-            return;
-        }
-
-        _barrierDiagnosticLogged = true;
-        Type managerType = _clientEvents.GetType();
-
-        Debug.Log("[DPS Meter][BARRIER TRACE] ClientEventManager=" + managerType.FullName);
-
-        EventInfo[] events = managerType.GetEvents(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < events.Length; i++)
-        {
-            EventInfo eventInfo = events[i];
-            if (eventInfo == null || !IsBarrierDiagnosticName(eventInfo.Name))
-            {
-                continue;
-            }
-
-            Debug.Log("[DPS Meter][BARRIER TRACE] Event candidate: " + eventInfo.Name +
-                " handler=" + (eventInfo.EventHandlerType != null ? eventInfo.EventHandlerType.FullName : "unknown"));
-        }
-
-        FieldInfo[] fields = managerType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-            if (field == null || !IsBarrierDiagnosticName(field.Name))
-            {
-                continue;
-            }
-
-            Debug.Log("[DPS Meter][BARRIER TRACE] Field candidate: " + field.Name +
-                " type=" + field.FieldType.FullName);
-        }
-
-        PropertyInfo[] properties = managerType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < properties.Length; i++)
-        {
-            PropertyInfo property = properties[i];
-            if (property == null || !IsBarrierDiagnosticName(property.Name))
-            {
-                continue;
-            }
-
-            Debug.Log("[DPS Meter][BARRIER TRACE] Property candidate: " + property.Name +
-                " type=" + property.PropertyType.FullName);
-        }
-
-        Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-        for (int i = 0; i < assemblies.Length; i++)
-        {
-            Type[] types;
-            try
-            {
-                types = assemblies[i].GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                types = ex.Types;
-            }
-            catch (Exception)
-            {
-                continue;
-            }
-
-            for (int j = 0; j < types.Length; j++)
-            {
-                Type type = types[j];
-                if (type == null || !IsBarrierDiagnosticType(type))
-                {
-                    continue;
-                }
-
-                Debug.Log("[DPS Meter][BARRIER TRACE] Runtime type candidate: " + type.FullName);
-
-                FieldInfo[] typeFields = type.GetFields(
-                    BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public |
-                    BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-                for (int k = 0; k < typeFields.Length; k++)
-                {
-                    FieldInfo field = typeFields[k];
-                    if (field == null || !IsBarrierDiagnosticName(field.Name))
-                    {
-                        continue;
-                    }
-
-                    Debug.Log("[DPS Meter][BARRIER TRACE] Type member: " + type.FullName + "." +
-                        field.Name + " type=" + field.FieldType.FullName);
-                }
-
-                PropertyInfo[] typeProperties = type.GetProperties(
-                    BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public |
-                    BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-                for (int k = 0; k < typeProperties.Length; k++)
-                {
-                    PropertyInfo property = typeProperties[k];
-                    if (property == null || !IsBarrierDiagnosticName(property.Name))
-                    {
-                        continue;
-                    }
-
-                    Debug.Log("[DPS Meter][BARRIER TRACE] Type member: " + type.FullName + "." +
-                        property.Name + " type=" + property.PropertyType.FullName);
-                }
-            }
-        }
-    }
-
-    private static bool IsBarrierDiagnosticType(Type type)
-    {
-        string name = type.FullName ?? type.Name;
-        return name.IndexOf("barrier", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               name.IndexOf("shield", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               name.IndexOf("ward", StringComparison.OrdinalIgnoreCase) >= 0;
-    }
-
-    private static bool IsBarrierDiagnosticName(string name)
-    {
-        if (string.IsNullOrEmpty(name))
-        {
-            return false;
-        }
-
-        return name.IndexOf("barrier", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               name.IndexOf("shield", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               name.IndexOf("ward", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private DpsData.DamageScalingType GetCachedSkillScaling(string skillIdentity, SkillTrigger skill, Actor actor)
