@@ -21,7 +21,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.68f);
     private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.68f);
     private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.68f);
-    private const string DevelopmentVersion = "v3.3";
+    private const string DevelopmentVersion = "v3.4";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -63,7 +63,6 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = WindowFillColor;
         GUI.DrawTexture(_windowRect, _whiteTexture);
         GUI.color = Color.white;
-        GUI.Box(_windowRect, GUIContent.none, GUI.skin.window);
 
         Rect headerRect = new Rect(
             _windowRect.x + 6f,
