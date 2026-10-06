@@ -16,16 +16,19 @@ public sealed class DpsData
     private readonly Dictionary<string, float> _currentPersonalSkills = new Dictionary<string, float>();
     private readonly Dictionary<string, Sprite> _skillIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalSkills = new Dictionary<string, float>();
-    private readonly Dictionary<Gem, float> _currentPersonalEssences = new Dictionary<Gem, float>();
-    private readonly Dictionary<Gem, Dictionary<DamageScalingType, float>> _currentPersonalEssenceScaling = new Dictionary<Gem, Dictionary<DamageScalingType, float>>();
-    private readonly Dictionary<Gem, float> _cumulativePersonalEssences = new Dictionary<Gem, float>();
+    private readonly Dictionary<string, float> _currentPersonalEssences = new Dictionary<string, float>();
+    private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalEssenceScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
+    private readonly Dictionary<string, Sprite> _currentPersonalEssenceIcons = new Dictionary<string, Sprite>();
+    private readonly Dictionary<string, float> _cumulativePersonalEssences = new Dictionary<string, float>();
+    private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _cumulativePersonalEssenceScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
+    private readonly Dictionary<string, Sprite> _cumulativePersonalEssenceIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _currentOtherPersonal = new Dictionary<string, float>();
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalSkillScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalOtherScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<string, Dictionary<ElementalType, float>> _currentPersonalSkillElements = new Dictionary<string, Dictionary<ElementalType, float>>();
     private readonly Dictionary<string, Dictionary<ElementalType, float>> _cumulativePersonalSkillElements = new Dictionary<string, Dictionary<ElementalType, float>>();
-    private readonly Dictionary<Gem, Dictionary<ElementalType, float>> _currentPersonalEssenceElements = new Dictionary<Gem, Dictionary<ElementalType, float>>();
-    private readonly Dictionary<Gem, Dictionary<ElementalType, float>> _cumulativePersonalEssenceElements = new Dictionary<Gem, Dictionary<ElementalType, float>>();
+    private readonly Dictionary<string, Dictionary<ElementalType, float>> _currentPersonalEssenceElements = new Dictionary<string, Dictionary<ElementalType, float>>();
+    private readonly Dictionary<string, Dictionary<ElementalType, float>> _cumulativePersonalEssenceElements = new Dictionary<string, Dictionary<ElementalType, float>>();
     private readonly Dictionary<string, float> _cumulativeOtherPersonal = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
@@ -72,10 +75,10 @@ public sealed class DpsData
     public IReadOnlyList<KeyValuePair<string, float>> CumulativePersonalSkills =>
         _cumulativePersonalSkills.OrderByDescending(pair => pair.Value).ToList();
 
-    public IReadOnlyList<KeyValuePair<Gem, float>> CurrentPersonalEssences =>
+    public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalEssences =>
         _currentPersonalEssences.OrderByDescending(pair => pair.Value).ToList();
 
-    public IReadOnlyList<KeyValuePair<Gem, float>> CumulativePersonalEssences =>
+    public IReadOnlyList<KeyValuePair<string, float>> CumulativePersonalEssences =>
         _cumulativePersonalEssences.OrderByDescending(pair => pair.Value).ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalOther =>
@@ -171,11 +174,21 @@ public sealed class DpsData
                 if (essence == null || contribution <= 0f)
                     continue;
 
-                Add(_currentPersonalEssences, essence, contribution);
-                Add(_cumulativePersonalEssences, essence, contribution);
-                AddElement(_currentPersonalEssenceElements, essence, elemental, contribution);
-                AddScaling(_currentPersonalEssenceScaling, essence, scalingType, contribution);
-                AddElement(_cumulativePersonalEssenceElements, essence, elemental, contribution);
+                string essenceKey = GetEssenceKey(essence);
+                if (string.IsNullOrEmpty(essenceKey))
+                    continue;
+
+                Add(_currentPersonalEssences, essenceKey, contribution);
+                Add(_cumulativePersonalEssences, essenceKey, contribution);
+                AddElement(_currentPersonalEssenceElements, essenceKey, elemental, contribution);
+                AddScaling(_currentPersonalEssenceScaling, essenceKey, scalingType, contribution);
+                AddElement(_cumulativePersonalEssenceElements, essenceKey, elemental, contribution);
+
+                if (essence.icon != null)
+                {
+                    _currentPersonalEssenceIcons[essenceKey] = essence.icon;
+                    _cumulativePersonalEssenceIcons[essenceKey] = essence.icon;
+                }
             }
         }
     }
@@ -203,6 +216,7 @@ public sealed class DpsData
         _currentPersonalSkillScaling.Clear();
         _currentPersonalOtherScaling.Clear();
         _currentPersonalEssenceScaling.Clear();
+        _currentPersonalEssenceIcons.Clear();
         _currentPersonalEssenceElements.Clear();
         _currentOtherPersonal.Clear();
         _currentParty.Clear();
@@ -223,6 +237,8 @@ public sealed class DpsData
         _cumulativePersonalSkills.Clear();
         _skillIcons.Clear();
         _cumulativePersonalEssences.Clear();
+        _cumulativePersonalEssenceScaling.Clear();
+        _cumulativePersonalEssenceIcons.Clear();
         _cumulativePersonalSkillElements.Clear();
         _cumulativePersonalEssenceElements.Clear();
         _cumulativeOtherPersonal.Clear();
@@ -247,7 +263,21 @@ public sealed class DpsData
 
     public DamageScalingType GetCurrentOtherScaling(string sourceName) => GetDominantScaling(_currentPersonalOtherScaling, sourceName);
 
-    public DamageScalingType GetCurrentEssenceScaling(Gem gem) => GetDominantScaling(_currentPersonalEssenceScaling, gem);
+    public DamageScalingType GetCurrentEssenceScaling(string essenceKey) => GetDominantScaling(_currentPersonalEssenceScaling, essenceKey);
+
+    public DamageScalingType GetCumulativeEssenceScaling(string essenceKey) => GetDominantScaling(_cumulativePersonalEssenceScaling, essenceKey);
+
+    public Sprite GetCurrentEssenceIcon(string essenceKey)
+    {
+        Sprite icon;
+        return !string.IsNullOrEmpty(essenceKey) && _currentPersonalEssenceIcons.TryGetValue(essenceKey, out icon) ? icon : null;
+    }
+
+    public Sprite GetCumulativeEssenceIcon(string essenceKey)
+    {
+        Sprite icon;
+        return !string.IsNullOrEmpty(essenceKey) && _cumulativePersonalEssenceIcons.TryGetValue(essenceKey, out icon) ? icon : null;
+    }
 
     public Sprite GetSkillIcon(string skillName)
     {
@@ -263,7 +293,9 @@ public sealed class DpsData
         _skillIcons[skillName] = icon;
     }
 
-    public ElementalType? GetCurrentEssenceElement(Gem gem) => GetDominantElement(_currentPersonalEssenceElements, gem);
+    public ElementalType? GetCurrentEssenceElement(string essenceKey) => GetDominantElement(_currentPersonalEssenceElements, essenceKey);
+
+    public ElementalType? GetCumulativeEssenceElement(string essenceKey) => GetDominantElement(_cumulativePersonalEssenceElements, essenceKey);
 
     private static ElementalType? GetDominantElement<T>(Dictionary<T, Dictionary<ElementalType, float>> map, T key) where T : class
     {
@@ -342,14 +374,16 @@ public sealed class DpsData
         elements[elemental.Value] = current + amount;
     }
 
-    private static void Add(Dictionary<Gem, float> map, Gem key, float amount)
+    private static string GetEssenceKey(Gem gem)
     {
-        if (key == null)
-            return;
+        if (gem == null)
+            return null;
 
-        float current;
-        map.TryGetValue(key, out current);
-        map[key] = current + amount;
+        string key = gem.GetOriginalName();
+        if (string.IsNullOrEmpty(key))
+            key = gem.GetActorReadableName();
+
+        return string.IsNullOrEmpty(key) ? null : key;
     }
 
 }
