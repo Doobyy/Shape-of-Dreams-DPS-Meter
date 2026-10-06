@@ -19,9 +19,6 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
-    private bool _barrierDiagnosticLogged;
-    private int _barrierTraceEventCount;
-    private const int BarrierTraceMaxEvents = 40;
     private void Awake()
     {
         Instance = this;
@@ -58,10 +55,8 @@ public sealed class DPSMeter : ModBehaviour
         _clientEvents.OnTakeDamage += OnTakeDamage;
         _clientEvents.OnTakeHeal += OnTakeHeal;
         _clientEvents.OnTakeShield += OnTakeShield;
-        _clientEvents.OnDamageNegatedByShield += OnDamageNegatedByShield;
         _clientEvents.OnLocalHeroAbilityChanged += OnLocalHeroAbilityChanged;
         _subscribed = true;
-        LogBarrierEventCandidates();
         Debug.Log("[DPS Meter] Damage event listener attached.");
     }
 
@@ -72,7 +67,6 @@ public sealed class DPSMeter : ModBehaviour
             _clientEvents.OnTakeDamage -= OnTakeDamage;
             _clientEvents.OnTakeHeal -= OnTakeHeal;
             _clientEvents.OnTakeShield -= OnTakeShield;
-            _clientEvents.OnDamageNegatedByShield -= OnDamageNegatedByShield;
             _clientEvents.OnLocalHeroAbilityChanged -= OnLocalHeroAbilityChanged;
         }
 
@@ -150,121 +144,183 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeShield(EventInfoShield info)
     {
-        LogBarrierEvent("OnTakeShield", info, null);
-    }
+        DewPlayer local = DewPlayer.local;
 
-    private void OnDamageNegatedByShield(EventInfoDamageNegatedByShield info)
-    {
-        LogBarrierEvent("OnDamageNegatedByShield", info, info.shield);
-    }
-
-    private void LogBarrierEvent(string eventName, object info, object shield)
-    {
-        if (_barrierTraceEventCount >= BarrierTraceMaxEvents)
+        if (local == null || local.hero == null || info.target == null)
         {
             return;
         }
 
-        _barrierTraceEventCount++;
+        if (info.target != local.hero)
+        {
+            return;
+        }
 
-        Debug.Log("[DPS Meter][BARRIER TRACE] " + eventName +
-            " info=" + DescribeBarrierObject(info) +
-            (shield != null ? " shield=" + DescribeBarrierObject(shield) : string.Empty));
+        float barrier = Mathf.Max(0f, info.finalAmount);
+        if (barrier <= 0f)
+        {
+            return;
+        }
+
+        string sourceIdentity;
+        string sourceName;
+        Sprite icon;
+        ResolveBarrierSource(info.statusEffect, out sourceIdentity, out sourceName, out icon);
+
+        _data.AddBarrier(barrier, sourceIdentity, sourceName, icon);
     }
 
-    private static string DescribeBarrierObject(object value)
+    private static void ResolveBarrierSource(
+        object statusEffect,
+        out string sourceIdentity,
+        out string sourceName,
+        out Sprite icon)
     {
-        if (value == null)
+        sourceIdentity = null;
+        sourceName = null;
+        icon = null;
+
+        Actor sourceActor = FindBarrierSourceActor(statusEffect, 0);
+        if (sourceActor != null)
         {
-            return "null";
+            SkillTrigger skill = sourceActor.firstTrigger as SkillTrigger;
+            sourceIdentity = GetSkillSlotIdentity(sourceActor, skill);
+
+            if (skill != null)
+            {
+                sourceName = skill.GetFormattedSkillTitle();
+                icon = FindSkillIcon(skill);
+            }
+
+            if (string.IsNullOrEmpty(sourceName))
+            {
+                Gem gem = sourceActor as Gem;
+                if (gem != null)
+                {
+                    sourceName = gem.GetOriginalName();
+                    icon = FindSpriteMember(gem);
+                }
+            }
+
+            if (string.IsNullOrEmpty(sourceName))
+            {
+                sourceName = sourceActor.name;
+            }
+        }
+
+        if (string.IsNullOrEmpty(sourceName) && statusEffect is UnityEngine.Object unityObject)
+        {
+            sourceName = unityObject.name;
+            icon = FindSpriteMember(statusEffect);
+        }
+
+        if (string.IsNullOrEmpty(sourceName) && statusEffect != null)
+        {
+            sourceName = statusEffect.GetType().Name;
+            icon = FindSpriteMember(statusEffect);
+        }
+
+        if (string.IsNullOrEmpty(sourceIdentity))
+        {
+            sourceIdentity = sourceName;
+        }
+    }
+
+    private static Actor FindBarrierSourceActor(object value, int depth)
+    {
+        if (value == null || depth > 3)
+        {
+            return null;
+        }
+
+        Actor directActor = value as Actor;
+        if (directActor != null)
+        {
+            return directActor;
+        }
+
+        Gem directGem = value as Gem;
+        if (directGem != null)
+        {
+            return directGem;
         }
 
         Type type = value.GetType();
-        List<string> parts = new List<string>();
-
         FieldInfo[] fields = type.GetFields(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         for (int i = 0; i < fields.Length; i++)
         {
             FieldInfo field = fields[i];
-
-            if (field == null || !IsBarrierTraceValueType(field.FieldType))
+            if (field == null || !IsBarrierSourceMemberName(field.Name))
             {
                 continue;
             }
 
+            object fieldValue;
             try
             {
-                object fieldValue = field.GetValue(value);
-                parts.Add(field.Name + "=" + FormatBarrierTraceValue(fieldValue));
+                fieldValue = field.GetValue(value);
             }
             catch (Exception)
             {
+                continue;
+            }
+
+            Actor found = FindBarrierSourceActor(fieldValue, depth + 1);
+            if (found != null)
+            {
+                return found;
             }
         }
 
         PropertyInfo[] properties = type.GetProperties(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         for (int i = 0; i < properties.Length; i++)
         {
             PropertyInfo property = properties[i];
-
             if (property == null ||
                 property.GetIndexParameters().Length != 0 ||
                 property.GetMethod == null ||
-                !IsBarrierTraceValueType(property.PropertyType))
+                !IsBarrierSourceMemberName(property.Name))
             {
                 continue;
             }
 
+            object propertyValue;
             try
             {
-                object propertyValue = property.GetValue(value, null);
-                parts.Add(property.Name + "=" + FormatBarrierTraceValue(propertyValue));
+                propertyValue = property.GetValue(value, null);
             }
             catch (Exception)
             {
+                continue;
+            }
+
+            Actor found = FindBarrierSourceActor(propertyValue, depth + 1);
+            if (found != null)
+            {
+                return found;
             }
         }
 
-        if (parts.Count == 0)
-        {
-            return type.FullName ?? type.Name;
-        }
-
-        return (type.FullName ?? type.Name) + "{" + string.Join(", ", parts.ToArray()) + "}";
+        return null;
     }
 
-    private static bool IsBarrierTraceValueType(Type type)
+    private static bool IsBarrierSourceMemberName(string name)
     {
-        if (type == null)
+        if (string.IsNullOrEmpty(name))
         {
             return false;
         }
 
-        return type.IsPrimitive ||
-               type.IsEnum ||
-               type == typeof(string) ||
-               type == typeof(decimal) ||
-               typeof(UnityEngine.Object).IsAssignableFrom(type);
-    }
-
-    private static string FormatBarrierTraceValue(object value)
-    {
-        if (value == null)
-        {
-            return "null";
-        }
-
-        UnityEngine.Object unityObject = value as UnityEngine.Object;
-        if (unityObject != null)
-        {
-            return unityObject.GetType().Name + ":" + unityObject.name;
-        }
-
-        return value.ToString();
+        return name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               name.IndexOf("owner", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               name.IndexOf("caster", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               name.IndexOf("gem", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static string GetSkillSlotIdentity(Actor source)
