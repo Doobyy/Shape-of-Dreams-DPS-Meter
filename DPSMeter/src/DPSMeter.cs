@@ -181,7 +181,7 @@ public sealed class DPSMeter : ModBehaviour
         if (_diagnosticDamageLogs < 12)
         {
             _diagnosticDamageLogs++;
-            Debug.Log("[DPS Meter v2.2] Damage actor=" + DescribeActorChain(info.actor)
+            Debug.Log("[DPS Meter v2.4] Damage actor=" + DescribeActorChainDetailed(info.actor)
                 + " | trigger=" + (skill != null ? skill.GetActorReadableName() : "null")
                 + " | directGem=" + (directGem != null ? directGem.GetActorReadableName() : "null")
                 + " | ability=" + (abilityInstance != null ? abilityInstance.GetActorReadableName() : "null")
@@ -486,6 +486,45 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return string.Join(" <- ", names.ToArray());
+    }
+
+    private static string DescribeActorChainDetailed(Actor actor)
+    {
+        if (actor == null)
+        {
+            return "null";
+        }
+
+        List<string> entries = new List<string>();
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            string entry = current.GetActorReadableName()
+                + " {type=" + current.GetType().FullName;
+
+            AbilityInstance instance = current as AbilityInstance;
+            if (instance != null)
+            {
+                entry += ", abilityGem="
+                    + (instance.gem != null ? instance.gem.GetActorReadableName() : "null");
+            }
+
+            DamageInstance damageInstance = current as DamageInstance;
+            if (damageInstance != null)
+            {
+                entry += ", damageOrigin=" + damageInstance.origin.ToString();
+            }
+
+            entry += "}";
+            entries.Add(entry);
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return string.Join(" <- ", entries.ToArray());
     }
 
     private static bool AreActorsRelated(Actor a, Actor b)
