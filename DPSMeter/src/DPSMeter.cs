@@ -309,6 +309,11 @@ public sealed class DPSMeter : ModBehaviour
             else
             {
                 scalingType = FindDamageScalingType(info.actor);
+
+                if (isLocalPlayer && string.IsNullOrEmpty(skillName) && !string.IsNullOrEmpty(sourceName))
+                {
+                    _data.RegisterOtherIcon(sourceName, FindActorIcon(info.actor));
+                }
             }
         }
 
@@ -1210,6 +1215,24 @@ public sealed class DPSMeter : ModBehaviour
                 if (skill.configs[i] != null && skill.configs[i].triggerIcon != null)
                     return skill.configs[i].triggerIcon;
             }
+        }
+
+        return FindSpriteMember(skill.currentConfig) ?? FindSpriteMember(skill);
+    }
+
+    private static Sprite FindActorIcon(Actor actor)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            Sprite icon = FindSpriteMember(current);
+            if (icon != null)
+                return icon;
+
+            current = current.parentActor;
+            depth++;
         }
 
         return null;
