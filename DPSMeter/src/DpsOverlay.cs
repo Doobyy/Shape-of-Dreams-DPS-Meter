@@ -25,7 +25,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color ApScalingBarColor = new Color(0.18f, 0.50f, 0.55f, 0.68f);
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.92f, 0.92f, 0.92f, 1f);
-    private const string DevelopmentVersion = "v4.6";
+    private const string DevelopmentVersion = "v4.7";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -92,7 +92,8 @@ public sealed class DpsOverlay : MonoBehaviour
                     _data.CurrentPersonalSkills,
                     _data.CurrentPersonalOther,
                     _data.CurrentPersonalEssences,
-                    _data.CurrentInstancePersonalDamage);
+                    _data.CurrentInstancePersonalDamage,
+                    false);
                 break;
 
             case DisplayMode.DamageTotal:
@@ -100,7 +101,8 @@ public sealed class DpsOverlay : MonoBehaviour
                     _data.CumulativePersonalSkills,
                     _data.CumulativePersonalOther,
                     _data.CumulativePersonalEssences,
-                    _data.CumulativePersonalDamage);
+                    _data.CumulativePersonalDamage,
+                    true);
                 break;
 
             case DisplayMode.PartyDps:
@@ -304,8 +306,9 @@ public sealed class DpsOverlay : MonoBehaviour
     private void DrawPersonal(
         IReadOnlyList<KeyValuePair<string, float>> sources,
         IReadOnlyList<KeyValuePair<string, float>> other,
-        IReadOnlyList<KeyValuePair<Gem, float>> essences,
-        float total)
+        IReadOnlyList<KeyValuePair<string, float>> essences,
+        float total,
+        bool cumulativeEssences)
     {
         List<DamageRow> rows = new List<DamageRow>(sources.Count + other.Count + essences.Count);
 
@@ -335,17 +338,23 @@ public sealed class DpsOverlay : MonoBehaviour
 
         for (int i = 0; i < essences.Count; i++)
         {
-            KeyValuePair<Gem, float> row = essences[i];
-            if (row.Key == null || row.Value <= 0f)
+            KeyValuePair<string, float> row = essences[i];
+            if (string.IsNullOrEmpty(row.Key) || row.Value <= 0f)
                 continue;
 
             rows.Add(new DamageRow
             {
                 Name = StripRichTextTags(GetEssenceDisplayName(row.Key)),
                 Amount = row.Value,
-                Elemental = _data.GetCurrentEssenceElement(row.Key),
-                Scaling = _data.GetCurrentEssenceScaling(row.Key),
-                Icon = row.Key.icon
+                Elemental = cumulativeEssences
+                    ? _data.GetCumulativeEssenceElement(row.Key)
+                    : _data.GetCurrentEssenceElement(row.Key),
+                Scaling = cumulativeEssences
+                    ? _data.GetCumulativeEssenceScaling(row.Key)
+                    : _data.GetCurrentEssenceScaling(row.Key),
+                Icon = cumulativeEssences
+                    ? _data.GetCumulativeEssenceIcon(row.Key)
+                    : _data.GetCurrentEssenceIcon(row.Key)
             });
         }
 
@@ -531,18 +540,11 @@ public sealed class DpsOverlay : MonoBehaviour
         return title;
     }
 
-    private static string GetEssenceDisplayName(Gem gem)
+    private static string GetEssenceDisplayName(string name)
     {
-        if (gem == null)
-        {
-            return "Essence";
-        }
-
-        string name = gem.GetOriginalName();
-
         if (string.IsNullOrEmpty(name))
         {
-            name = gem.GetActorReadableName();
+            return "Essence";
         }
 
         if (name.StartsWith("Gem_"))
