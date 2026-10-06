@@ -30,9 +30,31 @@ public sealed class DpsData
     private readonly Dictionary<string, Dictionary<ElementalType, float>> _currentPersonalEssenceElements = new Dictionary<string, Dictionary<ElementalType, float>>();
     private readonly Dictionary<string, Dictionary<ElementalType, float>> _cumulativePersonalEssenceElements = new Dictionary<string, Dictionary<ElementalType, float>>();
     private readonly Dictionary<string, float> _cumulativeOtherPersonal = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _currentPersonalHealing = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _cumulativePersonalHealing = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
     private bool _pendingInstanceReset;
+
+    public float CurrentInstancePersonalHealing { get; private set; }
+    public float CumulativePersonalHealing { get; private set; }
+
+    public float HealingStartedAt { get; private set; }
+    public float LastHealAt { get; private set; }
+    public int CurrentHealCount { get; private set; }
+    public float CumulativeHealingStartedAt { get; private set; }
+    public float LastCumulativeHealAt { get; private set; }
+
+    public float CurrentHealingDuration =>
+        CurrentHealCount == 0 ? 0f : Mathf.Max(0.001f, LastHealAt - HealingStartedAt);
+
+    public float CurrentPersonalHps =>
+        CurrentHealCount == 0 ? 0f : CurrentInstancePersonalHealing / CurrentHealingDuration;
+
+    public float TotalPersonalHps =>
+        CumulativePersonalHealing <= 0f || CumulativeHealingStartedAt <= 0f
+            ? 0f
+            : CumulativePersonalHealing / Mathf.Max(0.001f, LastCumulativeHealAt - CumulativeHealingStartedAt);
 
     public float CurrentInstancePersonalDamage { get; private set; }
     public float CumulativePersonalDamage { get; private set; }
@@ -69,6 +91,12 @@ public sealed class DpsData
     public float CurrentPartyAppliedDps =>
         CurrentHitCount == 0 ? 0f : CurrentInstancePartyAppliedDamage / CurrentDuration;
 
+    public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalHealing =>
+        _currentPersonalHealing.OrderByDescending(pair => pair.Value).ToList();
+
+    public IReadOnlyList<KeyValuePair<string, float>> CumulativePersonalHealing =>
+        _cumulativePersonalHealing.OrderByDescending(pair => pair.Value).ToList();
+
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalSkills =>
         _currentPersonalSkills.OrderByDescending(pair => pair.Value).ToList();
 
@@ -92,6 +120,42 @@ public sealed class DpsData
 
     public IReadOnlyList<KeyValuePair<string, float>> CumulativeParty =>
         _cumulativeParty.OrderByDescending(pair => pair.Value).ToList();
+
+    public void AddHealing(float healing, string sourceName)
+    {
+        if (healing <= 0f)
+        {
+            return;
+        }
+
+        if (_pendingInstanceReset)
+        {
+            ClearCurrentInstance();
+            _pendingInstanceReset = false;
+        }
+
+        float now = Time.time;
+
+        if (CurrentHealCount == 0)
+        {
+            HealingStartedAt = now;
+        }
+
+        if (CumulativeHealingStartedAt <= 0f)
+        {
+            CumulativeHealingStartedAt = now;
+        }
+
+        LastHealAt = now;
+        LastCumulativeHealAt = now;
+        CurrentHealCount++;
+
+        CurrentInstancePersonalHealing += healing;
+        CumulativePersonalHealing += healing;
+
+        Add(_currentPersonalHealing, sourceName, healing);
+        Add(_cumulativePersonalHealing, sourceName, healing);
+    }
 
     public void AddDamage(
         float producedDamage,
@@ -201,6 +265,11 @@ public sealed class DpsData
 
     private void ClearCurrentInstance()
     {
+        CurrentInstancePersonalHealing = 0f;
+        HealingStartedAt = 0f;
+        LastHealAt = 0f;
+        CurrentHealCount = 0;
+
         CurrentInstancePersonalDamage = 0f;
         CurrentInstancePersonalAppliedDamage = 0f;
         CurrentInstancePersonalOverkill = 0f;
@@ -211,6 +280,7 @@ public sealed class DpsData
         LastHitAt = 0f;
         CurrentHitCount = 0;
 
+        _currentPersonalHealing.Clear();
         _currentPersonalSkills.Clear();
         _currentPersonalEssences.Clear();
         _currentPersonalSkillElements.Clear();
@@ -228,6 +298,9 @@ public sealed class DpsData
         ClearCurrentInstance();
         _pendingInstanceReset = false;
 
+        CumulativePersonalHealing = 0f;
+        CumulativeHealingStartedAt = 0f;
+        LastCumulativeHealAt = 0f;
         CumulativePersonalDamage = 0f;
         CumulativePersonalAppliedDamage = 0f;
         CumulativePersonalOverkill = 0f;
@@ -235,6 +308,7 @@ public sealed class DpsData
         CumulativePartyAppliedDamage = 0f;
         CumulativePartyOverkill = 0f;
 
+        _cumulativePersonalHealing.Clear();
         _cumulativePersonalSkills.Clear();
         _skillIcons.Clear();
         _cumulativePersonalEssences.Clear();
