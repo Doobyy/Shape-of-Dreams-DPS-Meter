@@ -21,7 +21,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.68f);
     private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.68f);
     private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.68f);
-    private const string DevelopmentVersion = "v3.1";
+    private const string DevelopmentVersion = "v3.2";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -285,7 +285,6 @@ public sealed class DpsOverlay : MonoBehaviour
                 headerRect.height - 2f),
             "RELOAD"))
         {
-            Debug.Log("[DPS Meter] Reloading active mods...");
             DewMod.ReloadFromActiveMods();
         }
     }
