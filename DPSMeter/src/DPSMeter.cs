@@ -591,9 +591,135 @@ public sealed class DPSMeter : ModBehaviour
                 " parent=" + (current.parentActor == null ? "<null>" : current.parentActor.name));
 
             TraceHealingIdentityObject(current, "actor[" + actorDepth + "]", 0, seen);
+            TraceHealingSourceMetadata(current, "actor[" + actorDepth + "]");
 
-            current = current.parentActor;
-            actorDepth++;
+       
+
+    private static void TraceHealingSourceMetadata(object target, string path)
+    {
+        if (target == null) return;
+
+        Type type = target.GetType();
+        while (type != null && type != typeof(object))
+        {
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                string fieldName = field.Name;
+
+                if (field.IsStatic || typeof(Delegate).IsAssignableFrom(field.FieldType))
+                    continue;
+
+                if (fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("owner", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("caster", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("effect", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("gem", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
+                try
+                {
+                    object value = field.GetValue(target);
+                    if (value == null) continue;
+
+                    Type valueType = value.GetType();
+
+                    if (value is UnityEngine.Object)
+                    {
+                        UnityEngine.Object unityObject = value as UnityEngine.Object;
+                        Debug.Log("[DPS Meter][HEAL SOURCE META] path=" + path + "." + fieldName +
+                            " declaredType=" + field.FieldType.FullName +
+                            " type=" + valueType.FullName +
+                            " name=" + (unityObject == null ? "<null>" : unityObject.name));
+                    }
+                    else if (value is string || valueType.IsPrimitive || valueType.IsEnum)
+                    {
+                        Debug.Log("[DPS Meter][HEAL SOURCE META] path=" + path + "." + fieldName +
+                            " declaredType=" + field.FieldType.FullName + " value=" + value);
+                    }
+                    else
+                    {
+                        Debug.Log("[DPS Meter][HEAL SOURCE META] path=" + path + "." + fieldName +
+                            " declaredType=" + field.FieldType.FullName +
+                            " valueType=" + valueType.FullName);
+                        TraceHealingSourceMetadataObject(value, path + "." + fieldName, 0, new List<object>());
+                    }
+                }
+                catch (Exception) { }
+            }
+
+            type = type.BaseType;
+        }
+    }
+
+    private static void TraceHealingSourceMetadataObject(object target, string path, int depth, List<object> seen)
+    {
+        if (target == null || depth >= 3) return;
+
+        for (int i = 0; i < seen.Count; i++)
+            if (object.ReferenceEquals(seen[i], target)) return;
+        seen.Add(target);
+
+        Type type = target.GetType();
+        while (type != null && type != typeof(object))
+        {
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                if (field.IsStatic || typeof(Delegate).IsAssignableFrom(field.FieldType))
+                    continue;
+
+                string fieldName = field.Name;
+                bool interesting =
+                    fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("origin", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("owner", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("caster", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("effect", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("gem", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (!interesting) continue;
+
+                try
+                {
+                    object value = field.GetValue(target);
+                    if (value == null) continue;
+
+                    Type valueType = value.GetType();
+                    if (value is UnityEngine.Object)
+                    {
+                        UnityEngine.Object unityObject = value as UnityEngine.Object;
+                        Debug.Log("[DPS Meter][HEAL SOURCE META DETAIL] path=" + path + "." + fieldName +
+                            " type=" + valueType.FullName +
+                            " name=" + (unityObject == null ? "<null>" : unityObject.name));
+                    }
+                    else if (value is string || valueType.IsPrimitive || valueType.IsEnum)
+                    {
+                        Debug.Log("[DPS Meter][HEAL SOURCE META DETAIL] path=" + path + "." + fieldName +
+                            " value=" + value);
+                    }
+                    else
+                    {
+                        Debug.Log("[DPS Meter][HEAL SOURCE META DETAIL] path=" + path + "." + fieldName +
+                            " type=" + valueType.FullName);
+                        TraceHealingSourceMetadataObject(value, path + "." + fieldName, depth + 1, seen);
+                    }
+                }
+                catch (Exception) { }
+            }
+
+            type = type.BaseType;
         }
     }
 
