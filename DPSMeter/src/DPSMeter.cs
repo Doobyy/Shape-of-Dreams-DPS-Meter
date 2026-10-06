@@ -164,8 +164,10 @@ public sealed class DPSMeter : ModBehaviour
         bool isLocalPlayer = sourcePlayer == local;
 
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
-        AbilityInstance ability = info.actor.FindFirstOfType<AbilityInstance>();
-        Gem directGem = ability != null ? ability.gem : null;
+        // An Essence can create its own AbilityInstance/child actor. In that
+        // case the damage event's actor chain can contain the Gem even when
+        // the first AbilityInstance is not the Essence's instance.
+        Gem directGem = info.actor.FindFirstOfType<Gem>();
         Dictionary<Gem, float> essenceContributions = ConsumeEssenceContributions(
             info.actor,
             info.victim,
@@ -299,7 +301,9 @@ public sealed class DPSMeter : ModBehaviour
 
     private static bool IsEssenceGem(Gem gem)
     {
-        return gem != null && gem.location.index > 0;
+        // Gem itself is the game's Essence type. Do not use location.index:
+        // an equipped Essence can legitimately occupy index 0.
+        return gem != null;
     }
 
     private void OnEssenceDealDamage(Gem gem, EventInfoDamage info)
