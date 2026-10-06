@@ -170,6 +170,13 @@ public sealed class DPSMeter : ModBehaviour
                 DescribeHealingObject(current));
 
             TraceHealingReferences(current);
+
+            Hero hero = current as Hero;
+            if (hero != null)
+            {
+                TraceHealingHeroMembers(hero);
+            }
+
             current = current.parentActor;
             depth++;
         }
@@ -177,6 +184,126 @@ public sealed class DPSMeter : ModBehaviour
         Debug.Log("[DPS Meter][HEAL TRACE] END");
     }
 
+    private static void TraceHealingHeroMembers(Hero hero)
+    {
+        if (hero == null)
+        {
+            return;
+        }
+
+        Type type = hero.GetType();
+        Debug.Log("[DPS Meter][HEAL TRACE] HERO MEMBER SCAN type=" + type.FullName);
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            object value;
+
+            try
+            {
+                value = field.GetValue(hero);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            TraceHealingHeroMember(field.Name, field.FieldType, value);
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+            {
+                continue;
+            }
+
+            object value;
+
+            try
+            {
+                value = property.GetValue(hero, null);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            TraceHealingHeroMember(property.Name, property.PropertyType, value);
+        }
+    }
+
+    private static void TraceHealingHeroMember(string memberName, Type memberType, object value)
+    {
+        string name = memberName ?? string.Empty;
+        string typeName = memberType == null ? string.Empty : memberType.FullName ?? memberType.Name;
+
+        bool interestingName =
+            name.IndexOf("star", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("passive", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("constellation", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("mastery", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        bool interestingType =
+            typeName.IndexOf("star", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            typeName.IndexOf("passive", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            typeName.IndexOf("constellation", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        if (!interestingName && !interestingType)
+        {
+            return;
+        }
+
+        string valueDescription = value == null ? "null" : value.GetType().FullName;
+        Debug.Log(
+            "[DPS Meter][HEAL TRACE] HERO MEMBER " + name +
+            " declaredType=" + typeName +
+            " valueType=" + valueDescription);
+
+        if (value == null || value is string)
+        {
+            return;
+        }
+
+        System.Collections.IEnumerable enumerable = value as System.Collections.IEnumerable;
+        if (enumerable == null)
+        {
+            return;
+        }
+
+        int count = 0;
+        foreach (object item in enumerable)
+        {
+            if (item == null)
+            {
+                continue;
+            }
+
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] HERO MEMBER " + name +
+                " item[" + count + "] type=" + item.GetType().FullName +
+                " value=" + item);
+
+            TraceHealingReferenceMember(item.GetType(), "item", item);
+
+            count++;
+            if (count >= 20)
+            {
+                Debug.Log(
+                    "[DPS Meter][HEAL TRACE] HERO MEMBER " + name +
+                    " item scan capped at 20");
+                break;
+            }
+        }
+    }
     private static void TraceHealingReferences(object value)
     {
         if (value == null)
