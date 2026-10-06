@@ -618,11 +618,100 @@ public sealed class DPSMeter : ModBehaviour
         return "type=" + actor.GetType().FullName + " name=" + actorName;
     }
 
+    private static string TryGetStarDisplayName(string starId)
+    {
+        if (string.IsNullOrEmpty(starId)) return null;
+        try
+        {
+            Type starEffectType = typeof(Actor).Assembly.GetType("StarEffect");
+            if (starEffectType == null) return null;
+            UnityEngine.Object[] objects = Resources.FindObjectsOfTypeAll(starEffectType);
+            if (objects == null) return null;
+            for (int i = 0; i < objects.Length; i++)
+            {
+                UnityEngine.Object value = objects[i];
+                if (value == null ||
+                    (!string.Equals(value.name, starId, StringComparison.OrdinalIgnoreCase) &&
+                     !string.Equals(value.name, starId + "(Clone)", StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+                string displayName = FindDisplayString(value, starId, 0, new HashSet<object>());
+                if (!string.IsNullOrEmpty(displayName)) return displayName;
+            }
+        }
+        catch (Exception) { }
+        return null;
+    }
+
+    private static string FindDisplayString(object value, string identity, int depth, HashSet<object> visited)
+    {
+        if (value == null || depth > 4 || visited.Contains(value)) return null;
+        if (!(value is string) && !value.GetType().IsValueType) visited.Add(value);
+        Type type = value.GetType();
+        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field.FieldType != typeof(string) ||
+                (field.Name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                 field.Name.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0 &&
+                 field.Name.IndexOf("display", StringComparison.OrdinalIgnoreCase) < 0)) continue;
+            try
+            {
+                string candidate = field.GetValue(value) as string;
+                if (IsUsableDisplayName(candidate, identity)) return candidate;
+            }
+            catch (Exception) { }
+        }
+        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property.PropertyType != typeof(string) || property.GetIndexParameters().Length != 0 || property.GetMethod == null ||
+                (property.Name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                 property.Name.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0 &&
+                 property.Name.IndexOf("display", StringComparison.OrdinalIgnoreCase) < 0)) continue;
+            try
+            {
+                string candidate = property.GetValue(value, null) as string;
+                if (IsUsableDisplayName(candidate, identity)) return candidate;
+            }
+            catch (Exception) { }
+        }
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field.FieldType.IsPrimitive || field.FieldType.IsEnum || field.FieldType == typeof(string)) continue;
+            try
+            {
+                string result = FindDisplayString(field.GetValue(value), identity, depth + 1, visited);
+                if (!string.IsNullOrEmpty(result)) return result;
+            }
+            catch (Exception) { }
+        }
+        return null;
+    }
+
+    private static bool IsUsableDisplayName(string candidate, string identity)
+    {
+        if (string.IsNullOrWhiteSpace(candidate)) return false;
+        string normalized = candidate.Replace("(Clone)", string.Empty).Trim();
+        return !string.Equals(normalized, identity, StringComparison.OrdinalIgnoreCase) &&
+               !normalized.StartsWith("Se_", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string GetHealingSourceName(Actor source)
     {
         if (source == null)
         {
             return "Unknown Healing";
+        }
+
+        string starDisplayName = TryGetStarDisplayName(source.name);
+        if (!string.IsNullOrEmpty(starDisplayName))
+        {
+            return starDisplayName;
         }
 
         Gem gem = source as Gem;
