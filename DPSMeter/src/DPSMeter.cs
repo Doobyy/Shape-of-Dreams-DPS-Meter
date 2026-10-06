@@ -567,11 +567,143 @@ public sealed class DPSMeter : ModBehaviour
                 " skill=" + (skillName ?? "<null>"));
 
             TraceHealingMembers(current, depth);
+            TraceHealingReferences(current, depth);
             current = current.parentActor;
             depth++;
         }
 
         TraceHealingMembers(info, -1);
+    }
+
+    private static void TraceHealingReferences(object target, int depth)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        Type type = target.GetType();
+        string prefix = depth < 0
+            ? "[DPS Meter][HEAL EVENT REF]"
+            : "[DPS Meter][HEAL ACTOR REF]";
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+
+            if (field.IsStatic || field.FieldType.IsPrimitive ||
+                field.FieldType.IsEnum || field.FieldType == typeof(string) ||
+                field.FieldType == typeof(decimal) ||
+                typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType))
+            {
+                continue;
+            }
+
+            try
+            {
+                object value = field.GetValue(target);
+                LogHealingReference(prefix, "field", field.Name, field.FieldType, value);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length != 0 ||
+                property.GetMethod == null ||
+                property.GetMethod.IsStatic ||
+                property.PropertyType.IsPrimitive ||
+                property.PropertyType.IsEnum ||
+                property.PropertyType == typeof(string) ||
+                property.PropertyType == typeof(decimal) ||
+                typeof(UnityEngine.Object).IsAssignableFrom(property.PropertyType))
+            {
+                continue;
+            }
+
+            try
+            {
+                object value = property.GetValue(target, null);
+                LogHealingReference(prefix, "property", property.Name, property.PropertyType, value);
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
+    private static void LogHealingReference(
+        string prefix,
+        string memberKind,
+        string memberName,
+        Type declaredType,
+        object value)
+    {
+        if (value == null)
+        {
+            return;
+        }
+
+        string valueType = value.GetType().FullName ?? value.GetType().Name;
+        string valueName = null;
+
+        try
+        {
+            PropertyInfo nameProperty = value.GetType().GetProperty(
+                "name",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (nameProperty != null &&
+                nameProperty.GetIndexParameters().Length == 0 &&
+                nameProperty.GetMethod != null &&
+                nameProperty.PropertyType == typeof(string))
+            {
+                valueName = nameProperty.GetValue(value, null) as string;
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        string lower = (memberName + " " + declaredType.Name + " " + valueType + " " + (valueName ?? string.Empty))
+            .ToLowerInvariant();
+
+        bool interesting =
+            lower.Contains("skill") ||
+            lower.Contains("ability") ||
+            lower.Contains("passive") ||
+            lower.Contains("effect") ||
+            lower.Contains("status") ||
+            lower.Contains("buff") ||
+            lower.Contains("heal") ||
+            lower.Contains("guidance") ||
+            lower.Contains("shrine") ||
+            lower.Contains("source") ||
+            lower.Contains("star") ||
+            lower.Contains("gem") ||
+            lower.Contains("essence");
+
+        if (!interesting)
+        {
+            return;
+        }
+
+        Debug.Log(
+            prefix +
+            " " + memberKind + "=" + memberName +
+            " declaredType=" + (declaredType.FullName ?? declaredType.Name) +
+            " valueType=" + valueType +
+            " valueName=" + (valueName ?? "<null>"));
     }
 
     private static void TraceHealingMembers(object target, int depth)
