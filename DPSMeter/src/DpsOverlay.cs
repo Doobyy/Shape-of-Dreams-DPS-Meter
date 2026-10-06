@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.29";
+    private const string DevelopmentVersion = "v4.30";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -41,6 +41,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Vector2 _resizeStartMouse;
     private Vector2 _resizeStartSize;
     private bool _resizeMoved;
+    private float _resizeStartHealingHeight;
     private bool _headerMoved;
     private bool _showHealing;
     private float _collapsedWindowHeight;
@@ -198,9 +199,21 @@ public sealed class DpsOverlay : MonoBehaviour
                 _resizing = true;
                 _resizeStartMouse = e.mousePosition;
 
+                float resizeHealingHeight = 0f;
+                if (_showHealing
+                    && (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal))
+                {
+                    int rowCount = _mode == DisplayMode.CurrentDps
+                        ? (_data.CurrentPersonalHealing != null ? _data.CurrentPersonalHealing.Count : 0)
+                        : (_data.CumulativeHealingSources != null ? _data.CumulativeHealingSources.Count : 0);
+
+                    resizeHealingHeight = 16f + 22f + 22f + (rowCount * 22f) + 4f;
+                }
+
                 _resizeStartSize = new Vector2(
                     _windowRect.width,
                     _collapsedWindowHeight);
+                _resizeStartHealingHeight = resizeHealingHeight;
                 _resizeMoved = false;
 
                 e.Use();
@@ -233,15 +246,12 @@ public sealed class DpsOverlay : MonoBehaviour
                     260f,
                     Mathf.Max(260f, Screen.width - _windowRect.x - 10f));
 
-                _windowRect.height = Mathf.Clamp(
+                _collapsedWindowHeight = Mathf.Clamp(
                     _resizeStartSize.y + delta.y,
                     90f,
                     Mathf.Max(90f, Screen.height - _windowRect.y - 10f));
 
-                if (!_showHealing)
-                {
-                    _collapsedWindowHeight = _windowRect.height;
-                }
+                _windowRect.height = _collapsedWindowHeight + _resizeStartHealingHeight;
 
                 e.Use();
                 return;
@@ -289,9 +299,9 @@ public sealed class DpsOverlay : MonoBehaviour
                         _resizeStartSize.x + delta.x,
                         260f,
                         Mathf.Max(260f, Screen.width - _windowRect.x - 10f));
-
-                    _windowRect.height = _collapsedWindowHeight;
                 }
+
+                _windowRect.height = _collapsedWindowHeight + _resizeStartHealingHeight;
 
                 Debug.Log(
                     "[DPSMeter] Overlay diagnostic size: " +
