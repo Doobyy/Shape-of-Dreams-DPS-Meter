@@ -46,6 +46,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _barFill;
     private GUIStyle _rowRight;
     private Texture2D _whiteTexture;
+    private Texture2D _basicAttackIconTexture;
+    private const string BasicAttackIconPath = "Rawdata/!Sprites/2.png";
 
     public bool Visible { get; set; } = true;
 
@@ -332,7 +334,8 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 Name = StripRichTextTags(row.Key),
                 Amount = row.Value,
-                Scaling = _data.GetCurrentOtherScaling(row.Key)
+                Scaling = _data.GetCurrentOtherScaling(row.Key),
+                Icon = row.Key == "Basic Attack" ? GetBasicAttackIcon() : null
             });
         }
 
@@ -413,7 +416,18 @@ public sealed class DpsOverlay : MonoBehaviour
         if (icon != null)
         {
             Rect iconRect = new Rect(rowRect.x + 2f, rowRect.y + 2f, 18f, 18f);
-            DrawSprite(icon, iconRect);
+            if (name == "Basic Attack")
+            {
+                GUI.color = new Color(0.92f, 0.92f, 0.92f, 1f);
+                GUI.DrawTexture(iconRect, _whiteTexture);
+                GUI.color = Color.white;
+                Rect swordRect = new Rect(iconRect.x + 2f, iconRect.y + 2f, iconRect.width - 4f, iconRect.height - 4f);
+                DrawSprite(icon, swordRect);
+            }
+            else
+            {
+                DrawSprite(icon, iconRect);
+            }
             textX = rowRect.x + 24f;
         }
 
@@ -469,6 +483,32 @@ public sealed class DpsOverlay : MonoBehaviour
             case "Dark": return DarkBarColor;
             default: return DefaultBarColor;
         }
+    }
+
+    private Sprite GetBasicAttackIcon()
+    {
+        if (_basicAttackIconTexture != null)
+        {
+            return Sprite.Create(
+                _basicAttackIconTexture,
+                new Rect(0f, 0f, _basicAttackIconTexture.width, _basicAttackIconTexture.height),
+                new Vector2(0.5f, 0.5f),
+                100f);
+        }
+
+        Texture2D loaded = Resources.Load<Texture2D>(BasicAttackIconPath);
+        if (loaded == null)
+        {
+            Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack icon not found at " + BasicAttackIconPath);
+            return null;
+        }
+
+        _basicAttackIconTexture = loaded;
+        return Sprite.Create(
+            loaded,
+            new Rect(0f, 0f, loaded.width, loaded.height),
+            new Vector2(0.5f, 0.5f),
+            100f);
     }
 
     private static void DrawSprite(Sprite sprite, Rect rect)
