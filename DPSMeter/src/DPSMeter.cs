@@ -588,15 +588,13 @@ public sealed class DPSMeter : ModBehaviour
         if (source == null)
             return null;
 
-        string originalName = null;
         string skillKey = null;
 
         try
         {
-            originalName = source.GetOriginalName();
             skillKey = DewLocalization.GetSkillKey(source.GetType());
-            if (string.IsNullOrEmpty(skillKey) && !string.IsNullOrEmpty(originalName))
-                skillKey = DewLocalization.GetSkillKey(originalName);
+            if (string.IsNullOrEmpty(skillKey))
+                skillKey = DewLocalization.GetSkillKey(source.GetOriginalName());
         }
         catch (Exception)
         {
@@ -618,8 +616,7 @@ public sealed class DPSMeter : ModBehaviour
                 string lower = (method.Name ?? string.Empty).ToLowerInvariant();
 
                 if (method.ReturnType != typeof(string) ||
-                    lower.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 ||
-                    lower.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0)
+                    lower.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0)
                     continue;
 
                 ParameterInfo[] parameters = method.GetParameters();
@@ -627,7 +624,7 @@ public sealed class DPSMeter : ModBehaviour
                     continue;
 
                 Type parameterType = parameters[0].ParameterType;
-                object argument = null;
+                object argument;
 
                 if (parameterType == typeof(string))
                     argument = skillKey;
@@ -642,7 +639,14 @@ public sealed class DPSMeter : ModBehaviour
                 {
                     object result = method.Invoke(null, new object[] { argument });
                     string text = result as string;
+
+                    Debug.Log("[DPS Meter][HEAL SKILL LOCALIZATION] method=" + method.Name +
+                        " parameterType=" + parameterType.FullName +
+                        " argument=" + argument +
+                        " result=" + (text ?? "<null>"));
+
                     if (!string.IsNullOrEmpty(text) &&
+                        !string.Equals(text, skillKey, StringComparison.OrdinalIgnoreCase) &&
                         text.IndexOf("!Se_", StringComparison.OrdinalIgnoreCase) < 0 &&
                         text.IndexOf("!.", StringComparison.OrdinalIgnoreCase) < 0)
                     {
@@ -660,66 +664,6 @@ public sealed class DPSMeter : ModBehaviour
 
         return null;
     }
-
-
-
-    private static void TraceUnresolvedHealingSource(EventInfoHeal info, Gem resolvedGem, string resolvedName)
-    {
-        if (info.actor == null)
-            return;
-
-        string rawName = info.actor.name ?? string.Empty;
-        bool guidance = rawName.IndexOf("Se_LingeringAuraOfGuidance", StringComparison.OrdinalIgnoreCase) >= 0;
-        bool generic = rawName.IndexOf("Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase) >= 0;
-        if (!guidance && !generic)
-            return;
-
-        string cacheKey = (guidance ? "guidance:" : "generic:") + rawName;
-        if (!_healingNameTraceCache.Add(cacheKey))
-            return;
-
-        Debug.Log("[DPS Meter][HEAL NAME TRACE] source=" + (guidance ? "guidance" : "generic") +
-            " actor=" + rawName +
-            " parent=" + (info.actor.parentActor == null ? "<null>" : info.actor.parentActor.name));
-
-        TraceHealingNameSource(info.actor, guidance ? "guidance actor" : "generic actor");
-
-        if (info.actor.parentActor != null)
-            TraceHealingNameSource(info.actor.parentActor, guidance ? "guidance parent" : "generic parent");
-    }
-
-    private static void TraceHealingNameSource(Actor actor, string label)
-    {
-        if (actor == null)
-            return;
-
-        Debug.Log("[DPS Meter][HEAL NAME OBJECT] label=" + label +
-            " type=" + actor.GetType().FullName +
-            " name=" + (actor.name ?? "<null>") +
-            " originalName=" + (actor.GetOriginalName() ?? "<null>"));
-
-        SkillTrigger skill = actor.firstTrigger as SkillTrigger;
-        if (skill != null)
-        {
-            try
-            {
-                Debug.Log("[DPS Meter][HEAL NAME SKILL] label=" + label +
-                    " skillType=" + skill.GetType().FullName +
-                    " formattedTitle=" + (skill.GetFormattedSkillTitle() ?? "<null>") +
-                    " currentConfigType=" + (skill.currentConfig == null ? "<null>" : skill.currentConfig.GetType().FullName) +
-                    " currentConfigValue=" + (skill.currentConfig == null ? "<null>" : skill.currentConfig.ToString()));
-            }
-            catch (Exception)
-            {
-                Debug.Log("[DPS Meter][HEAL NAME SKILL] label=" + label + " inspection=threw");
-            }
-        }
-
-        TraceHealingNameMethods(actor, label);
-        TraceHealingLocalizationApi(actor);
-    }
-
-    private static bool _healingLocalizationProbeRan;
 
     private static void TraceHealingLocalizationApi(Actor actor)
     {
