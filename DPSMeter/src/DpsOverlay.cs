@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.23";
+    private const string DevelopmentVersion = "v4.24";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -88,6 +88,7 @@ public sealed class DpsOverlay : MonoBehaviour
             24f);
 
         DrawHeader(headerRect);
+        DrawDevelopmentReloadButton();
 
         Rect contentRect = new Rect(
             _windowRect.x + 6f,
@@ -186,14 +187,7 @@ public sealed class DpsOverlay : MonoBehaviour
             16f,
             16f);
 
-        float reloadWidth = 74f;
-        float metricWidth = headerRect.width * 0.35f;
-        float titleWidth = headerRect.width - metricWidth - reloadWidth - 8f;
-        Rect reloadRect = new Rect(
-            headerRect.x + titleWidth + metricWidth + 6f,
-            headerRect.y + 1f,
-            reloadWidth,
-            headerRect.height - 2f);
+        Rect reloadRect = GetReloadButtonRect();
 
         if (e.type == EventType.MouseDown && e.button == 0)
         {
@@ -361,9 +355,8 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
         }
 
-        float reloadWidth = 74f;
         float metricWidth = headerRect.width * 0.35f;
-        float titleWidth = headerRect.width - metricWidth - reloadWidth - 6f;
+        float titleWidth = headerRect.width - metricWidth - 6f;
 
         GUI.Label(
             new Rect(headerRect.x, headerRect.y, titleWidth, headerRect.height),
@@ -378,14 +371,33 @@ public sealed class DpsOverlay : MonoBehaviour
                 headerRect.height),
             metric,
             _header);
+    }
 
-        if (GUI.Button(
-            new Rect(
-                headerRect.x + titleWidth + metricWidth + 6f,
-                headerRect.y + 1f,
-                reloadWidth,
-                headerRect.height - 2f),
-            "RELOAD"))
+    private Rect GetReloadButtonRect()
+    {
+        const float reloadWidth = 74f;
+        const float reloadHeight = 24f;
+        const float gap = 6f;
+
+        float x = _windowRect.xMax + gap;
+        if (x + reloadWidth > Screen.width - 4f)
+        {
+            x = _windowRect.x - reloadWidth - gap;
+        }
+
+        x = Mathf.Clamp(x, 4f, Mathf.Max(4f, Screen.width - reloadWidth - 4f));
+
+        float y = _windowRect.y + 4f;
+        y = Mathf.Clamp(y, 4f, Mathf.Max(4f, Screen.height - reloadHeight - 4f));
+
+        return new Rect(x, y, reloadWidth, reloadHeight);
+    }
+
+    private void DrawDevelopmentReloadButton()
+    {
+        Rect reloadRect = GetReloadButtonRect();
+
+        if (GUI.Button(reloadRect, "RELOAD"))
         {
             DewMod.ReloadFromActiveMods();
         }
