@@ -511,42 +511,30 @@ public sealed class DpsOverlay : MonoBehaviour
             return _basicAttackIcon;
         }
 
-        string assemblyPath = typeof(DpsOverlay).Assembly.Location;
-        string assemblyDirectory = Path.GetDirectoryName(assemblyPath);
-        string iconPath = Path.Combine(assemblyDirectory, BasicAttackIconPath);
-
-        if (!File.Exists(iconPath))
+        // Basic Attack uses the game's existing sword sprite from Rawdata/!Sprites/2.png.
+        // Do not decode the PNG ourselves; Unity's runtime image-decoding API is not
+        // available in this mod's referenced Unity assemblies. Instead, reuse the
+        // Sprite object if the game has already loaded it.
+        Sprite[] loadedSprites = Resources.FindObjectsOfTypeAll<Sprite>();
+        for (int i = 0; i < loadedSprites.Length; i++)
         {
-            Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack icon not found at " + iconPath);
-            return null;
-        }
+            Sprite sprite = loadedSprites[i];
+            if (sprite == null)
+                continue;
 
-        try
-        {
-            byte[] bytes = File.ReadAllBytes(iconPath);
-            Texture2D loaded = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            if (!loaded.LoadImage(bytes))
+            if (string.Equals(sprite.name, "2", StringComparison.OrdinalIgnoreCase)
+                || (sprite.texture != null
+                    && string.Equals(sprite.texture.name, "2", StringComparison.OrdinalIgnoreCase)))
             {
-                Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack icon failed to load from " + iconPath);
-                UnityEngine.Object.Destroy(loaded);
-                return null;
+                _basicAttackIcon = sprite;
+                Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack icon found as loaded sprite name="
+                    + sprite.name);
+                return _basicAttackIcon;
             }
-
-            _basicAttackIconTexture = loaded;
-            _basicAttackIcon = Sprite.Create(
-                loaded,
-                new Rect(0f, 0f, loaded.width, loaded.height),
-                new Vector2(0.5f, 0.5f),
-                100f);
-
-            return _basicAttackIcon;
         }
-        catch (Exception ex)
-        {
-            Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack icon load failed="
-                + ex.GetType().Name + ": " + ex.Message);
-            return null;
-        }
+
+        Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack sword sprite is not loaded yet.");
+        return null;
     }
 
     private static void DrawSprite(Sprite sprite, Rect rect)
