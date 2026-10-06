@@ -664,26 +664,34 @@ public sealed class DPSMeter : ModBehaviour
 
                 Type parameterType = parameters[0].ParameterType;
                 object argument = null;
+                string argumentLabel = null;
 
                 if (parameterType.IsInstanceOfType(actor))
                 {
                     argument = actor;
+                    argumentLabel = "actor";
+                }
+                else if (parameterType == typeof(Type))
+                {
+                    argument = actor.GetType();
+                    argumentLabel = "actorType";
                 }
                 else if (parameterType == typeof(string))
                 {
-                    string readableName = null;
+                    string originalName = null;
                     try
                     {
-                        readableName = actor.GetActorReadableName();
+                        originalName = actor.GetOriginalName();
                     }
                     catch (Exception)
                     {
                     }
 
-                    if (string.IsNullOrEmpty(readableName))
+                    if (string.IsNullOrEmpty(originalName))
                         continue;
 
-                    argument = readableName;
+                    argument = originalName;
+                    argumentLabel = "originalName";
                 }
                 else
                 {
@@ -695,6 +703,7 @@ public sealed class DPSMeter : ModBehaviour
                     object result = method.Invoke(null, new object[] { argument });
                     Debug.Log("[DPS Meter][HEAL LOCALIZATION PROBE] method=" + method.Name +
                         " parameterType=" + parameterType.FullName +
+                        " argumentType=" + argumentLabel +
                         " argument=" + argument +
                         " result=" + (result == null ? "<null>" : result.ToString()));
                 }
@@ -702,6 +711,7 @@ public sealed class DPSMeter : ModBehaviour
                 {
                     Debug.Log("[DPS Meter][HEAL LOCALIZATION PROBE] method=" + method.Name +
                         " parameterType=" + parameterType.FullName +
+                        " argumentType=" + argumentLabel +
                         " invoke=failed");
                 }
             }
