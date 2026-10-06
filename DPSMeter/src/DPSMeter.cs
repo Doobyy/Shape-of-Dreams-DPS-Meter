@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -15,30 +14,11 @@ public sealed class DPSMeter : ModBehaviour
     private Hero _currentHero;
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private readonly Dictionary<Gem, EssenceProcessorHooks> _essenceProcessorHooks = new Dictionary<Gem, EssenceProcessorHooks>();
-    private readonly Dictionary<Gem, Stack<float>> _essenceProcessorStarts = new Dictionary<Gem, Stack<float>>();
-        private readonly Dictionary<Gem, System.Action<EventInfoAbilityInstance>> _essenceAbilityHandlers = new Dictionary<Gem, System.Action<EventInfoAbilityInstance>>();
-    private readonly Dictionary<AbilityInstance, Gem> _essenceAbilityInstances = new Dictionary<AbilityInstance, Gem>();
-    private readonly List<EssenceContribution> _pendingEssenceContributions = new List<EssenceContribution>();
-    private readonly Dictionary<Gem, System.Action<string>> _essenceSyncHandlers = new Dictionary<Gem, System.Action<string>>();
-    private const string EssenceContributionSyncKey = "dps_meter_contribution";
-    private float _nextEssenceProcessorRefreshTime;
 
     private sealed class EssenceProcessorHooks
     {
         public DataProcessor<DamageData, Actor, Entity> Before;
         public DataProcessor<DamageData, Actor, Entity> After;
-    }
-
-    private sealed class EssenceContribution
-    {
-        public Actor Source;
-        public Entity Victim;
-        public Gem Essence;
-        public float Amount;
-        public int Frame;
-        public float ReceivedTime;
-        public uint VictimNetId;
-        public uint TriggerNetId;
     }
 
     private void Awake()
@@ -48,7 +28,6 @@ public sealed class DPSMeter : ModBehaviour
         _overlay = gameObject.AddComponent<DpsOverlay>();
         _overlay.Initialize(_data);
         _travelInterruptHandler = OnTravelToNodeInterrupt;
-        RefreshEssenceProcessors();
 
         CallOnNetworkedManager<ClientEventManager>(AttachToClientEvents, DetachFromClientEvents);
         CallOnNetworkedManager<ZoneManager>(AttachToZoneManager, DetachFromZoneManager);
@@ -180,23 +159,6 @@ public sealed class DPSMeter : ModBehaviour
         {
             _essenceAbilityInstances.TryGetValue(abilityInstance, out abilityGem);
         }
-        // v3.0 diagnostic: specifically inspect Memory damage events for
-        // Essences that modify the Memory's own damage amount. Projectile/on-hit
-        // Essence damage is already solved and is excluded here.
-        Dictionary<Gem, float> essenceContributions = ConsumeEssenceContributions(
-            info.actor,
-            info.victim,
-            producedDamage);
-
-        if (IsEssenceGem(directGem))
-        {
-            float directAmount;
-            if (!essenceContributions.TryGetValue(directGem, out directAmount))
-            {
-                essenceContributions[directGem] = producedDamage;
-            }
-        }
-
         // Essence-generated damage is already represented by its Essence row.
         // Do not also attribute that same hit to the parent Memory/Skill.
         bool isDirectEssenceDamage = IsEssenceGem(directGem);
@@ -247,236 +209,6 @@ public sealed class DPSMeter : ModBehaviour
         return null;
     }
 
-    private void Update()
-    {
-        if (Time.time >= _nextEssenceProcessorRefreshTime)
-        {
-            _nextEssenceProcessorRefreshTime = Time.time + 0.5f;
-            RefreshEssenceProcessors();
-        }
-    }
-
-    private void RefreshEssenceProcessors()
-    {
-        if (DewPlayer.gamePlayers == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < DewPlayer.gamePlayers.Count; i++)
-        {
-            DewPlayer player = DewPlayer.gamePlayers[i];
-            if (player == null || player.hero == null)
-            {
-                continue;
-            }
-
-            Hero hero = player.hero;
-
-            if (hero.Skill != null && hero.Skill.gems != null)
-            {
-                foreach (Gem gem in hero.Skill.gems.Values)
-                {
-                    AttachEssenceProcessor(gem);
-                }
-            }
-
-            Gem[] heroGems = hero.GetComponentsInChildren<Gem>(true);
-            for (int j = 0; j < heroGems.Length; j++)
-            {
-                AttachEssenceProcessor(heroGems[j]);
-            }
-        }
-    }
-
-    private void AttachEssenceProcessor(Gem gem)
-    {
-        if (gem == null || _essenceProcessorHooks.ContainsKey(gem))
-        {
-            return;
-        }
-
-        DataProcessor<DamageData, Actor, Entity> before =
-            (ref DamageData data, Actor from, Entity to) => OnEssenceProcessorBefore(gem, ref data);
-
-        DataProcessor<DamageData, Actor, Entity> after =
-            (ref DamageData data, Actor from, Entity to) => OnEssenceProcessorAfter(gem, ref data, from, to);
-
-        gem.dealtDamageProcessor.Add(before, int.MinValue);
-        gem.dealtDamageProcessor.Add(after, int.MaxValue);
-
-        System.Action<EventInfoAbilityInstance> abilityHandler =
-            info => OnEssenceAbilityInstanceCreated(gem, info);
-
-        gem.ActorEvent_OnAbilityInstanceCreated += abilityHandler;
-
-        System.Action<string> syncHandler = key => OnEssenceContributionSynced(gem, key);
-        gem.ClientEvent_OnPersistentSyncedDataChanged += syncHandler;
-
-        _essenceProcessorHooks[gem] = new EssenceProcessorHooks
-        {
-            Before = before,
-            After = after
-        };
-
-        _essenceAbilityHandlers[gem] = abilityHandler;
-        _essenceSyncHandlers[gem] = syncHandler;
-        _essenceProcessorStarts[gem] = new Stack<float>();
-    }
-
-    private void OnEssenceAbilityInstanceCreated(Gem gem, EventInfoAbilityInstance info)
-    {
-        if (gem == null || info.instance == null)
-        {
-            return;
-        }
-
-        _essenceAbilityInstances[info.instance] = gem;
-
-    }
-
-    private static bool IsEssenceGem(Gem gem)
-    {
-        // Gem itself is the game's Essence type. Do not use location.index:
-        // an equipped Essence can legitimately occupy index 0.
-        return gem != null;
-    }
-
-    private void OnEssenceProcessorBefore(Gem gem, ref DamageData data)
-    {
-        Stack<float> starts;
-        if (!_essenceProcessorStarts.TryGetValue(gem, out starts))
-        {
-            starts = new Stack<float>();
-            _essenceProcessorStarts[gem] = starts;
-        }
-
-        starts.Push(data.currentAmount);
-    }
-
-    private void OnEssenceProcessorAfter(Gem gem, ref DamageData data, Actor from, Entity to)
-    {
-        Stack<float> starts;
-        if (!_essenceProcessorStarts.TryGetValue(gem, out starts) || starts.Count == 0)
-        {
-            return;
-        }
-
-        float before = starts.Pop();
-        float contribution = data.currentAmount - before;
-        if (contribution <= 0.0001f || from == null || to == null)
-        {
-            return;
-        }
-
-        // DamageData processing is server-only. Send the exact delta produced by
-        // this Essence to the client through the actor's synced persistent data.
-        if (gem.owner != null)
-        {
-            uint victimNetId = to.persistentNetId;
-            uint triggerNetId = from.firstTrigger != null
-                ? from.firstTrigger.persistentNetId
-                : 0u;
-
-            gem.persistentSyncedData[EssenceContributionSyncKey] =
-                contribution.ToString("R", System.Globalization.CultureInfo.InvariantCulture)
-                + "|" + victimNetId
-                + "|" + triggerNetId
-                + "|" + Time.frameCount;
-        }
-    }
-
-    private void OnEssenceContributionSynced(Gem gem, string key)
-    {
-        if (gem == null || key != EssenceContributionSyncKey)
-        {
-            return;
-        }
-
-        string payload;
-        if (!gem.persistentSyncedData.TryGetValue(EssenceContributionSyncKey, out payload)
-            || string.IsNullOrEmpty(payload))
-        {
-            return;
-        }
-
-        string[] parts = payload.Split('|');
-        if (parts.Length < 4)
-        {
-            return;
-        }
-
-        float amount;
-        uint victimNetId;
-        uint triggerNetId;
-        int serverFrame;
-
-        if (!float.TryParse(parts[0], System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture, out amount)
-            || !uint.TryParse(parts[1], out victimNetId)
-            || !uint.TryParse(parts[2], out triggerNetId)
-            || !int.TryParse(parts[3], out serverFrame)
-            || amount <= 0.0001f)
-        {
-            return;
-        }
-
-        _pendingEssenceContributions.Add(new EssenceContribution
-        {
-            Source = null,
-            Victim = null,
-            Essence = gem,
-            Amount = amount,
-            Frame = serverFrame,
-            ReceivedTime = Time.time,
-            VictimNetId = victimNetId,
-            TriggerNetId = triggerNetId
-        });
-    }
-
-    private Dictionary<Gem, float> ConsumeEssenceContributions(
-        Actor source,
-        Entity victim,
-        float producedDamage)
-    {
-        Dictionary<Gem, float> result = new Dictionary<Gem, float>();
-        uint victimNetId = victim != null ? victim.persistentNetId : 0u;
-        uint triggerNetId = source != null && source.firstTrigger != null
-            ? source.firstTrigger.persistentNetId
-            : 0u;
-
-        for (int i = _pendingEssenceContributions.Count - 1; i >= 0; i--)
-        {
-            EssenceContribution pending = _pendingEssenceContributions[i];
-
-            if (pending.Essence == null || Time.time - pending.ReceivedTime > 0.75f)
-            {
-                _pendingEssenceContributions.RemoveAt(i);
-                continue;
-            }
-
-            if (pending.VictimNetId != victimNetId)
-            {
-                continue;
-            }
-
-            if (pending.TriggerNetId != 0u
-                && triggerNetId != 0u
-                && pending.TriggerNetId != triggerNetId)
-            {
-                continue;
-            }
-
-            _pendingEssenceContributions.RemoveAt(i);
-
-            float current;
-            result.TryGetValue(pending.Essence, out current);
-            result[pending.Essence] = current + pending.Amount;
-        }
-
-        return result;
-    }
-
     private static Gem FindDamageSourceEssence(Actor actor)
     {
         if (actor == null)
@@ -500,140 +232,6 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return null;
-    }
-
-
-    private static string DescribeEssenceLocator(Gem gem, Actor damageActor)
-    {
-        if (gem == null || damageActor == null)
-        {
-            return "not-found";
-        }
-
-        Actor current = damageActor;
-        int depth = 0;
-
-        while (current != null && depth < 12)
-        {
-            AbilityInstance instance = current as AbilityInstance;
-            if (instance != null && instance.gem == gem)
-            {
-                return "actor-depth=" + depth + ":" + instance.GetActorReadableName();
-            }
-
-            current = current.parentActor;
-            depth++;
-        }
-
-        return "reaction-only";
-    }
-
-    private static string DescribeActorChain(Actor actor)
-    {
-        if (actor == null)
-        {
-            return "null";
-        }
-
-        List<string> names = new List<string>();
-        Actor current = actor;
-        int depth = 0;
-        while (current != null && depth < 8)
-        {
-            names.Add(current.GetActorReadableName());
-            current = current.parentActor;
-            depth++;
-        }
-
-        return string.Join(" <- ", names.ToArray());
-    }
-
-    private static string DescribeActorChainDetailed(Actor actor)
-    {
-        if (actor == null)
-        {
-            return "null";
-        }
-
-        List<string> entries = new List<string>();
-        Actor current = actor;
-        int depth = 0;
-
-        while (current != null && depth < 8)
-        {
-            string entry = current.GetActorReadableName()
-                + " {type=" + current.GetType().FullName;
-
-            AbilityInstance instance = current as AbilityInstance;
-            if (instance != null)
-            {
-                entry += ", abilityGem="
-                    + (instance.gem != null ? instance.gem.GetActorReadableName() : "null");
-            }
-
-            DamageInstance damageInstance = current as DamageInstance;
-            if (damageInstance != null)
-            {
-                entry += ", damageOrigin=" + damageInstance.origin.ToString();
-            }
-
-            entry += "}";
-            entries.Add(entry);
-
-            current = current.parentActor;
-            depth++;
-        }
-
-        return string.Join(" <- ", entries.ToArray());
-    }
-
-    private static bool AreActorsRelated(Actor a, Actor b)
-    {
-        if (a == null || b == null)
-        {
-            return false;
-        }
-
-        if (a == b)
-        {
-            return true;
-        }
-
-        return a.IsDescendantOf(b) || b.IsDescendantOf(a);
-    }
-
-    private void DetachEssenceProcessors()
-    {
-        foreach (KeyValuePair<Gem, EssenceProcessorHooks> pair in _essenceProcessorHooks)
-        {
-            Gem gem = pair.Key;
-            EssenceProcessorHooks hooks = pair.Value;
-
-            if (gem != null && hooks != null)
-            {
-                gem.dealtDamageProcessor.Remove(hooks.Before);
-                gem.dealtDamageProcessor.Remove(hooks.After);
-
-                System.Action<EventInfoAbilityInstance> abilityHandler;
-                if (_essenceAbilityHandlers.TryGetValue(gem, out abilityHandler))
-                {
-                    gem.ActorEvent_OnAbilityInstanceCreated -= abilityHandler;
-                }
-
-                System.Action<string> syncHandler;
-                if (_essenceSyncHandlers.TryGetValue(gem, out syncHandler))
-                {
-                    gem.ClientEvent_OnPersistentSyncedDataChanged -= syncHandler;
-                }
-            }
-        }
-
-        _essenceProcessorHooks.Clear();
-        _essenceAbilityHandlers.Clear();
-        _essenceSyncHandlers.Clear();
-        _essenceAbilityInstances.Clear();
-        _essenceProcessorStarts.Clear();
-        _pendingEssenceContributions.Clear();
     }
 
     private DewPlayer FindPlayer(Hero hero)
@@ -676,7 +274,6 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnDestroy()
     {
-        DetachEssenceProcessors();
         DetachFromClientEvents();
         DetachFromZoneManager();
 
