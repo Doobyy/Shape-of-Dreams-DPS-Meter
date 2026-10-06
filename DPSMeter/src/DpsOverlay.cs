@@ -30,7 +30,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.58";
+    private const string DevelopmentVersion = "v4.59";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -642,7 +642,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private void DrawBarrierBreakdown(IReadOnlyList<DpsData.BreakdownRow> rows, float total)
     {
-        float bps = _mode == DisplayMode.CurrentDps
+        float bps = _mode == DisplayMode.CurrentDps || _mode == DisplayMode.CurrentBps
             ? _data.CurrentPersonalBps
             : _data.TotalPersonalBps;
 
@@ -662,7 +662,7 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         float maxAmount = rows[0].Amount;
-        bool cumulative = _mode == DisplayMode.DamageTotal;
+        bool cumulative = _mode == DisplayMode.DamageTotal || _mode == DisplayMode.BarrierTotal;
 
         for (int i = 0; i < rows.Count; i++)
         {
