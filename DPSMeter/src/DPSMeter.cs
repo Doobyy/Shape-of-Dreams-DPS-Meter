@@ -23,6 +23,7 @@ public sealed class DPSMeter : ModBehaviour
     private float _nextEssenceProcessorRefreshTime;
     private int _diagnosticDamageLogs;
     private int _diagnosticAbilityLogs;
+    private int _diagnosticProcessorLogs;
 
     private sealed class EssenceProcessorHooks
     {
@@ -399,15 +400,35 @@ public sealed class DPSMeter : ModBehaviour
 
         float before = starts.Pop();
         float contribution = data.currentAmount - before;
+        bool modifiedByEssence = data.IsAmountModifiedBy(gem);
+
+        // Diagnostic only for now. We are trying to determine whether the
+        // game's DamageData exposes a modifier Essence's exact contribution
+        // when it buffs an existing Memory hit rather than creating its own
+        // damage event.
+        if (_diagnosticProcessorLogs < 80
+            && (Mathf.Abs(contribution) > 0.0001f || modifiedByEssence)
+            && data.currentAmount > 0f)
+        {
+            _diagnosticProcessorLogs++;
+            Debug.Log("[DPS Meter v2.7] Essence processor trace: "
+                + gem.GetActorReadableName()
+                + " | original=" + data.originalAmount
+                + " | before=" + before
+                + " | after=" + data.currentAmount
+                + " | delta=" + contribution
+                + " | amplification=" + data.amplificationMultiplier
+                + " | reduction=" + data.reductionMultiplier
+                + " | flat=" + data.flatModifier
+                + " | modifiedByThisEssence=" + modifiedByEssence
+                + " | from=" + DescribeActorChain(from)
+                + " | victim=" + (to != null ? to.GetReadableName() : "null"));
+        }
 
         if (contribution <= 0.0001f || from == null || to == null)
         {
             return;
         }
-
-        Debug.Log("[DPS Meter v2.2] Essence processor contribution: "
-            + gem.GetActorReadableName() + " +" + contribution
-            + " | from=" + DescribeActorChain(from));
 
         _pendingEssenceContributions.Add(new EssenceContribution
         {
