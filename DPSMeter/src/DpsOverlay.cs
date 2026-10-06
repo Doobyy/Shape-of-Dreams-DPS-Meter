@@ -24,7 +24,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color AdScalingBarColor = new Color(0.55f, 0.36f, 0.18f, 0.68f);
     private static readonly Color ApScalingBarColor = new Color(0.18f, 0.50f, 0.55f, 0.68f);
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
-    private const string DevelopmentVersion = "v4.5";
+    private static readonly Color SourceNameColor = new Color(0.92f, 0.92f, 0.92f, 1f);
+    private const string DevelopmentVersion = "v4.6";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -313,7 +314,7 @@ public sealed class DpsOverlay : MonoBehaviour
             KeyValuePair<string, float> row = sources[i];
             rows.Add(new DamageRow
             {
-                Name = row.Key,
+                Name = StripRichTextTags(row.Key),
                 Amount = row.Value,
                 Elemental = _data.GetCurrentSkillElement(row.Key),
                 Scaling = _data.GetCurrentSkillScaling(row.Key),
@@ -326,7 +327,7 @@ public sealed class DpsOverlay : MonoBehaviour
             KeyValuePair<string, float> row = other[i];
             rows.Add(new DamageRow
             {
-                Name = row.Key,
+                Name = StripRichTextTags(row.Key),
                 Amount = row.Value,
                 Scaling = _data.GetCurrentOtherScaling(row.Key)
             });
@@ -340,7 +341,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             rows.Add(new DamageRow
             {
-                Name = GetEssenceDisplayName(row.Key),
+                Name = StripRichTextTags(GetEssenceDisplayName(row.Key)),
                 Amount = row.Value,
                 Elemental = _data.GetCurrentEssenceElement(row.Key),
                 Scaling = _data.GetCurrentEssenceScaling(row.Key),
@@ -397,7 +398,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 rowRect.height),
             _whiteTexture);
 
-        GUI.color = Color.white;
+        GUI.color = SourceNameColor;
 
         float textX = rowRect.x + 7f;
         if (icon != null)
@@ -418,6 +419,24 @@ public sealed class DpsOverlay : MonoBehaviour
             _rowRight);
 
         GUI.color = Color.white;
+    }
+
+    private static string StripRichTextTags(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        int start;
+        while ((start = text.IndexOf("<color", StringComparison.OrdinalIgnoreCase)) >= 0)
+        {
+            int end = text.IndexOf('>', start);
+            if (end < 0)
+                break;
+
+            text = text.Remove(start, end - start + 1);
+        }
+
+        return text.Replace("</color>", string.Empty);
     }
 
     private static Color GetBarColor(ElementalType? elemental, DpsData.DamageScalingType scaling)
