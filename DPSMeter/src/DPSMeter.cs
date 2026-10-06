@@ -261,11 +261,14 @@ public sealed class DPSMeter : ModBehaviour
 
                 scanned++;
 
-                Debug.Log(
-                    "[DPS Meter][HEAL TRACE] STAR EFFECT INSTANCE name=" +
-                    value.name);
+                if (value.name.IndexOf("Se_Star_L_HealOnAttack", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    Debug.Log(
+                        "[DPS Meter][HEAL TRACE] TARGET STAR EFFECT FOUND name=" +
+                        value.name);
 
-                TraceHealingStarEffectMembers(value);
+                    TraceHealingStarEffectHierarchy(value);
+                }
             }
         }
         catch (Exception exception)
@@ -273,6 +276,102 @@ public sealed class DPSMeter : ModBehaviour
             Debug.Log(
                 "[DPS Meter][HEAL TRACE] STAR EFFECT LIVE SCAN ERROR " +
                 exception.GetType().Name + ": " + exception.Message);
+        }
+    }
+
+    private static void TraceHealingStarEffectHierarchy(object value)
+    {
+        if (value == null)
+        {
+            return;
+        }
+
+        Type type = value.GetType();
+        int depth = 0;
+
+        while (type != null && depth < 8)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] STAR EFFECT TYPE depth=" + depth +
+                " type=" + (type.FullName ?? type.Name));
+
+            TraceHealingStarEffectMembersForType(value, type);
+            type = type.BaseType;
+            depth++;
+        }
+    }
+
+    private static void TraceHealingStarEffectMembersForType(object value, Type type)
+    {
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+            BindingFlags.DeclaredOnly);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+
+            try
+            {
+                object memberValue = field.GetValue(value);
+
+                Debug.Log(
+                    "[DPS Meter][HEAL TRACE] STAR EFFECT HIERARCHY MEMBER " +
+                    field.Name +
+                    " declaredType=" +
+                    (field.FieldType == null ? "<unknown>" : (field.FieldType.FullName ?? field.FieldType.Name)) +
+                    " valueType=" +
+                    (memberValue == null ? "null" : memberValue.GetType().FullName));
+
+                if (memberValue is string ||
+                    (memberValue != null && (memberValue.GetType().IsPrimitive || memberValue.GetType().IsEnum)))
+                {
+                    Debug.Log(
+                        "[DPS Meter][HEAL TRACE] STAR EFFECT HIERARCHY VALUE " +
+                        field.Name + "=" + memberValue);
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+            BindingFlags.DeclaredOnly);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+            {
+                continue;
+            }
+
+            try
+            {
+                object memberValue = property.GetValue(value, null);
+
+                Debug.Log(
+                    "[DPS Meter][HEAL TRACE] STAR EFFECT HIERARCHY PROPERTY " +
+                    property.Name +
+                    " declaredType=" +
+                    (property.PropertyType == null ? "<unknown>" : (property.PropertyType.FullName ?? property.PropertyType.Name)) +
+                    " valueType=" +
+                    (memberValue == null ? "null" : memberValue.GetType().FullName));
+
+                if (memberValue is string ||
+                    (memberValue != null && (memberValue.GetType().IsPrimitive || memberValue.GetType().IsEnum)))
+                {
+                    Debug.Log(
+                        "[DPS Meter][HEAL TRACE] STAR EFFECT HIERARCHY VALUE " +
+                        property.Name + "=" + memberValue);
+                }
+            }
+            catch (Exception)
+            {
+            }
         }
     }
 
