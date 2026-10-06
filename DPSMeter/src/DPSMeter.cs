@@ -20,11 +20,9 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<Gem, System.Action<EventInfoAbilityInstance>> _essenceAbilityHandlers = new Dictionary<Gem, System.Action<EventInfoAbilityInstance>>();
     private readonly Dictionary<AbilityInstance, Gem> _essenceAbilityInstances = new Dictionary<AbilityInstance, Gem>();
     private readonly List<EssenceContribution> _pendingEssenceContributions = new List<EssenceContribution>();
+    private readonly Dictionary<Gem, System.Action<string>> _essenceSyncHandlers = new Dictionary<Gem, System.Action<string>>();
+    private const string EssenceContributionSyncKey = "dps_meter_contribution";
     private float _nextEssenceProcessorRefreshTime;
-    private int _diagnosticDamageLogs;
-    private int _diagnosticAbilityLogs;
-    private int _diagnosticProcessorLogs;
-    private int _diagnosticDamageEventLogs;
 
     private sealed class EssenceProcessorHooks
     {
@@ -39,6 +37,9 @@ public sealed class DPSMeter : ModBehaviour
         public Gem Essence;
         public float Amount;
         public int Frame;
+        public float ReceivedTime;
+        public uint VictimNetId;
+        public uint TriggerNetId;
     }
 
     private void Awake()
@@ -180,61 +181,9 @@ public sealed class DPSMeter : ModBehaviour
         {
             _essenceAbilityInstances.TryGetValue(abilityInstance, out abilityGem);
         }
-        if (_diagnosticDamageLogs < 12)
-        {
-            _diagnosticDamageLogs++;
-            Debug.Log("[DPS Meter v2.4] Damage actor=" + DescribeActorChainDetailed(info.actor)
-                + " | trigger=" + (skill != null ? skill.GetActorReadableName() : "null")
-                + " | directGem=" + (directGem != null ? directGem.GetActorReadableName() : "null")
-                + " | ability=" + (abilityInstance != null ? abilityInstance.GetActorReadableName() : "null")
-                + " | abilityGem=" + (abilityGem != null ? abilityGem.GetActorReadableName() : "null")
-                + " | pending=" + _pendingEssenceContributions.Count);
-        }
-
         // v3.0 diagnostic: specifically inspect Memory damage events for
         // Essences that modify the Memory's own damage amount. Projectile/on-hit
         // Essence damage is already solved and is excluded here.
-        if (_diagnosticDamageEventLogs < 80 && isLocalPlayer && !IsEssenceGem(directGem))
-        {
-            List<string> essenceStates = new List<string>();
-
-            foreach (Gem gem in _essenceProcessorHooks.Keys)
-            {
-                if (gem == null)
-                {
-                    continue;
-                }
-
-                bool reacted = info.chain.DidReact(gem);
-                string state = gem.GetActorReadableName() + ":reacted=" + reacted;
-
-                if (reacted)
-                {
-                    state += ", locator=" + DescribeEssenceLocator(gem, info.actor);
-                }
-
-                essenceStates.Add(state);
-            }
-
-            _diagnosticDamageEventLogs++;
-
-            Debug.Log("[DPS Meter v3.0] Memory modifier trace: "
-                + "skill=" + (skill != null ? skill.GetFormattedSkillTitle() : "null")
-                + " | amount=" + info.damage.amount
-                + " | discarded=" + info.damage.discardedAmount
-                + " | produced=" + producedDamage
-                + " | shieldNegated=" + info.negatedAmountByShield
-                + " | elemental=" + (info.damage.elemental.HasValue
-                    ? info.damage.elemental.Value.ToString()
-                    : "null")
-                + " | type=" + info.damage.type
-                + " | attributes=" + info.damage.attributes
-                + " | procCoefficient=" + info.damage.procCoefficient
-                + " | actor=" + DescribeActorChainDetailed(info.actor)
-                + " | reactionEssences=[" + string.Join(" ; ", essenceStates.ToArray()) + "]"
-                + " | reactionChain=" + info.chain.ToString());
-        }
-
         Dictionary<Gem, float> essenceContributions = ConsumeEssenceContributions(
             info.actor,
             info.victim,
@@ -366,6 +315,9 @@ public sealed class DPSMeter : ModBehaviour
 
         gem.ActorEvent_OnAbilityInstanceCreated += abilityHandler;
 
+        System.Action<string> syncHandler = key => OnEssenceContributionSynced(gem, key);
+        gem.ClientEvent_OnPersistentSyncedDataChanged += syncHandler;
+
         _essenceProcessorHooks[gem] = new EssenceProcessorHooks
         {
             Before = before,
@@ -374,6 +326,7 @@ public sealed class DPSMeter : ModBehaviour
 
         _essenceDamageHandlers[gem] = damageHandler;
         _essenceAbilityHandlers[gem] = abilityHandler;
+        _essenceSyncHandlers[gem] = syncHandler;
         _essenceProcessorStarts[gem] = new Stack<float>();
     }
 
@@ -447,41 +400,73 @@ public sealed class DPSMeter : ModBehaviour
         float contribution = data.currentAmount - before;
         bool modifiedByEssence = data.IsAmountModifiedBy(gem);
 
-        // Diagnostic only for now. We are trying to determine whether the
-        // game's DamageData exposes a modifier Essence's exact contribution
-        // when it buffs an existing Memory hit rather than creating its own
-        // damage event.
-        if (_diagnosticProcessorLogs < 80
-            && (Mathf.Abs(contribution) > 0.0001f || modifiedByEssence)
-            && data.currentAmount > 0f)
+        if (contribution <= 0.0001f || from == null || to == null)
         {
-            _diagnosticProcessorLogs++;
-            Debug.Log("[DPS Meter v2.7] Essence processor trace: "
-                + gem.GetActorReadableName()
-                + " | original=" + data.originalAmount
-                + " | before=" + before
-                + " | after=" + data.currentAmount
-                + " | delta=" + contribution
-                + " | amplification=" + data.amplificationMultiplier
-                + " | reduction=" + data.reductionMultiplier
-                + " | flat=" + data.flatModifier
-                + " | modifiedByThisEssence=" + modifiedByEssence
-                + " | from=" + DescribeActorChain(from)
-                + " | victim=" + (to != null ? to.ToString() : "null"));
+            return;
         }
 
-        if (contribution <= 0.0001f || from == null || to == null)
+        // DamageData processing is server-only. Send the exact delta produced by
+        // this Essence to the client through the actor's synced persistent data.
+        if (gem.owner != null)
+        {
+            uint victimNetId = to.persistentNetId;
+            uint triggerNetId = from.firstTrigger != null
+                ? from.firstTrigger.persistentNetId
+                : 0u;
+
+            gem.persistentSyncedData[EssenceContributionSyncKey] =
+                contribution.ToString("R", System.Globalization.CultureInfo.InvariantCulture)
+                + "|" + victimNetId
+                + "|" + triggerNetId
+                + "|" + Time.frameCount;
+        }
+    }
+
+    private void OnEssenceContributionSynced(Gem gem, string key)
+    {
+        if (gem == null || key != EssenceContributionSyncKey)
+        {
+            return;
+        }
+
+        string payload;
+        if (!gem.persistentSyncedData.TryGetValue(EssenceContributionSyncKey, out payload)
+            || string.IsNullOrEmpty(payload))
+        {
+            return;
+        }
+
+        string[] parts = payload.Split('|');
+        if (parts.Length < 4)
+        {
+            return;
+        }
+
+        float amount;
+        uint victimNetId;
+        uint triggerNetId;
+        int serverFrame;
+
+        if (!float.TryParse(parts[0], System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out amount)
+            || !uint.TryParse(parts[1], out victimNetId)
+            || !uint.TryParse(parts[2], out triggerNetId)
+            || !int.TryParse(parts[3], out serverFrame)
+            || amount <= 0.0001f)
         {
             return;
         }
 
         _pendingEssenceContributions.Add(new EssenceContribution
         {
-            Source = from,
-            Victim = to,
+            Source = null,
+            Victim = null,
             Essence = gem,
-            Amount = contribution,
-            Frame = Time.frameCount
+            Amount = amount,
+            Frame = serverFrame,
+            ReceivedTime = Time.time,
+            VictimNetId = victimNetId,
+            TriggerNetId = triggerNetId
         });
     }
 
@@ -491,45 +476,34 @@ public sealed class DPSMeter : ModBehaviour
         float producedDamage)
     {
         Dictionary<Gem, float> result = new Dictionary<Gem, float>();
+        uint victimNetId = victim != null ? victim.persistentNetId : 0u;
+        uint triggerNetId = source != null && source.firstTrigger != null
+            ? source.firstTrigger.persistentNetId
+            : 0u;
 
         for (int i = _pendingEssenceContributions.Count - 1; i >= 0; i--)
         {
             EssenceContribution pending = _pendingEssenceContributions[i];
 
-            if (pending.Frame != Time.frameCount)
+            if (pending.Essence == null || Time.time - pending.ReceivedTime > 0.75f)
             {
-                if (pending.Frame < Time.frameCount - 3)
-                {
-                    _pendingEssenceContributions.RemoveAt(i);
-                }
-
+                _pendingEssenceContributions.RemoveAt(i);
                 continue;
             }
 
-            if (!AreActorsRelated(pending.Source, source) || pending.Victim != victim)
+            if (pending.VictimNetId != victimNetId)
             {
                 continue;
             }
 
-            // A processor contribution is only the amount this Essence added
-            // to the damage. It will normally be smaller than the final hit,
-            // so matching the contribution against producedDamage would reject
-            // the exact modifier contribution we are trying to track.
-            //
-            // Actor ancestry is the correlation key here: the API guarantees
-            // that an actor's damage is processed by that actor and every
-            // ancestor's dealtDamageProcessor.
-            if (pending.Amount <= 0.0001f)
+            if (pending.TriggerNetId != 0u
+                && triggerNetId != 0u
+                && pending.TriggerNetId != triggerNetId)
             {
                 continue;
             }
 
             _pendingEssenceContributions.RemoveAt(i);
-
-            if (pending.Essence == null)
-            {
-                continue;
-            }
 
             float current;
             result.TryGetValue(pending.Essence, out current);
@@ -693,6 +667,7 @@ public sealed class DPSMeter : ModBehaviour
         _essenceProcessorHooks.Clear();
         _essenceDamageHandlers.Clear();
         _essenceAbilityHandlers.Clear();
+        _essenceSyncHandlers.Clear();
         _essenceAbilityInstances.Clear();
         _essenceProcessorStarts.Clear();
         _pendingEssenceContributions.Clear();
