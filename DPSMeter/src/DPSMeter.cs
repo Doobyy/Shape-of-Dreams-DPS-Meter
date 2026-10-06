@@ -175,6 +175,7 @@ public sealed class DPSMeter : ModBehaviour
             if (hero != null)
             {
                 TraceHealingHeroMembers(hero);
+                TraceHealingStarComponents(hero);
             }
 
             current = current.parentActor;
@@ -182,6 +183,50 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         Debug.Log("[DPS Meter][HEAL TRACE] END");
+    }
+
+    private static void TraceHealingStarComponents(Hero hero)
+    {
+        if (hero == null)
+        {
+            return;
+        }
+
+        Component[] components;
+
+        try
+        {
+            components = hero.GetComponents<Component>();
+        }
+        catch (Exception)
+        {
+            return;
+        }
+
+        Debug.Log("[DPS Meter][HEAL TRACE] STAR COMPONENT SCAN count=" + components.Length);
+
+        for (int i = 0; i < components.Length; i++)
+        {
+            Component component = components[i];
+            if (component == null)
+            {
+                continue;
+            }
+
+            Type type = component.GetType();
+            string typeName = type.FullName ?? type.Name;
+
+            if (typeName.IndexOf("Star", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                continue;
+            }
+
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] STAR COMPONENT type=" + typeName +
+                " name=" + component.name);
+
+            TraceHealingObjectMembers("StarComponent:" + type.Name, component);
+        }
     }
 
     private static void TraceHealingHeroMembers(Hero hero)
