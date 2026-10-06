@@ -522,6 +522,58 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
+    private static string GetHealingSourceName(Actor source)
+    {
+        string starName = TryGetStarDisplayName(source);
+        if (!string.IsNullOrEmpty(starName))
+        {
+            return starName;
+        }
+
+        if (source == null)
+        {
+            return "Unknown Healing";
+        }
+
+        Gem gem = source as Gem;
+        if (gem != null)
+        {
+            string gemKey = gem.GetOriginalName();
+            if (!string.IsNullOrEmpty(gemKey))
+            {
+                return gemKey;
+            }
+
+            return string.IsNullOrEmpty(gem.name) ? gem.GetType().Name : gem.name;
+        }
+
+        SkillTrigger skill = source.firstTrigger as SkillTrigger;
+        if (skill != null)
+        {
+            string skillName = skill.GetFormattedSkillTitle();
+            if (!string.IsNullOrEmpty(skillName))
+            {
+                return skillName;
+            }
+        }
+
+        string actorName = source.name;
+        if (!string.IsNullOrEmpty(actorName))
+        {
+            actorName = actorName.Replace("(Adjusted)", string.Empty)
+                .Replace("(Clone)", string.Empty)
+                .Trim();
+
+            if (!string.IsNullOrEmpty(actorName))
+            {
+                return actorName;
+            }
+        }
+
+        return source.GetType().Name;
+    }
+
+
     private static void TraceUnresolvedHealingSource(EventInfoHeal info, Gem resolvedGem, string resolvedName)
     {
         if (info.actor == null)
