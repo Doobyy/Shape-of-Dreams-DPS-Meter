@@ -21,7 +21,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.68f);
     private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.68f);
     private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.68f);
-    private const string DevelopmentVersion = "v3.4";
+    private const string DevelopmentVersion = "v3.5";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -352,7 +352,7 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             DamageRow row = rows[i];
-            DrawDamageRow(row.Name, row.Amount, total, i, row.Elemental, row.Icon);
+            DrawDamageRow(row.Name, row.Amount, total, rows[0].Amount, i, row.Elemental, row.Icon);
         }
     }
 
@@ -367,14 +367,14 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             KeyValuePair<string, float> row = rows[i];
-            DrawDamageRow(row.Key, row.Value, total, i, null, null);
+            DrawDamageRow(row.Key, row.Value, total, rows[0].Value, i, null, null);
         }
     }
 
-    private void DrawDamageRow(string name, float amount, float total, int index, ElementalType? elemental, Sprite icon)
+    private void DrawDamageRow(string name, float amount, float total, float maxAmount, int index, ElementalType? elemental, Sprite icon)
     {
-        float ratio = total > 0f ? Mathf.Clamp01(amount / total) : 0f;
-        float percent = ratio * 100f;
+        float ratio = maxAmount > 0f ? Mathf.Clamp01(amount / maxAmount) : 0f;
+        float percent = total > 0f ? Mathf.Clamp01(amount / total) * 100f : 0f;
 
         Rect rowRect = GUILayoutUtility.GetRect(0f, 22f, GUILayout.ExpandWidth(true));
 
