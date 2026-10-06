@@ -358,6 +358,21 @@ public sealed class DpsOverlay : MonoBehaviour
         }
     }
 
+    private void DrawParty(IReadOnlyList<KeyValuePair<string, float>> rows, float total)
+    {
+        if (rows.Count == 0)
+        {
+            GUILayout.Label("No party damage recorded yet.", _small);
+            return;
+        }
+
+        for (int i = 0; i < rows.Count; i++)
+        {
+            KeyValuePair<string, float> row = rows[i];
+            DrawDamageRow(row.Key, row.Value, total, i, null, null);
+        }
+    }
+
     private void DrawDamageRow(string name, float amount, float total, int index, ElementalType? elemental, Sprite icon)
     {
         float ratio = total > 0f ? Mathf.Clamp01(amount / total) : 0f;
