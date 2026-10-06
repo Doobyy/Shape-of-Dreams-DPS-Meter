@@ -135,7 +135,23 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        Gem healingGem = info.actor as Gem;
+        // Healing Essences can report their heal through an AbilityInstance
+        // whose first trigger belongs to the host Memory. Resolve the Gem from
+        // the actor chain first so an Essence heal is attributed to the Essence
+        // rather than the Memory that contains it.
+        Gem healingGem = FindDirectGemMember(info.actor);
+        if (healingGem == null)
+        {
+            Actor current = info.actor.parentActor;
+            int depth = 0;
+            while (current != null && depth < 8 && healingGem == null)
+            {
+                healingGem = FindDirectGemMember(current);
+                current = current.parentActor;
+                depth++;
+            }
+        }
+
         string sourceName = GetHealingSourceName(info.actor);
         string sourceIdentity = GetSkillSlotIdentity(info.actor);
 
@@ -144,7 +160,7 @@ public sealed class DPSMeter : ModBehaviour
             sourceIdentity = GetEssenceIdentity(healingGem);
             sourceName = GetLocalizedEssenceName(healingGem) ?? sourceName;
         }
-        Sprite healingIcon = FindHealingIcon(info.actor);
+        Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
         _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
 
     }
