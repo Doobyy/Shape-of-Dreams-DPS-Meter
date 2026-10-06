@@ -30,7 +30,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.80";
+    private const string DevelopmentVersion = "v4.81";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -45,8 +45,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private bool _resizeMoved;
     private float _resizeStartHealingHeight;
     private bool _headerMoved;
-    private bool _showHealing;
-    private bool _showBarrier;
+    private bool _showHealing = true;
+    private bool _showBarrier = true;
     private float _collapsedWindowHeight;
     private bool _manualResize;
 
@@ -626,26 +626,17 @@ public sealed class DpsOverlay : MonoBehaviour
             return;
         }
 
+        float maxAmount = rows[0].Amount;
         for (int i = 0; i < rows.Count; i++)
         {
             DamageRow row = rows[i];
-            DrawDamageRow(row.Name, row.Amount, total, rows[0].Amount, i, row.Elemental, row.Scaling, row.Icon);
+            DrawDamageRow(row.Name, row.Amount, total, maxAmount, i, row.Elemental, row.Scaling, row.Icon);
         }
     }
 
     private void DrawBreakdownToggles()
     {
-        GUIStyle toggleStyle = new GUIStyle(_small)
-        {
-            alignment = TextAnchor.MiddleCenter,
-            fontSize = 13,
-            fontStyle = FontStyle.Bold,
-            normal = { textColor = new Color(0.80f, 0.80f, 0.80f, 0.95f) },
-            hover = { textColor = Color.white }
-        };
-
         GUILayout.BeginHorizontal();
-        GUILayout.FlexibleSpace();
 
         Rect healingRect = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f), GUILayout.Height(20f));
         if (GUI.Button(healingRect, GUIContent.none, GUIStyle.none))
@@ -654,6 +645,8 @@ public sealed class DpsOverlay : MonoBehaviour
         }
         DrawExpandIcon(GetHealingExpandIcon(), healingRect, _showHealing);
 
+        GUILayout.FlexibleSpace();
+
         Rect barrierRect = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f), GUILayout.Height(20f));
         if (GUI.Button(barrierRect, GUIContent.none, GUIStyle.none))
         {
@@ -661,15 +654,14 @@ public sealed class DpsOverlay : MonoBehaviour
         }
         DrawExpandIcon(GetBarrierExpandIcon(), barrierRect, _showBarrier);
 
-        GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
     }
 
     private void DrawBarrierBreakdown(IReadOnlyList<DpsData.BreakdownRow> rows, float total)
     {
-        float bps = _mode == DisplayMode.CurrentDps || _mode == DisplayMode.CurrentBps
+        float bps = _mode == DisplayMode.CurrentDps
             ? _data.CurrentPersonalBps
-            : _data.TotalPersonalBps;
+            : _data.TotalPersonalBarrier;
 
         GUILayout.Label(
             "----------  " + FormatNumber(bps) + " BPS  ----------",
@@ -850,8 +842,6 @@ public sealed class DpsOverlay : MonoBehaviour
 
         Rect rowRect = GUILayoutUtility.GetRect(0f, 22f, GUILayout.ExpandWidth(true));
 
-        // Keep IMGUI text and bar edges on whole pixels. Fractional positions can
-        // make small fonts look noticeably soft even when the font itself is sharp.
         rowRect.x = Mathf.Round(rowRect.x);
         rowRect.y = Mathf.Round(rowRect.y);
         rowRect.width = Mathf.Round(rowRect.width);
@@ -971,8 +961,6 @@ public sealed class DpsOverlay : MonoBehaviour
             return _basicAttackIcon;
         }
 
-        // Rawdata/!Sprites/2.png is not a Resources path, so Resources.Load cannot
-        // locate it. First reuse a Sprite/Texture that the game has already loaded.
         Sprite[] loadedSprites = Resources.FindObjectsOfTypeAll<Sprite>();
         for (int i = 0; i < loadedSprites.Length; i++)
         {
@@ -1139,7 +1127,6 @@ public sealed class DpsOverlay : MonoBehaviour
         if (skill == null || skill.currentConfig == null)
             return null;
 
-        // The game's skill icon is stored on the active TriggerConfig.
         return skill.currentConfig.triggerIcon;
     }
 
@@ -1216,7 +1203,6 @@ public sealed class DpsOverlay : MonoBehaviour
             14f,
             14f);
 
-        GUI.color = new Color(1f, 1f, 1f, 0.35f);
         GUI.color = new Color(0.60f, 0.60f, 0.62f, 0.45f);
         for (int i = 0; i < 3; i++)
         {
