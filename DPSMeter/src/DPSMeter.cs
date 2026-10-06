@@ -465,7 +465,21 @@ public sealed class DPSMeter : ModBehaviour
                     continue;
                 }
 
-                Debug.Log("[DPS Meter][ESSENCE NAME TRACE] Method " + method.Name + " returns=" + method.ReturnType.FullName);
+                string methodValue = "<not-called>";
+                if (method.Name == "GetActorReadableName")
+                {
+                    try
+                    {
+                        object result = method.Invoke(gem, null);
+                        methodValue = result == null ? "<null>" : result.ToString();
+                    }
+                    catch (Exception)
+                    {
+                        methodValue = "<invoke failed>";
+                    }
+                }
+
+                Debug.Log("[DPS Meter][ESSENCE NAME TRACE] Method " + method.Name + " returns=" + method.ReturnType.FullName + " value=" + methodValue);
             }
 
             current = current.BaseType;
