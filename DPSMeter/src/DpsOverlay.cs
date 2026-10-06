@@ -329,10 +329,10 @@ public sealed class DpsOverlay : MonoBehaviour
             return;
         }
 
-        IReadOnlyList<KeyValuePair<string, float>> rows =
+        IReadOnlyList<DpsData.BreakdownRow> rows =
             _mode == DisplayMode.CurrentDps
-                ? _data.CurrentPersonalHealing
-                : _data.CumulativeHealingSources;
+                ? _data.CurrentPersonalHealingRows
+                : _data.CumulativeHealingRows;
 
         int rowCount = rows != null ? rows.Count : 0;
         float healingHeight = 16f + 22f + 22f + (rowCount * 22f) + 4f;
@@ -528,7 +528,7 @@ public sealed class DpsOverlay : MonoBehaviour
         }
     }
 
-    private void DrawHealingBreakdown(IReadOnlyList<KeyValuePair<string, float>> rows, float total)
+    private void DrawHealingBreakdown(IReadOnlyList<DpsData.BreakdownRow> rows, float total)
     {
         float hps = _mode == DisplayMode.CurrentDps
             ? _data.CurrentPersonalHps
