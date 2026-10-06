@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.52";
+    private const string DevelopmentVersion = "v4.55";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -46,6 +46,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private bool _showHealing;
     private bool _showBarrier;
     private float _collapsedWindowHeight;
+    private bool _manualResize;
 
     private GUIStyle _header;
     private GUIStyle _headerRight;
@@ -79,7 +80,7 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         HandleWindowInput();
-        UpdateWindowHeightForHealing();
+        UpdateWindowHeight();
 
         GUI.color = WindowFillColor;
         GUI.DrawTexture(_windowRect, _whiteTexture);
@@ -292,6 +293,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
                 if (_resizeMoved)
                 {
+                    _manualResize = true;
                     Vector2 delta = e.mousePosition - _resizeStartMouse;
                     _collapsedWindowHeight = Mathf.Clamp(
                         _resizeStartSize.y + delta.y,
@@ -323,15 +325,20 @@ public sealed class DpsOverlay : MonoBehaviour
         }
     }
 
-    private void UpdateWindowHeightForHealing()
+    private void UpdateWindowHeight()
     {
-        float breakdownHeight = GetExpandedBreakdownHeight();
-        if (breakdownHeight <= 0f)
+        if (!_manualResize && (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal))
         {
-            _windowRect.height = _collapsedWindowHeight;
-            return;
+            int rowCount = GetCurrentDpsRowCount();
+            float desiredHeight = 50f + (rowCount * 22f) + (rowCount > 0 ? 2f : 0f);
+            float maxCollapsedHeight = Mathf.Max(90f, Screen.height - _windowRect.y - 10f);
+
+            _collapsedWindowHeight = Mathf.Min(
+                Mathf.Max(272f, desiredHeight),
+                maxCollapsedHeight);
         }
 
+        float breakdownHeight = GetExpandedBreakdownHeight();
         float maxHeight = Mathf.Max(
             _collapsedWindowHeight,
             Screen.height - _windowRect.y - 10f);
@@ -339,6 +346,38 @@ public sealed class DpsOverlay : MonoBehaviour
         _windowRect.height = Mathf.Min(
             _collapsedWindowHeight + breakdownHeight,
             maxHeight);
+    }
+
+    private int GetCurrentDpsRowCount()
+    {
+        IReadOnlyList<DpsData.BreakdownRow> skills =
+            _mode == DisplayMode.CurrentDps
+                ? _data.CurrentPersonalSkillRows
+                : _data.CumulativePersonalSkillRows;
+        IReadOnlyList<KeyValuePair<string, float>> other =
+            _mode == DisplayMode.CurrentDps
+                ? _data.CurrentPersonalOther
+                : _data.CumulativePersonalOther;
+        IReadOnlyList<KeyValuePair<string, float>> essences =
+            _mode == DisplayMode.CurrentDps
+                ? _data.CurrentPersonalEssences
+                : _data.CumulativePersonalEssences;
+
+        int count = 0;
+        if (skills != null)
+            count += skills.Count;
+        if (other != null)
+            count += other.Count;
+        if (essences != null)
+        {
+            for (int i = 0; i < essences.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(essences[i].Key) && essences[i].Value > 0f)
+                    count++;
+            }
+        }
+
+        return count > 0 ? count : 1;
     }
 
     private float GetExpandedBreakdownHeight()
@@ -365,7 +404,7 @@ public sealed class DpsOverlay : MonoBehaviour
                     : _data.CumulativeHealingRows;
 
             int rowCount = rows != null ? rows.Count : 0;
-            height += 22f + 22f + (rowCount * 22f) + 4f;
+            height += 22f + (Mathf.Max(1, rowCount) * 22f);
         }
 
         if (_showBarrier)
@@ -376,7 +415,12 @@ public sealed class DpsOverlay : MonoBehaviour
                     : _data.CumulativeBarrierRows;
 
             int rowCount = rows != null ? rows.Count : 0;
-            height += 22f + 22f + (rowCount * 22f) + 4f;
+            height += 22f + (Mathf.Max(1, rowCount) * 22f);
+        }
+
+        if (_showHealing != _showBarrier)
+        {
+            height += 4f;
         }
 
         return height;
