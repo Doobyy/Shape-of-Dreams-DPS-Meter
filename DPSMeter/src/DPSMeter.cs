@@ -454,41 +454,10 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        Type type = actor.GetType();
-        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        Debug.Log("[DPS Meter][HEAL TRACE] Heal actor[" + depth + "] type=" +
+            actor.GetType().FullName + " name=" + actor.name);
 
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-            if (field == null)
-            {
-                continue;
-            }
-
-            string fieldName = field.Name;
-            if (fieldName.IndexOf("gem", StringComparison.OrdinalIgnoreCase) < 0 &&
-                fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
-                fieldName.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0 &&
-                fieldName.IndexOf("damage", StringComparison.OrdinalIgnoreCase) < 0 &&
-                fieldName.IndexOf("orb", StringComparison.OrdinalIgnoreCase) < 0 &&
-                fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0)
-            {
-                continue;
-            }
-
-            object value = null;
-            try
-            {
-                value = field.GetValue(actor);
-            }
-            catch (Exception)
-            {
-            }
-
-            Debug.Log("[DPS Meter][HEAL TRACE] Heal actor[" + depth + "]." + fieldName +
-                " type=" + field.FieldType.FullName +
-                " value=" + DescribeDiagnosticValue(value));
-        }
+        TraceHealingLinkMembers(actor, "actor", depth);
 
         AbilityInstance ability = actor as AbilityInstance;
         if (ability != null && ability.gem != null)
@@ -503,11 +472,11 @@ public sealed class DPSMeter : ModBehaviour
         {
             Debug.Log("[DPS Meter][HEAL TRACE] Heal actor[" + depth + "] firstTrigger type=" +
                 firstTrigger.GetType().FullName + " name=" + firstTrigger.name);
-            TraceHealingRelatedObject(firstTrigger, "firstTrigger", depth);
+            TraceHealingLinkMembers(firstTrigger, "firstTrigger", depth);
         }
     }
 
-    private static void TraceHealingRelatedObject(object value, string label, int depth)
+    private static void TraceHealingLinkMembers(object value, string label, int depth)
     {
         if (value == null)
         {
@@ -515,38 +484,82 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         Type type = value.GetType();
-        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        int typeDepth = 0;
 
-        for (int i = 0; i < fields.Length; i++)
+        while (type != null && typeDepth < 8)
         {
-            FieldInfo field = fields[i];
-            if (field == null)
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length; i++)
             {
-                continue;
+                FieldInfo field = fields[i];
+                if (field == null || !IsHealingLinkName(field.Name))
+                {
+                    continue;
+                }
+
+                object fieldValue = null;
+                try
+                {
+                    fieldValue = field.GetValue(value);
+                }
+                catch (Exception)
+                {
+                }
+
+                Debug.Log("[DPS Meter][HEAL TRACE] Heal " + label + "[" + depth + "]." +
+                    field.Name + " declaredOn=" + type.FullName +
+                    " type=" + field.FieldType.FullName +
+                    " value=" + DescribeDiagnosticValue(fieldValue));
             }
 
-            string name = field.Name;
-            if (name.IndexOf("gem", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("damage", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0)
+            PropertyInfo[] properties = type.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < properties.Length; i++)
             {
-                continue;
+                PropertyInfo property = properties[i];
+                if (property == null || property.GetIndexParameters().Length != 0 ||
+                    !IsHealingLinkName(property.Name) || !property.CanRead)
+                {
+                    continue;
+                }
+
+                object propertyValue = null;
+                try
+                {
+                    propertyValue = property.GetValue(value, null);
+                }
+                catch (Exception)
+                {
+                }
+
+                Debug.Log("[DPS Meter][HEAL TRACE] Heal " + label + "[" + depth + "]." +
+                    property.Name + " declaredOn=" + type.FullName +
+                    " propertyType=" + property.PropertyType.FullName +
+                    " value=" + DescribeDiagnosticValue(propertyValue));
             }
 
-            object fieldValue = null;
-            try
-            {
-                fieldValue = field.GetValue(value);
-            }
-            catch (Exception)
-            {
-            }
-
-            Debug.Log("[DPS Meter][HEAL TRACE] Heal " + label + "[" + depth + "]." + field.Name +
-                " type=" + field.FieldType.FullName +
-                " value=" + DescribeDiagnosticValue(fieldValue));
+            type = type.BaseType;
+            typeDepth++;
         }
+    }
+
+    private static bool IsHealingLinkName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
+
+        return name.IndexOf("gem", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static string DescribeDiagnosticValue(object value)
