@@ -280,6 +280,90 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static void TraceHealingLoadoutDeep(object loadout)
+    {
+        if (loadout == null)
+        {
+            return;
+        }
+
+        Type type = loadout.GetType();
+        Debug.Log(
+            "[DPS Meter][HEAL TRACE] LOADOUT DEEP type=" +
+            (type.FullName ?? type.Name));
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+
+            try
+            {
+                object memberValue = field.GetValue(loadout);
+                string fieldType = field.FieldType == null
+                    ? string.Empty
+                    : field.FieldType.FullName ?? field.FieldType.Name;
+
+                Debug.Log(
+                    "[DPS Meter][HEAL TRACE] LOADOUT MEMBER " +
+                    field.Name +
+                    " declaredType=" + fieldType +
+                    " valueType=" +
+                    (memberValue == null ? "null" : memberValue.GetType().FullName));
+
+                if (memberValue != null)
+                {
+                    TraceHealingObjectMembers(
+                        "Loadout:" + field.Name,
+                        memberValue);
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+            {
+                continue;
+            }
+
+            try
+            {
+                object memberValue = property.GetValue(loadout, null);
+                string propertyType = property.PropertyType == null
+                    ? string.Empty
+                    : property.PropertyType.FullName ?? property.PropertyType.Name;
+
+                Debug.Log(
+                    "[DPS Meter][HEAL TRACE] LOADOUT PROPERTY " +
+                    property.Name +
+                    " declaredType=" + propertyType +
+                    " valueType=" +
+                    (memberValue == null ? "null" : memberValue.GetType().FullName));
+
+                if (memberValue != null)
+                {
+                    TraceHealingObjectMembers(
+                        "LoadoutProperty:" + property.Name,
+                        memberValue);
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
     private static void TraceHealingStarOwner(object value)
     {
         if (value == null)
@@ -358,6 +442,11 @@ public sealed class DPSMeter : ModBehaviour
                         TraceHealingObjectMembers(
                             "StarOwner:" + field.Name,
                             memberValue);
+
+                        if (field.Name.IndexOf("selectedLoadout", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            TraceHealingLoadoutDeep(memberValue);
+                        }
                     }
                 }
                 catch (Exception)
