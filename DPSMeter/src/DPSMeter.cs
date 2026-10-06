@@ -856,11 +856,12 @@ public sealed class DPSMeter : ModBehaviour
             return cached;
         }
 
+        // Resolve Essence scaling only from the Essence's own configured
+        // damage data. Do not fall back to the runtime actor here: an Essence
+        // socketed into a character skill can share that skill's actor chain
+        // and would otherwise inherit the host skill's scaler (for example,
+        // Essence of Charcoal incorrectly inheriting Valiant Heart's 2.4 AD).
         DpsData.DamageScalingType scaling = FindConfiguredGemScaling(gem);
-        if (scaling == DpsData.DamageScalingType.None)
-        {
-            scaling = FindDamageScalingType(actor);
-        }
 
         if (scaling != DpsData.DamageScalingType.None)
         {
