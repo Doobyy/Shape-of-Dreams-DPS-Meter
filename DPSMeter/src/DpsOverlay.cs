@@ -446,18 +446,11 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private static Sprite GetIcon(SkillTrigger skill)
     {
-        if (skill == null)
+        if (skill == null || skill.currentConfig == null)
             return null;
 
-        Sprite icon = FindSpriteMember(skill);
-        if (icon != null)
-            return icon;
-
-        icon = FindSpriteMember(skill.currentConfig);
-        if (icon != null)
-            return icon;
-
-        return null;
+        // The game's skill icon is stored on the active TriggerConfig.
+        return skill.currentConfig.triggerIcon;
     }
 
     private static Sprite FindSpriteMember(object target)
