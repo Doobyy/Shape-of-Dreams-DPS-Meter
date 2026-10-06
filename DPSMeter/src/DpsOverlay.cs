@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.31";
+    private const string DevelopmentVersion = "v4.32";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -109,7 +109,7 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             case DisplayMode.CurrentDps:
                 DrawPersonal(
-                    _data.CurrentPersonalSkills,
+                    _data.CurrentPersonalSkillRows,
                     _data.CurrentPersonalOther,
                     _data.CurrentPersonalEssences,
                     _data.CurrentInstancePersonalDamage,
@@ -118,7 +118,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             case DisplayMode.DamageTotal:
                 DrawPersonal(
-                    _data.CumulativePersonalSkills,
+                    _data.CumulativePersonalSkillRows,
                     _data.CumulativePersonalOther,
                     _data.CumulativePersonalEssences,
                     _data.CumulativePersonalDamage,
@@ -161,8 +161,8 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 DrawHealingBreakdown(
                     _mode == DisplayMode.CurrentDps
-                        ? _data.CurrentPersonalHealing
-                        : _data.CumulativeHealingSources,
+                        ? _data.CurrentPersonalHealingRows
+                        : _data.CumulativeHealingRows,
                     _mode == DisplayMode.CurrentDps
                         ? _data.CurrentInstancePersonalHealing
                         : _data.CumulativePersonalHealing);
@@ -441,7 +441,7 @@ public sealed class DpsOverlay : MonoBehaviour
     }
 
     private void DrawPersonal(
-        IReadOnlyList<KeyValuePair<string, float>> sources,
+        IReadOnlyList<DpsData.BreakdownRow> sources,
         IReadOnlyList<KeyValuePair<string, float>> other,
         IReadOnlyList<KeyValuePair<string, float>> essences,
         float total,
@@ -451,14 +451,14 @@ public sealed class DpsOverlay : MonoBehaviour
 
         for (int i = 0; i < sources.Count; i++)
         {
-            KeyValuePair<string, float> row = sources[i];
+            DpsData.BreakdownRow row = sources[i];
             rows.Add(new DamageRow
             {
-                Name = StripRichTextTags(row.Key),
-                Amount = row.Value,
-                Elemental = _data.GetCurrentSkillElement(row.Key),
-                Scaling = _data.GetCurrentSkillScaling(row.Key),
-                Icon = _data.GetSkillIcon(row.Key)
+                Name = StripRichTextTags(row.Name),
+                Amount = row.Amount,
+                Elemental = _data.GetCurrentSkillElement(row.Identity),
+                Scaling = _data.GetCurrentSkillScaling(row.Identity),
+                Icon = _data.GetSkillIcon(row.Identity)
             });
         }
 
@@ -541,7 +541,7 @@ public sealed class DpsOverlay : MonoBehaviour
         DrawHealingSources(rows, total);
     }
 
-    private void DrawHealingSources(IReadOnlyList<KeyValuePair<string, float>> rows, float total)
+    private void DrawHealingSources(IReadOnlyList<DpsData.BreakdownRow> rows, float total)
     {
         if (rows == null || rows.Count == 0)
         {
@@ -549,14 +549,14 @@ public sealed class DpsOverlay : MonoBehaviour
             return;
         }
 
-        float maxAmount = rows[0].Value;
+        float maxAmount = rows[0].Amount;
         for (int i = 0; i < rows.Count; i++)
         {
-            KeyValuePair<string, float> row = rows[i];
+            DpsData.BreakdownRow row = rows[i];
             Sprite icon = _mode == DisplayMode.TotalHps || _mode == DisplayMode.DamageTotal
-                ? _data.GetCumulativeHealingIcon(row.Key)
-                : _data.GetCurrentHealingIcon(row.Key);
-            DrawHealingRow(row.Key, row.Value, total, maxAmount, icon);
+                ? _data.GetCumulativeHealingIcon(row.Identity)
+                : _data.GetCurrentHealingIcon(row.Identity);
+            DrawHealingRow(row.Name, row.Amount, total, maxAmount, icon);
         }
     }
 
