@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -113,11 +114,22 @@ public sealed class DPSMeter : ModBehaviour
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
         AbilityInstance ability = info.actor.FindFirstOfType<AbilityInstance>();
 
-        Gem gem = ability != null ? ability.gem : null;
+        List<Gem> essences = new List<Gem>();
+        Gem directGem = ability != null ? ability.gem : null;
 
-        if (gem == null)
+        if (directGem != null)
         {
-            gem = info.actor.FindFirstOfType<Gem>();
+            essences.Add(directGem);
+        }
+
+        Gem[] heroGems = sourceHero.GetComponentsInChildren<Gem>(true);
+        for (int i = 0; i < heroGems.Length; i++)
+        {
+            Gem candidate = heroGems[i];
+            if (candidate != null && !essences.Contains(candidate) && info.damage.IsAmountModifiedBy(candidate))
+            {
+                essences.Add(candidate);
+            }
         }
 
         string skillName = skill != null
@@ -134,7 +146,7 @@ public sealed class DPSMeter : ModBehaviour
             isLocalPlayer,
             skill,
             skillName,
-            gem,
+            essences,
             elementalType,
             playerName);
     }
