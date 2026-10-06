@@ -155,12 +155,14 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         meter._healingTraceCount++;
+        Debug.Log("[DPS Meter][HEAL TRACE] ENTER source=" + DescribeHealingObject(source));
 
         try
         {
             Type starEffectType = typeof(Actor).Assembly.GetType("StarEffect");
             if (starEffectType == null)
             {
+                Debug.Log("[DPS Meter][HEAL TRACE] StarEffect TYPE NOT FOUND");
                 return;
             }
 
