@@ -16,6 +16,7 @@ public sealed class DPSMeter : ModBehaviour
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private readonly Dictionary<Gem, EssenceProcessorHooks> _essenceProcessorHooks = new Dictionary<Gem, EssenceProcessorHooks>();
     private readonly Dictionary<Gem, Stack<float>> _essenceProcessorStarts = new Dictionary<Gem, Stack<float>>();
+    private readonly Dictionary<Gem, System.Action<EventInfoDamage>> _essenceDamageHandlers = new Dictionary<Gem, System.Action<EventInfoDamage>>();
     private readonly List<EssenceContribution> _pendingEssenceContributions = new List<EssenceContribution>();
     private float _nextEssenceProcessorRefreshTime;
 
@@ -165,7 +166,10 @@ public sealed class DPSMeter : ModBehaviour
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
         AbilityInstance ability = info.actor.FindFirstOfType<AbilityInstance>();
         Gem directGem = ability != null ? ability.gem : null;
-        Dictionary<Gem, float> essenceContributions = ConsumeEssenceContributions(info.actor, info.victim);
+        Dictionary<Gem, float> essenceContributions = ConsumeEssenceContributions(
+            info.actor,
+            info.victim,
+            producedDamage);
 
         if (IsEssenceGem(directGem))
         {
@@ -279,18 +283,40 @@ public sealed class DPSMeter : ModBehaviour
         gem.dealtDamageProcessor.Add(before, int.MinValue);
         gem.dealtDamageProcessor.Add(after, int.MaxValue);
 
+        System.Action<EventInfoDamage> damageHandler = info => OnEssenceDealDamage(gem, info);
+
+        gem.ActorEvent_OnDealDamage += damageHandler;
+
         _essenceProcessorHooks[gem] = new EssenceProcessorHooks
         {
             Before = before,
             After = after
         };
 
+        _essenceDamageHandlers[gem] = damageHandler;
         _essenceProcessorStarts[gem] = new Stack<float>();
     }
 
     private static bool IsEssenceGem(Gem gem)
     {
         return gem != null && gem.location.index > 0;
+    }
+
+    private void OnEssenceDealDamage(Gem gem, EventInfoDamage info)
+    {
+        if (gem == null || info.actor == null || info.victim == null || info.damage.amount <= 0f)
+        {
+            return;
+        }
+
+        _pendingEssenceContributions.Add(new EssenceContribution
+        {
+            Source = info.actor,
+            Victim = info.victim,
+            Essence = gem,
+            Amount = Mathf.Max(0f, info.damage.amount + info.damage.discardedAmount),
+            Frame = Time.frameCount
+        });
     }
 
     private void OnEssenceProcessorBefore(Gem gem, ref DamageData data)
@@ -333,7 +359,8 @@ public sealed class DPSMeter : ModBehaviour
 
     private Dictionary<Gem, float> ConsumeEssenceContributions(
         Actor source,
-        Entity victim)
+        Entity victim,
+        float producedDamage)
     {
         Dictionary<Gem, float> result = new Dictionary<Gem, float>();
 
@@ -352,6 +379,11 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             if (pending.Source != source || pending.Victim != victim)
+            {
+                continue;
+            }
+
+            if (Mathf.Abs(pending.Amount - producedDamage) > 0.01f)
             {
                 continue;
             }
@@ -382,10 +414,17 @@ public sealed class DPSMeter : ModBehaviour
             {
                 gem.dealtDamageProcessor.Remove(hooks.Before);
                 gem.dealtDamageProcessor.Remove(hooks.After);
+
+                System.Action<EventInfoDamage> damageHandler;
+                if (_essenceDamageHandlers.TryGetValue(gem, out damageHandler))
+                {
+                    gem.ActorEvent_OnDealDamage -= damageHandler;
+                }
             }
         }
 
         _essenceProcessorHooks.Clear();
+        _essenceDamageHandlers.Clear();
         _essenceProcessorStarts.Clear();
         _pendingEssenceContributions.Clear();
     }
