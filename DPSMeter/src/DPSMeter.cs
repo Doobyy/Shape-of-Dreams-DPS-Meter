@@ -203,7 +203,11 @@ public sealed class DPSMeter : ModBehaviour
             }
         }
 
-        string skillName = skill != null
+        // Essence-generated damage is already represented by its Essence row.
+        // Do not also attribute that same hit to the parent Memory/Skill.
+        bool isDirectEssenceDamage = IsEssenceGem(directGem);
+
+        string skillName = !isDirectEssenceDamage && skill != null
             ? skill.GetFormattedSkillTitle()
             : null;
 
@@ -225,7 +229,8 @@ public sealed class DPSMeter : ModBehaviour
             "Basic / Other",
             essenceContributions,
             elementalType,
-            playerName);
+            playerName,
+            isDirectEssenceDamage);
     }
 
     private static Sprite FindSkillIcon(SkillTrigger skill)
