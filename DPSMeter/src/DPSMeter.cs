@@ -870,6 +870,164 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
+    private static DpsData.DamageScalingType FindConfiguredGemAbilityScaling(
+        AbilityInstance instance,
+        Gem gem,
+        int depth)
+    {
+        if (instance == null || gem == null || depth > 8)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        if (instance.gem == gem)
+        {
+            DamageInstance damageInstance = instance as DamageInstance;
+            if (damageInstance != null)
+            {
+                DpsData.DamageScalingType scaling = GetScalingType(damageInstance.dmgFactor);
+                if (scaling != DpsData.DamageScalingType.None)
+                {
+                    return scaling;
+                }
+            }
+
+            FieldInfo dmgFactorField = instance.GetType().GetField(
+                "dmgFactor",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (dmgFactorField != null && dmgFactorField.FieldType == typeof(ScalingValue))
+            {
+                try
+                {
+                    ScalingValue configuredScaling = (ScalingValue)dmgFactorField.GetValue(instance);
+                    DpsData.DamageScalingType scaling = GetScalingType(configuredScaling);
+                    if (scaling != DpsData.DamageScalingType.None)
+                    {
+                        return scaling;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            DpsData.DamageScalingType nestedScaling = FindConfiguredAbilityScaling(instance, 0);
+            if (nestedScaling != DpsData.DamageScalingType.None)
+            {
+                return nestedScaling;
+            }
+        }
+
+        List<Actor> children = instance.children;
+        if (children == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child == null)
+            {
+                continue;
+            }
+
+            DpsData.DamageScalingType scaling = FindConfiguredGemAbilityScaling(child, gem, depth + 1);
+            if (scaling != DpsData.DamageScalingType.None)
+            {
+                return scaling;
+            }
+        }
+
+        return DpsData.DamageScalingType.None;
+    }
+
+    private static DpsData.DamageScalingType FindConfiguredAbilityScaling(AbilityInstance instance, int depth)
+    {
+        if (instance == null || depth > 6)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        DamageInstance damageInstance = instance as DamageInstance;
+        if (damageInstance != null)
+        {
+            DpsData.DamageScalingType scaling = GetScalingType(damageInstance.dmgFactor);
+            if (scaling != DpsData.DamageScalingType.None)
+            {
+                return scaling;
+            }
+        }
+
+        FieldInfo dmgFactorField = instance.GetType().GetField(
+            "dmgFactor",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        if (dmgFactorField != null && dmgFactorField.FieldType == typeof(ScalingValue))
+        {
+            try
+            {
+                ScalingValue configuredScaling = (ScalingValue)dmgFactorField.GetValue(instance);
+                DpsData.DamageScalingType scaling = GetScalingType(configuredScaling);
+                if (scaling != DpsData.DamageScalingType.None)
+                {
+                    return scaling;
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        List<Actor> children = instance.children;
+        if (children == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child == null)
+            {
+                continue;
+            }
+
+            DpsData.DamageScalingType scaling = FindConfiguredAbilityScaling(child, depth + 1);
+            if (scaling != DpsData.DamageScalingType.None)
+            {
+                return scaling;
+            }
+        }
+
+        return DpsData.DamageScalingType.None;
+    }
+
+    private static DpsData.DamageScalingType GetScalingType(ScalingValue scaling)
+    {
+        float ad = Mathf.Max(0f, scaling.adFactor);
+        float ap = Mathf.Max(0f, scaling.apFactor);
+        float hp = Mathf.Max(0f, scaling.addedHpFactor);
+
+        if (ad <= 0f && ap <= 0f && hp <= 0f)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        if (ap > ad && ap >= hp)
+        {
+            return DpsData.DamageScalingType.Ap;
+        }
+
+        if (hp > ad && hp > ap)
+        {
+            return DpsData.DamageScalingType.Hp;
+        }
+
+        return DpsData.DamageScalingType.Ad;
+    }
+
     private static DpsData.DamageScalingType FindConfiguredGemScaling(Gem gem)
     {
         if (gem == null)
