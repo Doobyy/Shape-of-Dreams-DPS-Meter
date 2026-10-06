@@ -33,7 +33,6 @@ public sealed class DPSMeter : ModBehaviour
 
     private void AttachToClientEvents()
     {
-        Debug.Log("[DPS Meter][DIAGNOSTIC] v4.54 loaded");
         ClientEventManager currentManager = ClientEventManager.instance;
 
         if (currentManager == null)
@@ -856,12 +855,35 @@ public sealed class DPSMeter : ModBehaviour
             return cached;
         }
 
-        // Resolve Essence scaling only from the Essence's own configured
-        // damage data. Do not fall back to the runtime actor here: an Essence
-        // socketed into a character skill can share that skill's actor chain
-        // and would otherwise inherit the host skill's scaler (for example,
-        // Essence of Charcoal incorrectly inheriting Valiant Heart's 2.4 AD).
+        // Resolve Essence scaling only from the configured data associated
+        // with this Gem. The current runtime structure is still ambiguous, so
+        // trace only Charcoal here to identify whether its configured instance
+        // is the Essence or the host skill.
         DpsData.DamageScalingType scaling = FindConfiguredGemScaling(gem);
+
+        if (string.Equals(gem.GetOriginalName(), "E_Charcoal", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(gem.name, "E_Charcoal", StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log("[DPS Meter][CHARCOAL TRACE] gemType=" + gem.GetType().FullName +
+                " gemName=" + (gem.name ?? "<null>") +
+                " original=" + (gem.GetOriginalName() ?? "<null>"));
+
+            if (gem.skill != null && gem.skill.currentConfig != null)
+            {
+                AbilityInstance configured = gem.skill.currentConfig.spawnedInstance;
+                Debug.Log("[DPS Meter][CHARCOAL TRACE] configuredType=" +
+                    (configured == null ? "<null>" : configured.GetType().FullName) +
+                    " configuredName=" + (configured == null ? "<null>" : configured.name) +
+                    " configuredGem=" + (configured == null || configured.gem == null
+                        ? "<null>"
+                        : configured.gem.GetOriginalName()));
+
+                if (configured != null)
+                {
+                    LogCharcoalScalingFields(configured, 0);
+                }
+            }
+        }
 
         if (scaling != DpsData.DamageScalingType.None)
         {
@@ -876,6 +898,60 @@ public sealed class DPSMeter : ModBehaviour
 
 
 
+
+    private static void LogCharcoalScalingFields(AbilityInstance instance, int depth)
+    {
+        if (instance == null || depth > 4)
+        {
+            return;
+        }
+
+        Type type = instance.GetType();
+        string gemName = instance.gem == null ? "<null>" : instance.gem.GetOriginalName();
+
+        Debug.Log("[DPS Meter][CHARCOAL TRACE] depth=" + depth +
+            " type=" + type.FullName +
+            " name=" + instance.name +
+            " gem=" + gemName);
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field.FieldType != typeof(ScalingValue))
+            {
+                continue;
+            }
+
+            try
+            {
+                ScalingValue value = (ScalingValue)field.GetValue(instance);
+                Debug.Log("[DPS Meter][CHARCOAL TRACE] depth=" + depth +
+                    " scalingField=" + field.Name +
+                    " value=" + value);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        List<Actor> children = instance.children;
+        if (children == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child != null)
+            {
+                LogCharcoalScalingFields(child, depth + 1);
+            }
+        }
+    }
 
     private static DpsData.DamageScalingType FindConfiguredGemAbilityScaling(
         AbilityInstance instance,
