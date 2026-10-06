@@ -21,7 +21,6 @@ public sealed class DPSMeter : ModBehaviour
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private bool _healingDiagnosticLogged;
     private int _healingEventDiagnosticCount;
-    private readonly Dictionary<string, string> _healingSourceNames = new Dictionary<string, string>();
     private void Awake()
     {
         Instance = this;
