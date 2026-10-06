@@ -352,7 +352,7 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             DamageRow row = rows[i];
-            DrawDamageRow(row.Name, row.Amount, total, rows[0].Amount, i, row.Elemental, row.Icon);
+            DrawDamageRow(row.Name, row.Amount, total, rows[0].Amount, i, row.Elemental, row.Scaling, row.Icon);
         }
     }
 
@@ -367,11 +367,11 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             KeyValuePair<string, float> row = rows[i];
-            DrawDamageRow(row.Key, row.Value, total, rows[0].Value, i, null, null);
+            DrawDamageRow(row.Key, row.Value, total, rows[0].Value, i, null, DpsData.DamageScalingType.None, null);
         }
     }
 
-    private void DrawDamageRow(string name, float amount, float total, float maxAmount, int index, ElementalType? elemental, Sprite icon)
+    private void DrawDamageRow(string name, float amount, float total, float maxAmount, int index, ElementalType? elemental, DpsData.DamageScalingType scaling, Sprite icon)
     {
         float ratio = maxAmount > 0f ? Mathf.Clamp01(amount / maxAmount) : 0f;
         float percent = total > 0f ? Mathf.Clamp01(amount / total) * 100f : 0f;
@@ -381,7 +381,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.DrawTexture(rowRect, _whiteTexture);
 
-        GUI.color = GetBarColor(elemental);
+        GUI.color = GetBarColor(elemental, scaling);
         GUI.DrawTexture(
             new Rect(
                 rowRect.x,
