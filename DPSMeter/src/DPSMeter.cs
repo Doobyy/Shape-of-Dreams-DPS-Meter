@@ -487,6 +487,9 @@ public sealed class DPSMeter : ModBehaviour
                 " value=" + item);
 
             TraceHealingReferenceMember(item.GetType(), "item", item);
+            TraceHealingObjectMembers(
+                ownerType.Name + "." + memberName + "[" + count + "]",
+                item);
 
             count++;
             if (count >= 20)
