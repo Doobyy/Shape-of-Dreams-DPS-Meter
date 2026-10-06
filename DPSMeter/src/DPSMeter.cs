@@ -577,8 +577,24 @@ public sealed class DPSMeter : ModBehaviour
     private static void TraceHealingIdentity(Actor source)
     {
         if (source == null) return;
-        Debug.Log("[DPS Meter][HEAL IDENTITY] actorType=" + source.GetType().FullName + " name=" + (source.name ?? "<null>"));
-        TraceHealingIdentityObject(source, "actor", 0, new List<object>());
+
+        List<object> seen = new List<object>();
+        Actor current = source;
+        int actorDepth = 0;
+
+        while (current != null && actorDepth < 8)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL IDENTITY ACTOR] depth=" + actorDepth +
+                " type=" + current.GetType().FullName +
+                " name=" + (current.name ?? "<null>") +
+                " parent=" + (current.parentActor == null ? "<null>" : current.parentActor.name));
+
+            TraceHealingIdentityObject(current, "actor[" + actorDepth + "]", 0, seen);
+
+            current = current.parentActor;
+            actorDepth++;
+        }
     }
 
     private static void TraceHealingIdentityObject(object target, string path, int depth, List<object> seen)
