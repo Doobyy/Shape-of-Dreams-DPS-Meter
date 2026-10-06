@@ -519,7 +519,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             rows.Add(new DamageRow
             {
-                Name = StripRichTextTags(GetEssenceDisplayName(row.Key)),
+                Name = StripRichTextTags(_data.GetEssenceDisplayName(row.Key)),
                 Amount = row.Value,
                 Elemental = cumulativeEssences
                     ? _data.GetCumulativeEssenceElement(row.Key)
@@ -987,29 +987,6 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         return title;
-    }
-
-    private static string GetEssenceDisplayName(string name)
-    {
-        if (string.IsNullOrEmpty(name))
-        {
-            return "Essence";
-        }
-
-        if (name.StartsWith("Gem_"))
-        {
-            name = name.Substring(4);
-
-            int separator = name.IndexOf('_');
-            if (separator > 0 && separator <= 2)
-            {
-                name = name.Substring(separator + 1);
-            }
-        }
-
-        name = name.Replace('_', ' ').Trim();
-
-        return string.IsNullOrEmpty(name) ? "Essence" : "Essence of " + name;
     }
 
     private static string FormatNumber(float value)
