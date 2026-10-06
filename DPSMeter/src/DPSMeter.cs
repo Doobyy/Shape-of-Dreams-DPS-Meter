@@ -17,6 +17,7 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private readonly HashSet<AbilityInstance> _tracedAbilityInstances = new HashSet<AbilityInstance>();
+    private readonly HashSet<Gem> _tracedGems = new HashSet<Gem>();
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
@@ -149,6 +150,7 @@ public sealed class DPSMeter : ModBehaviour
         bool isLocalPlayer = sourcePlayer == local;
 
         TraceAbilitySource(info.actor);
+        TraceGemSource(FindDamageSourceEssence(info.actor));
 
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
         // An Essence can create its own AbilityInstance/child actor. In that
@@ -246,7 +248,12 @@ public sealed class DPSMeter : ModBehaviour
             return cached;
         }
 
-        DpsData.DamageScalingType scaling = FindDamageScalingType(actor);
+        DpsData.DamageScalingType scaling = FindConfiguredGemScaling(gem);
+        if (scaling == DpsData.DamageScalingType.None)
+        {
+            scaling = FindDamageScalingType(actor);
+        }
+
         if (scaling != DpsData.DamageScalingType.None)
         {
             _essenceScalingCache[gem] = scaling;
@@ -269,13 +276,127 @@ public sealed class DPSMeter : ModBehaviour
                 if (damageInstance != null)
                 {
                     ScalingValue scaling = damageInstance.dmgFactor;
-                    Debug.Log($"[DPS Meter][v3.8 TRACE] Damage ancestry depth={depth} type={instance.GetType().Name} gem={(instance.gem != null ? instance.gem.GetActorReadableName() : "none")} scaling=ad={scaling.adFactor}, ap={scaling.apFactor}, addedHp={scaling.addedHpFactor}, base={scaling.baseValue} elemental={damageInstance.elemental}");
+                    Debug.Log($"[DPS Meter][v3.9 TRACE] Damage ancestry depth={depth} type={instance.GetType().Name} gem={(instance.gem != null ? instance.gem.GetActorReadableName() : "none")} scaling=ad={scaling.adFactor}, ap={scaling.apFactor}, addedHp={scaling.addedHpFactor}, base={scaling.baseValue} elemental={damageInstance.elemental}");
                 }
             }
 
             current = current.parentActor;
             depth++;
         }
+    }
+
+    private void TraceGemSource(Gem gem)
+    {
+        if (gem == null || !_tracedGems.Add(gem))
+        {
+            return;
+        }
+
+        SkillTrigger skill = gem.skill;
+        if (skill == null)
+        {
+            Debug.Log("[DPS Meter][v3.9 TRACE] Gem has no SkillTrigger: " + gem.GetActorReadableName());
+            return;
+        }
+
+        TriggerConfig config = skill.currentConfig;
+        if (config == null)
+        {
+            Debug.Log("[DPS Meter][v3.9 TRACE] Gem skill has no current config: " + gem.GetActorReadableName());
+            return;
+        }
+
+        AbilityInstance configured = config.spawnedInstance;
+        string configuredName = configured != null ? configured.GetType().Name : "none";
+
+        Debug.Log("[DPS Meter][v3.9 TRACE] Gem source=" + gem.GetActorReadableName()
+            + " level=" + gem.effectiveLevel
+            + " skill=" + skill.GetFormattedSkillTitle()
+            + " configIndex=" + skill.currentConfigIndex
+            + " spawnedInstance=" + configuredName);
+
+        TraceConfiguredAbilityInstance(configured, 0);
+    }
+
+    private void TraceConfiguredAbilityInstance(AbilityInstance instance, int depth)
+    {
+        if (instance == null || depth > 4)
+        {
+            return;
+        }
+
+        DamageInstance damageInstance = instance as DamageInstance;
+        if (damageInstance != null)
+        {
+            ScalingValue scaling = damageInstance.dmgFactor;
+            Debug.Log("[DPS Meter][v3.9 TRACE] Configured ability depth=" + depth
+                + " type=" + instance.GetType().Name
+                + " scaling=ad=" + scaling.adFactor
+                + ", ap=" + scaling.apFactor
+                + ", addedHp=" + scaling.addedHpFactor
+                + ", base=" + scaling.baseValue
+                + " elemental=" + damageInstance.elemental);
+        }
+        else
+        {
+            Debug.Log("[DPS Meter][v3.9 TRACE] Configured ability depth=" + depth
+                + " type=" + instance.GetType().Name
+                + " no DamageInstance");
+        }
+
+        List<Actor> children = instance.children;
+        if (children == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child != null)
+            {
+                TraceConfiguredAbilityInstance(child, depth + 1);
+            }
+        }
+    }
+
+    private static DpsData.DamageScalingType FindConfiguredGemScaling(Gem gem)
+    {
+        if (gem == null || gem.skill == null || gem.skill.currentConfig == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        AbilityInstance configured = gem.skill.currentConfig.spawnedInstance;
+        DamageInstance damageInstance = configured as DamageInstance;
+
+        if (damageInstance == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        ScalingValue scaling = damageInstance.dmgFactor;
+
+        float ad = Mathf.Max(0f, scaling.adFactor);
+        float ap = Mathf.Max(0f, scaling.apFactor);
+        float hp = Mathf.Max(0f, scaling.addedHpFactor);
+
+        if (ad <= 0f && ap <= 0f && hp <= 0f)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        if (ap > ad && ap >= hp)
+        {
+            return DpsData.DamageScalingType.Ap;
+        }
+
+        if (hp > ad && hp > ap)
+        {
+            return DpsData.DamageScalingType.Hp;
+        }
+
+        return DpsData.DamageScalingType.Ad;
     }
 
     private void TraceAbilityChildren(AbilityInstance source)
@@ -318,7 +439,7 @@ public sealed class DPSMeter : ModBehaviour
             {
                 Gem gem = instance.gem;
                 DamageInstance damageInstance = instance as DamageInstance;
-                ScalingValue scaling = damageInstance != null ? damageInstance.dmgFactor : null;
+                ScalingValue scaling = damageInstance != null ? damageInstance.dmgFactor : default(ScalingValue);
 
                 string gemName = gem != null ? gem.GetActorReadableName() : "none";
                 string typeName = instance.GetType().Name;
