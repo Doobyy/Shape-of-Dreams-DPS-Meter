@@ -182,6 +182,7 @@ public sealed class DpsData
                 Add(_cumulativePersonalEssences, essenceKey, contribution);
                 AddElement(_currentPersonalEssenceElements, essenceKey, elemental, contribution);
                 AddScaling(_currentPersonalEssenceScaling, essenceKey, scalingType, contribution);
+                AddScaling(_cumulativePersonalEssenceScaling, essenceKey, scalingType, contribution);
                 AddElement(_cumulativePersonalEssenceElements, essenceKey, elemental, contribution);
 
                 if (essence.icon != null)
