@@ -183,7 +183,7 @@ public sealed class DPSMeter : ModBehaviour
         ElementalType? elementalType = info.damage.elemental;
         DpsData.DamageScalingType scalingType = DpsData.DamageScalingType.None;
 
-        Debug.Log("[DPS Meter][v4.1 TRACE] damage skill=" +
+        Debug.Log("[DPS Meter][v4.4 TRACE] damage skill=" +
             (skillName ?? "none") +
             " directEssence=" + isDirectEssenceDamage +
             " directGem=" + (directGem != null ? directGem.GetActorReadableName() : "none") +
@@ -209,7 +209,7 @@ public sealed class DPSMeter : ModBehaviour
             }
         }
 
-        Debug.Log("[DPS Meter][v4.1 TRACE] resolved scaling=" + scalingType +
+        Debug.Log("[DPS Meter][v4.4 TRACE] resolved scaling=" + scalingType +
             " skill=" + (skillName ?? "none"));
 
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
@@ -243,7 +243,7 @@ public sealed class DPSMeter : ModBehaviour
 
         if (sourceGem == null && skill != null)
         {
-            sourceGem = FindGemOnSkillTrigger(skill);
+            sourceGem = FindGemOnSkillTrigger(skill, actor);
         }
 
         DpsData.DamageScalingType scaling = FindConfiguredGemScaling(sourceGem);
@@ -261,54 +261,45 @@ public sealed class DPSMeter : ModBehaviour
         return scaling;
     }
 
-    private static Gem FindGemOnSkillTrigger(SkillTrigger skill)
+    private static Gem FindGemOnSkillTrigger(SkillTrigger skill, Actor actor)
     {
-        if (skill == null)
+        if (skill == null || actor == null)
         {
             return null;
         }
 
-        System.Type type = skill.GetType();
-
-        System.Reflection.FieldInfo[] fields = type.GetFields(
-            System.Reflection.BindingFlags.Instance |
-            System.Reflection.BindingFlags.Public |
-            System.Reflection.BindingFlags.NonPublic);
-
-        for (int i = 0; i < fields.Length; i++)
+        Hero hero = actor.firstEntity as Hero;
+        if (hero == null || hero.Skill == null)
         {
-            if (fields[i].FieldType == typeof(Gem))
-            {
-                Gem gem = fields[i].GetValue(skill) as Gem;
-                if (gem != null)
-                {
-                    return gem;
-                }
-            }
+            return null;
         }
 
-        System.Reflection.PropertyInfo[] properties = type.GetProperties(
-            System.Reflection.BindingFlags.Instance |
-            System.Reflection.BindingFlags.Public |
-            System.Reflection.BindingFlags.NonPublic);
-
-        for (int i = 0; i < properties.Length; i++)
+        HeroSkillLocation location;
+        if (!hero.Skill.TryGetSkillLocation(skill, out location))
         {
-            if (properties[i].PropertyType != typeof(Gem) || !properties[i].CanRead)
+            Debug.Log("[DPS Meter][v4.4 TRACE] SkillTrigger location lookup failed skill=" + skill.GetFormattedSkillTitle());
+            return null;
+        }
+
+        Debug.Log("[DPS Meter][v4.4 TRACE] SkillTrigger location=" + location + " skill=" + skill.GetFormattedSkillTitle());
+
+        IEnumerable<Gem> gems = hero.Skill.GetGemsInSkill(location);
+        if (gems == null)
+        {
+            return null;
+        }
+
+        foreach (Gem gem in gems)
+        {
+            if (gem == null)
             {
                 continue;
             }
 
-            try
+            DpsData.DamageScalingType scaling = FindConfiguredGemScaling(gem);
+            if (scaling != DpsData.DamageScalingType.None)
             {
-                Gem gem = properties[i].GetValue(skill, null) as Gem;
-                if (gem != null)
-                {
-                    return gem;
-                }
-            }
-            catch
-            {
+                return gem;
             }
         }
 
@@ -473,17 +464,17 @@ public sealed class DPSMeter : ModBehaviour
 
         try
         {
-            UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] FindConfiguredGemScaling gem=" + gem + " type=" + gem.GetType().Name);
+            UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] FindConfiguredGemScaling gem=" + gem + " type=" + gem.GetType().Name);
 
             if (gem.skill == null)
             {
-                UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] gem.skill=null");
+                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] gem.skill=null");
                 return DpsData.DamageScalingType.None;
             }
 
             if (gem.skill.currentConfig == null)
             {
-                UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] gem.skill.currentConfig=null");
+                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] gem.skill.currentConfig=null");
                 return DpsData.DamageScalingType.None;
             }
 
@@ -491,11 +482,11 @@ public sealed class DPSMeter : ModBehaviour
 
             if (configured == null)
             {
-                UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] spawnedInstance=null");
+                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] spawnedInstance=null");
                 return DpsData.DamageScalingType.None;
             }
 
-            UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] configured type=" + configured.GetType().Name);
+            UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] configured type=" + configured.GetType().Name);
 
             if (configured.GetType().Name == "Ai_E_MysticDagger")
             {
@@ -505,7 +496,7 @@ public sealed class DPSMeter : ModBehaviour
 
                 if (damageField == null)
                 {
-                    UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] Mystic Dagger damage field=null");
+                    UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] Mystic Dagger damage field=null");
                     return DpsData.DamageScalingType.None;
                 }
 
@@ -513,13 +504,13 @@ public sealed class DPSMeter : ModBehaviour
 
                 if (!(value is ScalingValue))
                 {
-                    UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] Mystic Dagger damage field type=" + damageField.FieldType);
+                    UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] Mystic Dagger damage field type=" + damageField.FieldType);
                     return DpsData.DamageScalingType.None;
                 }
 
                 ScalingValue scaling = (ScalingValue)value;
 
-                UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] Mystic Dagger damage scaling=ad=" +
+                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] Mystic Dagger damage scaling=ad=" +
                     scaling.adFactor + ", ap=" + scaling.apFactor + ", addedHp=" + scaling.addedHpFactor +
                     ", base=" + scaling.baseValue);
 
@@ -530,13 +521,13 @@ public sealed class DPSMeter : ModBehaviour
 
             if (damageInstance == null)
             {
-                UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] configured has no DamageInstance");
+                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] configured has no DamageInstance");
                 return DpsData.DamageScalingType.None;
             }
 
             ScalingValue damageScaling = damageInstance.dmgFactor;
 
-            UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] configured DamageInstance scaling=ad=" +
+            UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] configured DamageInstance scaling=ad=" +
                 damageScaling.adFactor + ", ap=" + damageScaling.apFactor +
                 ", addedHp=" + damageScaling.addedHpFactor + ", base=" + damageScaling.baseValue);
 
@@ -544,7 +535,7 @@ public sealed class DPSMeter : ModBehaviour
         }
         catch (System.Exception ex)
         {
-            UnityEngine.Debug.Log("[DPS Meter][v4.0 TRACE] FindConfiguredGemScaling exception=" + ex.GetType().Name + ": " + ex.Message);
+            UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] FindConfiguredGemScaling exception=" + ex.GetType().Name + ": " + ex.Message);
             return DpsData.DamageScalingType.None;
         }
     }
