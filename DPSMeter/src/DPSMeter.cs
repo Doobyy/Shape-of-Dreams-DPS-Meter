@@ -176,6 +176,12 @@ public sealed class DPSMeter : ModBehaviour
             {
                 TraceHealingHeroMembers(hero);
                 TraceHealingStarComponents(hero);
+
+                DewPlayer player = FindLocalDewPlayer(hero);
+                if (player != null)
+                {
+                    TraceHealingPlayerStarMembers(player);
+                }
             }
 
             current = current.parentActor;
@@ -183,6 +189,131 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         Debug.Log("[DPS Meter][HEAL TRACE] END");
+    }
+
+    private static DewPlayer FindLocalDewPlayer(Hero hero)
+    {
+        if (hero == null || DewPlayer.gamePlayers == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < DewPlayer.gamePlayers.Count; i++)
+        {
+            DewPlayer player = DewPlayer.gamePlayers[i];
+            if (player != null && player.hero == hero)
+            {
+                return player;
+            }
+        }
+
+        return null;
+    }
+
+    private static void TraceHealingPlayerStarMembers(DewPlayer player)
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        Type type = player.GetType();
+        Debug.Log("[DPS Meter][HEAL TRACE] PLAYER MEMBER SCAN type=" + type.FullName);
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            string name = field.Name ?? string.Empty;
+            string fieldTypeName = field.FieldType == null
+                ? string.Empty
+                : field.FieldType.FullName ?? field.FieldType.Name;
+
+            bool interesting =
+                name.IndexOf("star", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                name.IndexOf("loadout", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                name.IndexOf("profile", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                fieldTypeName.IndexOf("Star", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                fieldTypeName.IndexOf("Loadout", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                fieldTypeName.IndexOf("Profile", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (!interesting)
+            {
+                continue;
+            }
+
+            object value;
+            try
+            {
+                value = field.GetValue(player);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] PLAYER MEMBER " + name +
+                " declaredType=" + fieldTypeName +
+                " valueType=" + (value == null ? "null" : value.GetType().FullName));
+
+            if (value != null)
+            {
+                TraceHealingObjectMembers("Player:" + name, value);
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+            {
+                continue;
+            }
+
+            string name = property.Name ?? string.Empty;
+            string propertyTypeName = property.PropertyType == null
+                ? string.Empty
+                : property.PropertyType.FullName ?? property.PropertyType.Name;
+
+            bool interesting =
+                name.IndexOf("star", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                name.IndexOf("loadout", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                name.IndexOf("profile", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                propertyTypeName.IndexOf("Star", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                propertyTypeName.IndexOf("Loadout", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                propertyTypeName.IndexOf("Profile", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (!interesting)
+            {
+                continue;
+            }
+
+            object value;
+            try
+            {
+                value = property.GetValue(player, null);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] PLAYER PROPERTY " + name +
+                " declaredType=" + propertyTypeName +
+                " valueType=" + (value == null ? "null" : value.GetType().FullName));
+
+            if (value != null)
+            {
+                TraceHealingObjectMembers("PlayerProperty:" + name, value);
+            }
+        }
     }
 
     private static void TraceHealingStarComponents(Hero hero)
