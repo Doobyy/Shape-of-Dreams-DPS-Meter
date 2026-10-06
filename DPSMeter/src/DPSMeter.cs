@@ -17,9 +17,12 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<Gem, EssenceProcessorHooks> _essenceProcessorHooks = new Dictionary<Gem, EssenceProcessorHooks>();
     private readonly Dictionary<Gem, Stack<float>> _essenceProcessorStarts = new Dictionary<Gem, Stack<float>>();
     private readonly Dictionary<Gem, System.Action<EventInfoDamage>> _essenceDamageHandlers = new Dictionary<Gem, System.Action<EventInfoDamage>>();
+    private readonly Dictionary<Gem, System.Action<EventInfoAbilityInstance>> _essenceAbilityHandlers = new Dictionary<Gem, System.Action<EventInfoAbilityInstance>>();
+    private readonly Dictionary<AbilityInstance, Gem> _essenceAbilityInstances = new Dictionary<AbilityInstance, Gem>();
     private readonly List<EssenceContribution> _pendingEssenceContributions = new List<EssenceContribution>();
     private float _nextEssenceProcessorRefreshTime;
     private int _diagnosticDamageLogs;
+    private int _diagnosticAbilityLogs;
 
     private sealed class EssenceProcessorHooks
     {
@@ -169,12 +172,20 @@ public sealed class DPSMeter : ModBehaviour
         // case the damage event's actor chain can contain the Gem even when
         // the first AbilityInstance is not the Essence's instance.
         Gem directGem = info.actor.FindFirstOfType<Gem>();
+        AbilityInstance abilityInstance = info.actor.FindFirstOfType<AbilityInstance>();
+        Gem abilityGem = null;
+        if (abilityInstance != null)
+        {
+            _essenceAbilityInstances.TryGetValue(abilityInstance, out abilityGem);
+        }
         if (_diagnosticDamageLogs < 12)
         {
             _diagnosticDamageLogs++;
             Debug.Log("[DPS Meter v2.2] Damage actor=" + DescribeActorChain(info.actor)
                 + " | trigger=" + (skill != null ? skill.GetActorReadableName() : "null")
                 + " | directGem=" + (directGem != null ? directGem.GetActorReadableName() : "null")
+                + " | ability=" + (abilityInstance != null ? abilityInstance.GetActorReadableName() : "null")
+                + " | abilityGem=" + (abilityGem != null ? abilityGem.GetActorReadableName() : "null")
                 + " | pending=" + _pendingEssenceContributions.Count);
         }
 
@@ -299,6 +310,11 @@ public sealed class DPSMeter : ModBehaviour
 
         gem.ActorEvent_OnDealDamage += damageHandler;
 
+        System.Action<EventInfoAbilityInstance> abilityHandler =
+            info => OnEssenceAbilityInstanceCreated(gem, info);
+
+        gem.ActorEvent_OnAbilityInstanceCreated += abilityHandler;
+
         _essenceProcessorHooks[gem] = new EssenceProcessorHooks
         {
             Before = before,
@@ -306,7 +322,30 @@ public sealed class DPSMeter : ModBehaviour
         };
 
         _essenceDamageHandlers[gem] = damageHandler;
+        _essenceAbilityHandlers[gem] = abilityHandler;
         _essenceProcessorStarts[gem] = new Stack<float>();
+    }
+
+    private void OnEssenceAbilityInstanceCreated(Gem gem, EventInfoAbilityInstance info)
+    {
+        if (gem == null || info.instance == null)
+        {
+            return;
+        }
+
+        _essenceAbilityInstances[info.instance] = gem;
+
+        if (_diagnosticAbilityLogs < 20)
+        {
+            _diagnosticAbilityLogs++;
+            Debug.Log("[DPS Meter v2.3] Essence ability created: gem="
+                + gem.GetActorReadableName()
+                + " | instance=" + info.instance.GetActorReadableName()
+                + " | eventActor=" + DescribeActorChain(info.actor)
+                + " | instanceChain=" + DescribeActorChain(info.instance)
+                + " | instanceGem="
+                + (info.instance.gem != null ? info.instance.gem.GetActorReadableName() : "null"));
+        }
     }
 
     private static bool IsEssenceGem(Gem gem)
@@ -480,12 +519,20 @@ public sealed class DPSMeter : ModBehaviour
                 if (_essenceDamageHandlers.TryGetValue(gem, out damageHandler))
                 {
                     gem.ActorEvent_OnDealDamage -= damageHandler;
+
+                    System.Action<EventInfoAbilityInstance> abilityHandler;
+                    if (_essenceAbilityHandlers.TryGetValue(gem, out abilityHandler))
+                    {
+                        gem.ActorEvent_OnAbilityInstanceCreated -= abilityHandler;
+                    }
                 }
             }
         }
 
         _essenceProcessorHooks.Clear();
         _essenceDamageHandlers.Clear();
+        _essenceAbilityHandlers.Clear();
+        _essenceAbilityInstances.Clear();
         _essenceProcessorStarts.Clear();
         _pendingEssenceContributions.Clear();
     }
