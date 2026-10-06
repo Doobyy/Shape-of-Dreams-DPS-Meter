@@ -16,11 +16,12 @@ public sealed class DpsOverlay : MonoBehaviour
     }
 
     private static readonly Color DefaultBarColor = new Color(0.30f, 0.30f, 0.30f, 0.68f);
+    private static readonly Color WindowFillColor = new Color(0f, 0f, 0f, 0.55f);
     private static readonly Color FireBarColor = new Color(0.62f, 0.18f, 0.18f, 0.68f);
     private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.68f);
     private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.68f);
     private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.68f);
-    private const string DevelopmentVersion = "v1.3";
+    private const string DevelopmentVersion = "v1.4";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -59,6 +60,9 @@ public sealed class DpsOverlay : MonoBehaviour
         EnsureStyles();
         HandleWindowInput();
 
+        GUI.color = WindowFillColor;
+        GUI.DrawTexture(_windowRect, _whiteTexture);
+        GUI.color = Color.white;
         GUI.Box(_windowRect, GUIContent.none, GUI.skin.window);
 
         Rect headerRect = new Rect(
@@ -286,28 +290,61 @@ public sealed class DpsOverlay : MonoBehaviour
         }
     }
 
+    private sealed class DamageRow
+    {
+        public string Name;
+        public float Amount;
+        public ElementalType? Elemental;
+        public Sprite Icon;
+    }
+
     private void DrawPersonal(
         IReadOnlyList<KeyValuePair<string, float>> sources,
         IReadOnlyList<KeyValuePair<string, float>> other,
         IReadOnlyList<KeyValuePair<Gem, float>> essences,
         float total)
     {
-        DrawSkillRows(sources, total);
-        DrawRows(other, total, sources.Count);
+        List<DamageRow> rows = new List<DamageRow>(sources.Count + other.Count + essences.Count);
 
-        if (essences.Count > 0)
+        for (int i = 0; i < sources.Count; i++)
         {
-            GUILayout.Space(4f);
-            GUILayout.Label("ESSENCES", _small);
-            DrawRows(essences, total, sources.Count + other.Count + 1);
+            KeyValuePair<string, float> row = sources[i];
+            rows.Add(new DamageRow
+            {
+                Name = row.Key,
+                Amount = row.Value,
+                Elemental = _data.GetCurrentSkillElement(row.Key),
+                Icon = _data.GetSkillIcon(row.Key)
+            });
         }
-    }
 
-    private void DrawSkillRows(
-        IReadOnlyList<KeyValuePair<string, float>> rows,
-        float total,
-        int indexOffset = 0)
-    {
+        for (int i = 0; i < other.Count; i++)
+        {
+            KeyValuePair<string, float> row = other[i];
+            rows.Add(new DamageRow
+            {
+                Name = row.Key,
+                Amount = row.Value
+            });
+        }
+
+        for (int i = 0; i < essences.Count; i++)
+        {
+            KeyValuePair<Gem, float> row = essences[i];
+            if (row.Key == null || row.Value <= 0f)
+                continue;
+
+            rows.Add(new DamageRow
+            {
+                Name = row.Key.GetActorReadableName(),
+                Amount = row.Value,
+                Elemental = _data.GetCurrentEssenceElement(row.Key),
+                Icon = row.Key.icon
+            });
+        }
+
+        rows.Sort((a, b) => b.Amount.CompareTo(a.Amount));
+
         if (rows.Count == 0)
         {
             GUILayout.Label("No damage recorded yet.", _small);
@@ -316,60 +353,8 @@ public sealed class DpsOverlay : MonoBehaviour
 
         for (int i = 0; i < rows.Count; i++)
         {
-            KeyValuePair<string, float> row = rows[i];
-            DrawDamageRow(row.Key, row.Value, total, indexOffset + i, _data.GetCurrentSkillElement(row.Key), _data.GetSkillIcon(row.Key));
-        }
-    }
-
-    private void DrawRows(
-        IReadOnlyList<KeyValuePair<string, float>> rows,
-        float total,
-        int indexOffset = 0)
-    {
-        if (rows.Count == 0)
-        {
-            GUILayout.Label("No damage recorded yet.", _small);
-            return;
-        }
-
-        for (int i = 0; i < rows.Count; i++)
-        {
-            KeyValuePair<string, float> row = rows[i];
-            DrawDamageRow(row.Key, row.Value, total, indexOffset + i, null, null);
-        }
-    }
-
-    private void DrawParty(IReadOnlyList<KeyValuePair<string, float>> rows, float total)
-    {
-        if (rows.Count == 0)
-        {
-            GUILayout.Label("No party damage recorded yet.", _small);
-            return;
-        }
-
-        for (int i = 0; i < rows.Count; i++)
-        {
-            KeyValuePair<string, float> row = rows[i];
-            DrawDamageRow(row.Key, row.Value, total, i, null, null);
-        }
-    }
-
-    private void DrawRows(
-        IReadOnlyList<KeyValuePair<Gem, float>> rows,
-        float total,
-        int indexOffset = 0)
-    {
-        if (rows.Count == 0)
-        {
-            GUILayout.Label("No damage recorded yet.", _small);
-            return;
-        }
-
-        for (int i = 0; i < rows.Count; i++)
-        {
-            KeyValuePair<Gem, float> row = rows[i];
-            string name = row.Key != null ? row.Key.GetActorReadableName() : "Unknown Essence";
-            DrawDamageRow(name, row.Value, total, indexOffset + i, _data.GetCurrentEssenceElement(row.Key), row.Key != null ? row.Key.icon : null);
+            DamageRow row = rows[i];
+            DrawDamageRow(row.Name, row.Amount, total, i, row.Elemental, row.Icon);
         }
     }
 
