@@ -11,6 +11,8 @@ public sealed class DpsOverlay : MonoBehaviour
     {
         CurrentDps,
         DamageTotal,
+        CurrentHps,
+        TotalHps,
         PartyDps,
         PartyTotal
     }
@@ -24,8 +26,9 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color AdScalingBarColor = new Color(0.55f, 0.36f, 0.18f, 0.68f);
     private static readonly Color ApScalingBarColor = new Color(0.18f, 0.50f, 0.55f, 0.68f);
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
+    private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.16";
+    private const string DevelopmentVersion = "v4.17";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -38,6 +41,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Vector2 _resizeStartMouse;
     private Vector2 _resizeStartSize;
     private bool _headerMoved;
+    private bool _showHealing;
 
     private GUIStyle _header;
     private GUIStyle _row;
@@ -106,6 +110,14 @@ public sealed class DpsOverlay : MonoBehaviour
                     true);
                 break;
 
+            case DisplayMode.CurrentHps:
+                DrawHealingSources(_data.CurrentPersonalHealing, _data.CurrentInstancePersonalHealing);
+                break;
+
+            case DisplayMode.TotalHps:
+                DrawHealingSources(_data.CumulativeHealingSources, _data.CumulativePersonalHealing);
+                break;
+
             case DisplayMode.PartyDps:
                 DrawParty(_data.CurrentParty, _data.CurrentInstancePartyDamage);
                 break;
@@ -113,6 +125,17 @@ public sealed class DpsOverlay : MonoBehaviour
             case DisplayMode.PartyTotal:
                 DrawParty(_data.CumulativeParty, _data.CumulativePartyDamage);
                 break;
+        }
+
+        if (_showHealing && (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal))
+        {
+            DrawHealingBreakdown(
+                _mode == DisplayMode.CurrentDps
+                    ? _data.CurrentPersonalHealing
+                    : _data.CumulativeHealingSources,
+                _mode == DisplayMode.CurrentDps
+                    ? _data.CurrentInstancePersonalHealing
+                    : _data.CumulativePersonalHealing);
         }
 
         GUILayout.EndScrollView();
@@ -138,10 +161,11 @@ public sealed class DpsOverlay : MonoBehaviour
             16f);
 
         float reloadWidth = 74f;
+        float chevronWidth = 22f;
         float metricWidth = headerRect.width * 0.35f;
-        float titleWidth = headerRect.width - metricWidth - reloadWidth - 6f;
+        float titleWidth = headerRect.width - metricWidth - reloadWidth - chevronWidth - 8f;
         Rect reloadRect = new Rect(
-            headerRect.x + titleWidth + metricWidth + 6f,
+            headerRect.x + titleWidth + chevronWidth + metricWidth + 6f,
             headerRect.y + 1f,
             reloadWidth,
             headerRect.height - 2f);
@@ -153,6 +177,23 @@ public sealed class DpsOverlay : MonoBehaviour
                 _resizing = true;
                 _resizeStartMouse = e.mousePosition;
                 _resizeStartSize = _windowRect.size;
+                e.Use();
+                return;
+            }
+
+            Rect chevronRect = new Rect(
+                headerRect.x + titleWidth,
+                headerRect.y + 1f,
+                chevronWidth,
+                headerRect.height - 2f);
+
+            if (chevronRect.Contains(e.mousePosition))
+            {
+                if (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal)
+                {
+                    _showHealing = !_showHealing;
+                }
+
                 e.Use();
                 return;
             }
@@ -228,7 +269,7 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 if (!_headerMoved)
                 {
-                    _mode = (DisplayMode)(((int)_mode + 1) % 4);
+                    _mode = (DisplayMode)(((int)_mode + 1) % 6);
                 }
 
                 _dragging = false;
@@ -254,6 +295,16 @@ public sealed class DpsOverlay : MonoBehaviour
                 metric = FormatNumber(_data.CumulativePersonalDamage) + " DAMAGE";
                 break;
 
+            case DisplayMode.CurrentHps:
+                title = "CURRENT HPS";
+                metric = FormatNumber(_data.CurrentPersonalHps) + " HPS";
+                break;
+
+            case DisplayMode.TotalHps:
+                title = "TOTAL HPS";
+                metric = FormatNumber(_data.TotalPersonalHps) + " HPS";
+                break;
+
             case DisplayMode.PartyDps:
                 title = "PARTY DPS";
                 metric = FormatNumber(_data.CurrentPartyDps) + " DPS";
@@ -266,8 +317,9 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         float reloadWidth = 74f;
+        float chevronWidth = 22f;
         float metricWidth = headerRect.width * 0.35f;
-        float titleWidth = headerRect.width - metricWidth - reloadWidth - 6f;
+        float titleWidth = headerRect.width - metricWidth - reloadWidth - chevronWidth - 8f;
 
         GUI.Label(
             new Rect(headerRect.x, headerRect.y, titleWidth, headerRect.height),
@@ -276,7 +328,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
         GUI.Label(
             new Rect(
-                headerRect.x + titleWidth,
+                headerRect.x + titleWidth + chevronWidth,
                 headerRect.y,
                 metricWidth,
                 headerRect.height),
@@ -285,7 +337,21 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (GUI.Button(
             new Rect(
-                headerRect.x + titleWidth + metricWidth + 6f,
+                headerRect.x + titleWidth,
+                headerRect.y + 1f,
+                chevronWidth,
+                headerRect.height - 2f),
+            (_showHealing && (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal)) ? "▼" : "▶"))
+        {
+            if (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal)
+            {
+                _showHealing = !_showHealing;
+            }
+        }
+
+        if (GUI.Button(
+            new Rect(
+                headerRect.x + titleWidth + chevronWidth + metricWidth + 6f,
                 headerRect.y + 1f,
                 reloadWidth,
                 headerRect.height - 2f),
@@ -373,6 +439,61 @@ public sealed class DpsOverlay : MonoBehaviour
             DamageRow row = rows[i];
             DrawDamageRow(row.Name, row.Amount, total, rows[0].Amount, i, row.Elemental, row.Scaling, row.Icon);
         }
+    }
+
+    private void DrawHealingBreakdown(IReadOnlyList<KeyValuePair<string, float>> rows, float total)
+    {
+        GUILayout.Label("----------", _small);
+        DrawHealingSources(rows, total);
+    }
+
+    private void DrawHealingSources(IReadOnlyList<KeyValuePair<string, float>> rows, float total)
+    {
+        if (rows == null || rows.Count == 0)
+        {
+            GUILayout.Label("No healing recorded yet.", _small);
+            return;
+        }
+
+        float maxAmount = rows[0].Value;
+        for (int i = 0; i < rows.Count; i++)
+        {
+            KeyValuePair<string, float> row = rows[i];
+            DrawHealingRow(row.Key, row.Value, total, maxAmount);
+        }
+    }
+
+    private void DrawHealingRow(string name, float amount, float total, float maxAmount)
+    {
+        float ratio = maxAmount > 0f ? Mathf.Clamp01(amount / maxAmount) : 0f;
+        float percent = total > 0f ? Mathf.Clamp01(amount / total) * 100f : 0f;
+
+        Rect rowRect = GUILayoutUtility.GetRect(0f, 22f, GUILayout.ExpandWidth(true));
+        rowRect.x = Mathf.Round(rowRect.x);
+        rowRect.y = Mathf.Round(rowRect.y);
+        rowRect.width = Mathf.Round(rowRect.width);
+        rowRect.height = Mathf.Round(rowRect.height);
+
+        Rect barRect = rowRect;
+        GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
+        GUI.DrawTexture(barRect, _whiteTexture);
+
+        GUI.color = HealingBarColor;
+        GUI.DrawTexture(
+            new Rect(barRect.x, barRect.y, barRect.width * ratio, barRect.height),
+            _whiteTexture);
+
+        GUI.color = SourceNameColor;
+        GUI.Label(
+            new Rect(barRect.x + 7f, rowRect.y, Mathf.Max(0f, barRect.width - 14f), rowRect.height),
+            StripRichTextTags(name),
+            _row);
+        GUI.Label(
+            new Rect(rowRect.x + 7f, rowRect.y, rowRect.width - 14f, rowRect.height),
+            FormatNumber(amount) + "  " + percent.ToString("0.0"),
+            _rowRight);
+
+        GUI.color = Color.white;
     }
 
     private void DrawParty(IReadOnlyList<KeyValuePair<string, float>> rows, float total)
