@@ -779,6 +779,17 @@ public sealed class DPSMeter : ModBehaviour
 
         DpsData.DamageScalingType scaling = FindConfiguredGemScaling(sourceGem);
 
+        // Character abilities such as Bismuth's Valiant Heart can carry their
+        // scaling on the skill's configured AbilityInstance rather than on a
+        // Gem. Check that configured instance before falling back to the live
+        // damage actor.
+        if (scaling == DpsData.DamageScalingType.None &&
+            skill != null &&
+            skill.currentConfig != null)
+        {
+            scaling = FindConfiguredAbilityScaling(skill.currentConfig.spawnedInstance, 0);
+        }
+
         if (scaling == DpsData.DamageScalingType.None)
         {
             scaling = FindDamageScalingType(actor);
