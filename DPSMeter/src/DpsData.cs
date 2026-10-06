@@ -94,7 +94,7 @@ public sealed class DpsData
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalHealing =>
         _currentPersonalHealing.OrderByDescending(pair => pair.Value).ToList();
 
-    public IReadOnlyList<KeyValuePair<string, float>> CumulativePersonalHealing =>
+    public IReadOnlyList<KeyValuePair<string, float>> CumulativeHealingSources =>
         _cumulativePersonalHealing.OrderByDescending(pair => pair.Value).ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalSkills =>
