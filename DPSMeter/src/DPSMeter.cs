@@ -466,6 +466,47 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static DpsData.DamageScalingType FindConfiguredAbilityScaling(AbilityInstance instance, int depth)
+    {
+        if (instance == null || depth > 6)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        DamageInstance damageInstance = instance as DamageInstance;
+        if (damageInstance != null)
+        {
+            DpsData.DamageScalingType scaling = GetScalingType(damageInstance.dmgFactor);
+            if (scaling != DpsData.DamageScalingType.None)
+            {
+                return scaling;
+            }
+        }
+
+        List<Actor> children = instance.children;
+        if (children == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child == null)
+            {
+                continue;
+            }
+
+            DpsData.DamageScalingType scaling = FindConfiguredAbilityScaling(child, depth + 1);
+            if (scaling != DpsData.DamageScalingType.None)
+            {
+                return scaling;
+            }
+        }
+
+        return DpsData.DamageScalingType.None;
+    }
+
     private static DpsData.DamageScalingType GetScalingType(ScalingValue scaling)
     {
         float ad = Mathf.Max(0f, scaling.adFactor);
@@ -554,19 +595,33 @@ public sealed class DPSMeter : ModBehaviour
 
             DamageInstance damageInstance = configured as DamageInstance;
 
-            if (damageInstance == null)
+            if (damageInstance != null)
             {
-                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] configured has no DamageInstance");
-                return DpsData.DamageScalingType.None;
+                ScalingValue damageScaling = damageInstance.dmgFactor;
+
+                UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] configured DamageInstance scaling=ad=" +
+                    damageScaling.adFactor + ", ap=" + damageScaling.apFactor +
+                    ", addedHp=" + damageScaling.addedHpFactor + ", base=" + damageScaling.baseValue);
+
+                DpsData.DamageScalingType directScaling = GetScalingType(damageScaling);
+                if (directScaling != DpsData.DamageScalingType.None)
+                {
+                    return directScaling;
+                }
             }
 
-            ScalingValue damageScaling = damageInstance.dmgFactor;
+            // Some Essences expose their scaling on a child DamageInstance
+            // rather than on the configured root AbilityInstance. Search the
+            // configured ability tree before giving up and falling back to the
+            // runtime damage actor.
+            DpsData.DamageScalingType childScaling = FindConfiguredAbilityScaling(configured, 0);
+            if (childScaling != DpsData.DamageScalingType.None)
+            {
+                return childScaling;
+            }
 
-            UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] configured DamageInstance scaling=ad=" +
-                damageScaling.adFactor + ", ap=" + damageScaling.apFactor +
-                ", addedHp=" + damageScaling.addedHpFactor + ", base=" + damageScaling.baseValue);
-
-            return GetScalingType(damageScaling);
+            UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] configured has no usable DamageInstance scaling");
+            return DpsData.DamageScalingType.None;
         }
         catch (System.Exception ex)
         {
