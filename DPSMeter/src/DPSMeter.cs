@@ -724,6 +724,11 @@ public sealed class DPSMeter : ModBehaviour
         else if (!string.IsNullOrEmpty(skillName))
         {
             scalingType = GetCachedSkillScaling(skillIdentity, skill, info.actor);
+
+            if (scalingType == DpsData.DamageScalingType.None)
+            {
+                LogScalingDiagnostic(skillIdentity, skill, info.actor);
+            }
         }
         else if (isBasicAttack)
         {
@@ -753,6 +758,63 @@ public sealed class DPSMeter : ModBehaviour
             playerName,
             isDirectEssenceDamage,
             scalingType);
+    }
+
+    private static void LogScalingDiagnostic(string skillIdentity, SkillTrigger skill, Actor actor)
+    {
+        try
+        {
+            Debug.Log("[DPS Meter][SCALING TRACE] skill=" + (skillIdentity ?? "<null>") +
+                " skillName=" + (skill == null ? "<null>" : skill.GetFormattedSkillTitle()) +
+                " actor=" + (actor == null ? "<null>" : actor.GetType().FullName + ":" + actor.name));
+
+            Actor current = actor;
+            int depth = 0;
+            while (current != null && depth < 8)
+            {
+                Debug.Log("[DPS Meter][SCALING TRACE] actor[" + depth + "]=" +
+                    current.GetType().FullName + ":" + current.name +
+                    " firstTrigger=" + (current.firstTrigger == null ? "<null>" : current.firstTrigger.GetType().FullName) +
+                    " firstEntity=" + (current.firstEntity == null ? "<null>" : current.firstEntity.GetType().FullName));
+                current = current.parentActor;
+                depth++;
+            }
+
+            if (skill != null && skill.currentConfig != null)
+            {
+                AbilityInstance configured = skill.currentConfig.spawnedInstance;
+                Debug.Log("[DPS Meter][SCALING TRACE] configured=" +
+                    (configured == null ? "<null>" : configured.GetType().FullName));
+
+                if (configured != null)
+                {
+                    FieldInfo[] fields = configured.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    for (int i = 0; i < fields.Length; i++)
+                    {
+                        string name = fields[i].Name;
+                        if (name.IndexOf("damage", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            name.IndexOf("scal", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            name.IndexOf("factor", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            name.IndexOf("power", StringComparison.OrdinalIgnoreCase) < 0 &&
+                            name.IndexOf("hp", StringComparison.OrdinalIgnoreCase) < 0)
+                        {
+                            continue;
+                        }
+
+                        object value = null;
+                        try { value = fields[i].GetValue(configured); } catch (Exception) { }
+                        Debug.Log("[DPS Meter][SCALING TRACE] configured field " + name +
+                            " type=" + fields[i].FieldType.FullName +
+                            " value=" + (value == null ? "<null>" : value.ToString()));
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.Log("[DPS Meter][SCALING TRACE] diagnostic failed: " + ex.GetType().Name + ": " + ex.Message);
+        }
     }
 
     private DpsData.DamageScalingType GetCachedSkillScaling(string skillIdentity, SkillTrigger skill, Actor actor)
