@@ -28,12 +28,24 @@ public sealed class DPSMeter : ModBehaviour
 
     private void AttachToClientEvents()
     {
-        _clientEvents = ClientEventManager.instance;
+        ClientEventManager currentManager = ClientEventManager.instance;
 
-        if (_clientEvents == null || _subscribed)
+        if (currentManager == null)
         {
             return;
         }
+
+        if (_subscribed && _clientEvents == currentManager)
+        {
+            return;
+        }
+
+        if (_subscribed)
+        {
+            DetachFromClientEvents();
+        }
+
+        _clientEvents = currentManager;
 
         _clientEvents.OnTakeDamage += OnTakeDamage;
         _clientEvents.OnLocalHeroAbilityChanged += OnLocalHeroAbilityChanged;
@@ -72,6 +84,12 @@ public sealed class DPSMeter : ModBehaviour
     private void OnZoneLoadStarted(EventInfoLoadZone info)
     {
         _data.ResetCurrentInstance();
+        _currentHero = null;
+
+        // A new run can recreate the networked event manager. Re-check the
+        // active manager so damage events continue reaching the meter.
+        AttachToClientEvents();
+        AttachToZoneManager();
     }
 
     private void OnTakeDamage(EventInfoDamage info)
@@ -265,13 +283,24 @@ public sealed class DPSMeter : ModBehaviour
 
     private void AttachToZoneManager()
     {
-        _zoneManager = ZoneManager.instance;
+        ZoneManager currentManager = ZoneManager.instance;
 
-        if (_zoneManager == null)
+        if (currentManager == null)
         {
             return;
         }
 
+        if (_zoneManager == currentManager)
+        {
+            return;
+        }
+
+        if (_zoneManager != null)
+        {
+            DetachFromZoneManager();
+        }
+
+        _zoneManager = currentManager;
         _zoneManager.ClientEvent_OnZoneLoadStarted += OnZoneLoadStarted;
         Debug.Log("[DPS Meter] Zone reset listener attached.");
     }
