@@ -590,10 +590,10 @@ public sealed class DPSMeter : ModBehaviour
         // actor briefly so the actual runtime actor can be identified even if
         // the zone uses a different/generated name than the known status key.
         Actor guidanceParent = info.actor.parentActor;
-        if (guidanceParent != null && rawName.IndexOf("Se_LingeringAuraOfGuidance", StringComparison.OrdinalIgnoreCase) >= 0)
+        if (rawName.IndexOf("Se_LingeringAuraOfGuidance", StringComparison.OrdinalIgnoreCase) >= 0)
         {
-            Debug.Log("[DPS Meter][GUIDANCE TRACE] parentType=" + guidanceParent.GetType().FullName + " parentName=" + (guidanceParent.name ?? "<null>"));
-            TraceGuidanceParentFields(guidanceParent);
+            Debug.Log("[DPS Meter][GUIDANCE ACTOR TRACE] type=" + info.actor.GetType().FullName + " name=" + rawName);
+            TraceGuidanceActorFields(info.actor);
         }
 
         Debug.Log(
@@ -655,6 +655,106 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+
+    private static void TraceGuidanceActorFields(Actor actor)
+    {
+        if (actor == null)
+        {
+            return;
+        }
+
+        Type type = actor.GetType();
+        while (type != null && type != typeof(object))
+        {
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+
+                if (field.IsStatic || typeof(Delegate).IsAssignableFrom(field.FieldType))
+                {
+                    continue;
+                }
+
+                string fieldName = field.Name;
+                bool interesting =
+                    fieldName.IndexOf("effect", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("heal", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("amount", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("basic", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("data", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (!interesting)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(actor);
+                    if (value == null)
+                    {
+                        continue;
+                    }
+
+                    UnityEngine.Object unityObject = value as UnityEngine.Object;
+                    if (unityObject != null)
+                    {
+                        Debug.Log(
+                            "[DPS Meter][GUIDANCE ACTOR FIELD] " +
+                            field.Name +
+                            " type=" + field.FieldType.FullName +
+                            " valueType=" + value.GetType().FullName +
+                            " valueName=" + (unityObject.name ?? "<null>"));
+                    }
+                    else
+                    {
+                        Debug.Log(
+                            "[DPS Meter][GUIDANCE ACTOR FIELD] " +
+                            field.Name +
+                            " type=" + field.FieldType.FullName +
+                            " valueType=" + value.GetType().FullName +
+                            " value=" + Convert.ToString(value));
+                    }
+
+                    if (value is System.Collections.IEnumerable enumerable &&
+                        !(value is string))
+                    {
+                        int index = 0;
+                        foreach (object item in enumerable)
+                        {
+                            if (item != null)
+                            {
+                                Debug.Log(
+                                    "[DPS Meter][GUIDANCE ACTOR ITEM] " +
+                                    "field=" + field.Name +
+                                    " index=" + index +
+                                    " itemType=" + (item.GetType().FullName ?? item.GetType().Name));
+
+                                TraceHealingReferenceMembers(item, "guidance." + field.Name + "[" + index + "]");
+                            }
+
+                            index++;
+                            if (index >= 16)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            type = type.BaseType;
+        }
+    }
 
     private static void TraceHealingEventReferences(EventInfoHeal info)
     {
