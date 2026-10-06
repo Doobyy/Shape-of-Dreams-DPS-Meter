@@ -24,6 +24,7 @@ public sealed class DPSMeter : ModBehaviour
     private int _diagnosticDamageLogs;
     private int _diagnosticAbilityLogs;
     private int _diagnosticProcessorLogs;
+    private int _diagnosticDamageEventLogs;
 
     private sealed class EssenceProcessorHooks
     {
@@ -188,6 +189,44 @@ public sealed class DPSMeter : ModBehaviour
                 + " | ability=" + (abilityInstance != null ? abilityInstance.GetActorReadableName() : "null")
                 + " | abilityGem=" + (abilityGem != null ? abilityGem.GetActorReadableName() : "null")
                 + " | pending=" + _pendingEssenceContributions.Count);
+        }
+
+        // v2.8 diagnostic: inspect the client-side damage event and its
+        // ReactionChain. The server-only dealtDamageProcessor cannot tell us
+        // how a modifier Essence changed a Memory hit from the client.
+        if (_diagnosticDamageEventLogs < 80)
+        {
+            List<string> reactionEssences = new List<string>();
+
+            foreach (Gem gem in _essenceProcessorHooks.Keys)
+            {
+                if (gem != null && info.chain.DidReact(gem))
+                {
+                    reactionEssences.Add(gem.GetActorReadableName());
+                }
+            }
+
+            if (reactionEssences.Count > 0 || directGem != null)
+            {
+                _diagnosticDamageEventLogs++;
+
+                Debug.Log("[DPS Meter v2.8] Damage event trace: "
+                    + "amount=" + info.damage.amount
+                    + " | discarded=" + info.damage.discardedAmount
+                    + " | produced=" + producedDamage
+                    + " | elemental=" + (info.damage.elemental.HasValue
+                        ? info.damage.elemental.Value.ToString()
+                        : "null")
+                    + " | type=" + info.damage.type
+                    + " | attributes=" + info.damage.attributes
+                    + " | procCoefficient=" + info.damage.procCoefficient
+                    + " | actor=" + DescribeActorChainDetailed(info.actor)
+                    + " | directGem=" + (directGem != null
+                        ? directGem.GetActorReadableName()
+                        : "null")
+                    + " | reactionEssences=" + string.Join(", ", reactionEssences.ToArray())
+                    + " | reactionChain=" + info.chain.ToString());
+            }
         }
 
         Dictionary<Gem, float> essenceContributions = ConsumeEssenceContributions(
