@@ -309,7 +309,7 @@ public sealed class DpsOverlay : MonoBehaviour
     }
 
     private void DrawPersonal(
-        IReadOnlyList<KeyValuePair<SkillTrigger, float>> sources,
+        IReadOnlyList<KeyValuePair<string, float>> sources,
         IReadOnlyList<KeyValuePair<string, float>> other,
         float total)
     {
