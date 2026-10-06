@@ -713,32 +713,29 @@ public sealed class DPSMeter : ModBehaviour
         ElementalType? elementalType = info.damage.elemental;
         DpsData.DamageScalingType scalingType = DpsData.DamageScalingType.None;
 
-        // The final damage event tells us the actual elemental result. Only
-        // fall back to source scaling when no elemental result was produced.
-        // Basic attacks are treated as AD-scaled when the game does not expose
-        // a more specific runtime scaling source.
-        if (!elementalType.HasValue)
+        // Scaling and elemental type are separate pieces of information.
+        // The final damage event may expose an elemental value even when the
+        // source still has a useful AD/AP/HP scaler. Always resolve the source
+        // scaling instead of suppressing it whenever elemental damage is set.
+        if (isDirectEssenceDamage)
         {
-            if (isDirectEssenceDamage)
-            {
-                scalingType = GetCachedEssenceScaling(directGem, info.actor);
-            }
-            else if (!string.IsNullOrEmpty(skillName))
-            {
-                scalingType = GetCachedSkillScaling(skillIdentity, skill, info.actor);
-            }
-            else if (isBasicAttack)
-            {
-                scalingType = DpsData.DamageScalingType.Ad;
-            }
-            else
-            {
-                scalingType = FindDamageScalingType(info.actor);
+            scalingType = GetCachedEssenceScaling(directGem, info.actor);
+        }
+        else if (!string.IsNullOrEmpty(skillName))
+        {
+            scalingType = GetCachedSkillScaling(skillIdentity, skill, info.actor);
+        }
+        else if (isBasicAttack)
+        {
+            scalingType = DpsData.DamageScalingType.Ad;
+        }
+        else
+        {
+            scalingType = FindDamageScalingType(info.actor);
 
-                if (isLocalPlayer && string.IsNullOrEmpty(skillName) && !string.IsNullOrEmpty(sourceName))
-                {
-                    _data.RegisterOtherIcon(sourceName, FindActorIcon(info.actor));
-                }
+            if (isLocalPlayer && string.IsNullOrEmpty(skillName) && !string.IsNullOrEmpty(sourceName))
+            {
+                _data.RegisterOtherIcon(sourceName, FindActorIcon(info.actor));
             }
         }
 
