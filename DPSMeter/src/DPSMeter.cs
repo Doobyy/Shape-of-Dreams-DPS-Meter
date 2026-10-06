@@ -19,8 +19,6 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
-    private bool _healingDiagnosticLogged;
-    private int _healingEventDiagnosticCount;
     private bool _barrierDiagnosticLogged;
     private void Awake()
     {
@@ -59,7 +57,6 @@ public sealed class DPSMeter : ModBehaviour
         _clientEvents.OnTakeHeal += OnTakeHeal;
         _clientEvents.OnLocalHeroAbilityChanged += OnLocalHeroAbilityChanged;
         _subscribed = true;
-        LogHealingEventCandidates();
         LogBarrierEventCandidates();
         Debug.Log("[DPS Meter] Damage event listener attached.");
     }
@@ -97,7 +94,6 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnZoneLoadStarted(EventInfoLoadZone info)
     {
-        _healingEventDiagnosticCount = 0;
         _data.ResetCurrentInstance();
         _currentHero = null;
 
@@ -143,12 +139,6 @@ public sealed class DPSMeter : ModBehaviour
         Sprite healingIcon = FindHealingIcon(info.actor);
         _data.AddHealing(healing, sourceName, healingIcon);
 
-        const int maxEvents = 20;
-        if (_healingEventDiagnosticCount < maxEvents)
-        {
-            _healingEventDiagnosticCount++;
-            TraceHealingEvent(info, _healingEventDiagnosticCount);
-        }
     }
 
     private static string GetHealingSourceName(Actor source)
@@ -363,94 +353,6 @@ public sealed class DPSMeter : ModBehaviour
             playerName,
             isDirectEssenceDamage,
             scalingType);
-    }
-
-    private void LogHealingEventCandidates()
-    {
-        if (_healingDiagnosticLogged || _clientEvents == null)
-        {
-            return;
-        }
-
-        _healingDiagnosticLogged = true;
-        Type managerType = _clientEvents.GetType();
-
-        Debug.Log("[DPS Meter][HEAL TRACE] ClientEventManager=" + managerType.FullName);
-
-        EventInfo[] events = managerType.GetEvents(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < events.Length; i++)
-        {
-            EventInfo eventInfo = events[i];
-            if (eventInfo == null || eventInfo.Name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0)
-            {
-                continue;
-            }
-
-            Debug.Log("[DPS Meter][HEAL TRACE] Event candidate: " + eventInfo.Name +
-                " handler=" + (eventInfo.EventHandlerType != null ? eventInfo.EventHandlerType.FullName : "unknown"));
-        }
-
-        FieldInfo[] fields = managerType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-            if (field == null || field.Name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0)
-            {
-                continue;
-            }
-
-            Debug.Log("[DPS Meter][HEAL TRACE] Field candidate: " + field.Name +
-                " type=" + field.FieldType.FullName);
-        }
-
-        PropertyInfo[] properties = managerType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < properties.Length; i++)
-        {
-            PropertyInfo property = properties[i];
-            if (property == null || property.Name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0)
-            {
-                continue;
-            }
-
-            Debug.Log("[DPS Meter][HEAL TRACE] Property candidate: " + property.Name +
-                " type=" + property.PropertyType.FullName);
-        }
-
-        Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-        for (int i = 0; i < assemblies.Length; i++)
-        {
-            Type[] types;
-            try
-            {
-                types = assemblies[i].GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                types = ex.Types;
-            }
-            catch (Exception)
-            {
-                continue;
-            }
-
-            for (int j = 0; j < types.Length; j++)
-            {
-                Type type = types[j];
-                if (type == null)
-                {
-                    continue;
-                }
-
-                string name = type.Name;
-                if (name.IndexOf("EventInfo", StringComparison.OrdinalIgnoreCase) < 0 ||
-                    name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0)
-                {
-                    continue;
-                }
-
-                Debug.Log("[DPS Meter][HEAL TRACE] Runtime type candidate: " + type.FullName);
-            }
-        }
     }
 
     private void LogBarrierEventCandidates()
@@ -682,40 +584,6 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void TraceHealingActorDetails(Actor actor, int depth)
-    {
-        if (actor == null)
-        {
-            return;
-        }
-
-        Debug.Log("[DPS Meter][HEAL TRACE] Heal actor[" + depth + "] type=" +
-            actor.GetType().FullName + " name=" + actor.name);
-
-        TraceHealingLinkMembers(actor, "actor", depth);
-
-        if (actor.GetType().Name == "Se_Star_L_HealOnAttack")
-        {
-            TraceHealOnAttackDetails(actor);
-        }
-
-        AbilityInstance ability = actor as AbilityInstance;
-        if (ability != null && ability.gem != null)
-        {
-            Gem gem = ability.gem;
-            Debug.Log("[DPS Meter][HEAL TRACE] Heal actor[" + depth + "] GEM type=" +
-                gem.GetType().FullName + " name=" + gem.name);
-        }
-
-        AbilityTrigger firstTrigger = actor.firstTrigger;
-        if (firstTrigger != null)
-        {
-            Debug.Log("[DPS Meter][HEAL TRACE] Heal actor[" + depth + "] firstTrigger type=" +
-                firstTrigger.GetType().FullName + " name=" + firstTrigger.name);
-            TraceHealingLinkMembers(firstTrigger, "firstTrigger", depth);
-        }
-    }
-
     private static void TraceHealOnAttackDetails(Actor actor)
     {
         Type type = actor.GetType();
@@ -901,22 +769,6 @@ public sealed class DPSMeter : ModBehaviour
                name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
                name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
                name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0;
-    }
-
-    private static string DescribeDiagnosticValue(object value)
-    {
-        if (value == null)
-        {
-            return "null";
-        }
-
-        Actor actor = value as Actor;
-        if (actor != null)
-        {
-            return actor.GetType().FullName + " name=" + actor.name;
-        }
-
-        return value.ToString();
     }
 
     private DpsData.DamageScalingType GetCachedSkillScaling(string skillName, SkillTrigger skill, Actor actor)
