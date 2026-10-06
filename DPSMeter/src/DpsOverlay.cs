@@ -30,7 +30,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.60";
+    private const string DevelopmentVersion = "v4.61";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -705,7 +705,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.DrawTexture(barRect, _whiteTexture);
 
-        GUI.color = new Color(0.28f, 0.50f, 0.68f, 0.68f);
+        GUI.color = new Color(0.46f, 0.46f, 0.48f, 0.68f);
         GUI.DrawTexture(
             new Rect(barRect.x, barRect.y, barRect.width * ratio, barRect.height),
             _whiteTexture);
