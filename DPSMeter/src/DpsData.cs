@@ -15,6 +15,7 @@ public sealed class DpsData
     }
     private readonly Dictionary<string, float> _currentPersonalSkills = new Dictionary<string, float>();
     private readonly Dictionary<string, Sprite> _skillIcons = new Dictionary<string, Sprite>();
+    private readonly Dictionary<string, Sprite> _otherIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalSkills = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentPersonalEssences = new Dictionary<string, float>();
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalEssenceScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
@@ -311,6 +312,7 @@ public sealed class DpsData
         _cumulativePersonalHealing.Clear();
         _cumulativePersonalSkills.Clear();
         _skillIcons.Clear();
+        _otherIcons.Clear();
         _cumulativePersonalEssences.Clear();
         _cumulativePersonalEssenceScaling.Clear();
         _cumulativePersonalEssenceIcons.Clear();
@@ -366,6 +368,20 @@ public sealed class DpsData
             return;
 
         _skillIcons[skillName] = icon;
+    }
+
+    public Sprite GetCurrentOtherIcon(string sourceName)
+    {
+        Sprite icon;
+        return !string.IsNullOrEmpty(sourceName) && _otherIcons.TryGetValue(sourceName, out icon) ? icon : null;
+    }
+
+    public void RegisterOtherIcon(string sourceName, Sprite icon)
+    {
+        if (string.IsNullOrEmpty(sourceName) || icon == null)
+            return;
+
+        _otherIcons[sourceName] = icon;
     }
 
     public ElementalType? GetCurrentEssenceElement(string essenceKey) => GetDominantElement(_currentPersonalEssenceElements, essenceKey);
