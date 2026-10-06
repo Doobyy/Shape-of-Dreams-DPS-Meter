@@ -21,6 +21,7 @@ public sealed class DPSMeter : ModBehaviour
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private bool _healingDiagnosticLogged;
     private bool _damageEventDiagnosticLogged;
+    private bool _healingEventDiagnosticLogged;
     private void Awake()
     {
         Instance = this;
@@ -55,6 +56,7 @@ public sealed class DPSMeter : ModBehaviour
         _clientEvents = currentManager;
 
         _clientEvents.OnTakeDamage += OnTakeDamage;
+        _clientEvents.OnTakeHeal += OnTakeHealDiagnostic;
         _clientEvents.OnLocalHeroAbilityChanged += OnLocalHeroAbilityChanged;
         _subscribed = true;
         LogHealingEventCandidates();
@@ -66,6 +68,7 @@ public sealed class DPSMeter : ModBehaviour
         if (_clientEvents != null && _subscribed)
         {
             _clientEvents.OnTakeDamage -= OnTakeDamage;
+            _clientEvents.OnTakeHeal -= OnTakeHealDiagnostic;
             _clientEvents.OnLocalHeroAbilityChanged -= OnLocalHeroAbilityChanged;
         }
 
@@ -111,6 +114,17 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return false;
+    }
+
+    private void OnTakeHealDiagnostic(EventInfoHeal info)
+    {
+        if (_healingEventDiagnosticLogged)
+        {
+            return;
+        }
+
+        _healingEventDiagnosticLogged = true;
+        TraceHealingEvent(info);
     }
 
     private void OnTakeDamage(EventInfoDamage info)
@@ -338,6 +352,97 @@ public sealed class DPSMeter : ModBehaviour
 
                 Debug.Log("[DPS Meter][HEAL TRACE] Runtime type candidate: " + type.FullName);
             }
+        }
+    }
+
+    private static void TraceHealingEvent(EventInfoHeal info)
+    {
+        if (info == null)
+        {
+            Debug.Log("[DPS Meter][HEAL TRACE] EventInfoHeal instance=null");
+            return;
+        }
+
+        Type eventType = info.GetType();
+        Debug.Log("[DPS Meter][HEAL TRACE] EventInfoHeal runtime type=" + eventType.FullName);
+
+        FieldInfo[] fields = eventType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field == null)
+            {
+                continue;
+            }
+
+            object value = null;
+            try
+            {
+                value = field.GetValue(info);
+            }
+            catch (Exception)
+            {
+            }
+
+            Debug.Log("[DPS Meter][HEAL TRACE] EventInfoHeal." + field.Name +
+                " type=" + field.FieldType.FullName +
+                " value=" + DescribeDiagnosticValue(value));
+        }
+
+        PropertyInfo[] properties = eventType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property == null || !property.CanRead)
+            {
+                continue;
+            }
+
+            object value = null;
+            try
+            {
+                value = property.GetValue(info, null);
+            }
+            catch (Exception)
+            {
+            }
+
+            Debug.Log("[DPS Meter][HEAL TRACE] EventInfoHeal." + property.Name +
+                " type=" + property.PropertyType.FullName +
+                " value=" + DescribeDiagnosticValue(value));
+        }
+
+        Actor source = null;
+        Actor target = null;
+        FieldInfo sourceField = eventType.GetField("actor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (sourceField != null)
+        {
+            source = sourceField.GetValue(info) as Actor;
+        }
+
+        FieldInfo targetField = eventType.GetField("victim", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (targetField != null)
+        {
+            target = targetField.GetValue(info) as Actor;
+        }
+
+        if (source != null)
+        {
+            Actor current = source;
+            int depth = 0;
+            while (current != null && depth < 8)
+            {
+                Debug.Log("[DPS Meter][HEAL TRACE] Heal source actor[" + depth + "] type=" +
+                    current.GetType().FullName + " name=" + current.name);
+                current = current.parentActor;
+                depth++;
+            }
+        }
+
+        if (target != null)
+        {
+            Debug.Log("[DPS Meter][HEAL TRACE] Heal target actor type=" +
+                target.GetType().FullName + " name=" + target.name);
         }
     }
 
