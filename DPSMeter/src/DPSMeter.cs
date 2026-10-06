@@ -21,6 +21,7 @@ public sealed class DPSMeter : ModBehaviour
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private bool _healingDiagnosticLogged;
     private int _healingEventDiagnosticCount;
+    private readonly Dictionary<string, string> _healingSourceNames = new Dictionary<string, string>();
     private void Awake()
     {
         Instance = this;
@@ -55,7 +56,7 @@ public sealed class DPSMeter : ModBehaviour
         _clientEvents = currentManager;
 
         _clientEvents.OnTakeDamage += OnTakeDamage;
-        _clientEvents.OnTakeHeal += OnTakeHealDiagnostic;
+        _clientEvents.OnTakeHeal += OnTakeHeal;
         _clientEvents.OnLocalHeroAbilityChanged += OnLocalHeroAbilityChanged;
         _subscribed = true;
         LogHealingEventCandidates();
@@ -67,7 +68,7 @@ public sealed class DPSMeter : ModBehaviour
         if (_clientEvents != null && _subscribed)
         {
             _clientEvents.OnTakeDamage -= OnTakeDamage;
-            _clientEvents.OnTakeHeal -= OnTakeHealDiagnostic;
+            _clientEvents.OnTakeHeal -= OnTakeHeal;
             _clientEvents.OnLocalHeroAbilityChanged -= OnLocalHeroAbilityChanged;
         }
 
@@ -116,17 +117,81 @@ public sealed class DPSMeter : ModBehaviour
         return false;
     }
 
-    private void OnTakeHealDiagnostic(EventInfoHeal info)
+    private void OnTakeHeal(EventInfoHeal info)
     {
-        const int maxEvents = 20;
+        DewPlayer local = DewPlayer.local;
 
-        if (_healingEventDiagnosticCount >= maxEvents)
+        if (local == null || local.hero == null || info.actor == null || info.target == null)
         {
             return;
         }
 
-        _healingEventDiagnosticCount++;
-        TraceHealingEvent(info, _healingEventDiagnosticCount);
+        if (info.target != local.hero)
+        {
+            return;
+        }
+
+        float healing = Mathf.Max(0f, info.amount);
+
+        if (healing <= 0f)
+        {
+            return;
+        }
+
+        string sourceName = GetHealingSourceName(info.actor);
+        _data.AddHealing(healing, sourceName);
+
+        const int maxEvents = 20;
+        if (_healingEventDiagnosticCount < maxEvents)
+        {
+            _healingEventDiagnosticCount++;
+            TraceHealingEvent(info, _healingEventDiagnosticCount);
+        }
+    }
+
+    private static string GetHealingSourceName(Actor source)
+    {
+        if (source == null)
+        {
+            return "Unknown Healing";
+        }
+
+        Gem gem = source as Gem;
+        if (gem != null)
+        {
+            string gemKey = gem.GetOriginalName();
+            if (!string.IsNullOrEmpty(gemKey))
+            {
+                return gemKey;
+            }
+
+            return string.IsNullOrEmpty(gem.name) ? gem.GetType().Name : gem.name;
+        }
+
+        SkillTrigger skill = source.firstTrigger as SkillTrigger;
+        if (skill != null)
+        {
+            string skillName = skill.GetFormattedSkillTitle();
+            if (!string.IsNullOrEmpty(skillName))
+            {
+                return skillName;
+            }
+        }
+
+        string actorName = source.name;
+        if (!string.IsNullOrEmpty(actorName))
+        {
+            actorName = actorName.Replace("(Adjusted)", string.Empty)
+                .Replace("(Clone)", string.Empty)
+                .Trim();
+
+            if (!string.IsNullOrEmpty(actorName))
+            {
+                return actorName;
+            }
+        }
+
+        return source.GetType().Name;
     }
 
     private void OnTakeDamage(EventInfoDamage info)
