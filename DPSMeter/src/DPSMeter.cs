@@ -498,7 +498,7 @@ public sealed class DPSMeter : ModBehaviour
                 gem.GetType().FullName + " name=" + gem.name);
         }
 
-        SkillTrigger firstTrigger = actor.firstTrigger;
+        AbilityTrigger firstTrigger = actor.firstTrigger;
         if (firstTrigger != null)
         {
             Debug.Log("[DPS Meter][HEAL TRACE] Heal actor[" + depth + "] firstTrigger type=" +
