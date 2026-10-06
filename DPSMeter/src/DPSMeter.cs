@@ -154,7 +154,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private static bool IsDamageModifiedBy(FinalDamageData finalDamage, Gem gem)
     {
-        if (finalDamage == null || gem == null)
+        if (gem == null)
         {
             return false;
         }
