@@ -22,6 +22,7 @@ public sealed class DPSMeter : ModBehaviour
     private bool _healingDiagnosticLogged;
     private bool _damageEventDiagnosticLogged;
     private bool _healingEventDiagnosticLogged;
+    private int _healingEventDiagnosticCount;
     private void Awake()
     {
         Instance = this;
@@ -118,13 +119,15 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeHealDiagnostic(EventInfoHeal info)
     {
-        if (_healingEventDiagnosticLogged)
+        const int maxEvents = 20;
+
+        if (_healingEventDiagnosticCount >= maxEvents)
         {
             return;
         }
 
-        _healingEventDiagnosticLogged = true;
-        TraceHealingEvent(info);
+        _healingEventDiagnosticCount++;
+        TraceHealingEvent(info, _healingEventDiagnosticCount);
     }
 
     private void OnTakeDamage(EventInfoDamage info)
@@ -355,9 +358,10 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void TraceHealingEvent(EventInfoHeal info)
+    private static void TraceHealingEvent(EventInfoHeal info, int eventNumber)
     {
         Type eventType = info.GetType();
+        Debug.Log("[DPS Meter][HEAL TRACE] ===== HEAL EVENT #" + eventNumber + " =====");
         Debug.Log("[DPS Meter][HEAL TRACE] EventInfoHeal runtime type=" + eventType.FullName);
 
         FieldInfo[] fields = eventType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -428,6 +432,7 @@ public sealed class DPSMeter : ModBehaviour
             {
                 Debug.Log("[DPS Meter][HEAL TRACE] Heal source actor[" + depth + "] type=" +
                     current.GetType().FullName + " name=" + current.name);
+                TraceHealingActorDetails(current, depth);
                 current = current.parentActor;
                 depth++;
             }
@@ -437,6 +442,60 @@ public sealed class DPSMeter : ModBehaviour
         {
             Debug.Log("[DPS Meter][HEAL TRACE] Heal target actor type=" +
                 target.GetType().FullName + " name=" + target.name);
+        }
+    }
+
+    private static void TraceHealingActorDetails(Actor actor, int depth)
+    {
+        if (actor == null)
+        {
+            return;
+        }
+
+        Type type = actor.GetType();
+        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field == null)
+            {
+                continue;
+            }
+
+            string fieldName = field.Name;
+            if (fieldName.IndexOf("gem", StringComparison.OrdinalIgnoreCase) < 0 &&
+                fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                fieldName.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0 &&
+                fieldName.IndexOf("damage", StringComparison.OrdinalIgnoreCase) < 0 &&
+                fieldName.IndexOf("orb", StringComparison.OrdinalIgnoreCase) < 0 &&
+                fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                continue;
+            }
+
+            object value = null;
+            try
+            {
+                value = field.GetValue(actor);
+            }
+            catch (Exception)
+            {
+            }
+
+            Debug.Log("[DPS Meter][HEAL TRACE] Heal actor[" + depth + "]." + fieldName +
+                " type=" + field.FieldType.FullName +
+                " value=" + DescribeDiagnosticValue(value));
+        }
+
+        AbilityInstance ability = actor as AbilityInstance;
+        if (ability != null && ability.gem != null)
+        {
+            Gem gem = ability.gem;
+            Debug.Log("[DPS Meter][HEAL TRACE] Heal actor[" + depth + "] GEM type=" +
+                gem.GetType().FullName + " name=" + gem.name +
+                " originalName=" + gem.originalName +
+                " gemType=" + gem.gemType);
         }
     }
 
