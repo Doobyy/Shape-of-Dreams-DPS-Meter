@@ -184,7 +184,7 @@ public sealed class DPSMeter : ModBehaviour
 
         if (isLocalPlayer && skill != null && !string.IsNullOrEmpty(skillName))
         {
-            Sprite icon = skill.currentConfig != null ? skill.currentConfig.triggerIcon : null;
+            Sprite icon = FindSkillIcon(skill);
             _data.RegisterSkillIcon(skillName, icon);
         }
 
@@ -208,26 +208,16 @@ public sealed class DPSMeter : ModBehaviour
         if (skill == null)
             return null;
 
-        FieldInfo[] fields = skill.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < fields.Length; i++)
+        if (skill.currentConfig != null && skill.currentConfig.triggerIcon != null)
+            return skill.currentConfig.triggerIcon;
+
+        if (skill.configs != null)
         {
-            if (fields[i].FieldType == typeof(Sprite))
+            for (int i = 0; i < skill.configs.Length; i++)
             {
-                Sprite icon = fields[i].GetValue(skill) as Sprite;
-                if (icon != null)
-                    return icon;
+                if (skill.configs[i] != null && skill.configs[i].triggerIcon != null)
+                    return skill.configs[i].triggerIcon;
             }
-        }
-
-        PropertyInfo[] properties = skill.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < properties.Length; i++)
-        {
-            if (properties[i].GetIndexParameters().Length != 0 || properties[i].PropertyType != typeof(Sprite))
-                continue;
-
-            Sprite icon = properties[i].GetValue(skill, null) as Sprite;
-            if (icon != null)
-                return icon;
         }
 
         return null;
