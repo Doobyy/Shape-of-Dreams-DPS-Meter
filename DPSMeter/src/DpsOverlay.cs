@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.IO;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -26,7 +25,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color ApScalingBarColor = new Color(0.18f, 0.50f, 0.55f, 0.68f);
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.92f, 0.92f, 0.92f, 1f);
-    private const string DevelopmentVersion = "v4.8";
+    private const string DevelopmentVersion = "v4.9";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -47,9 +46,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _barFill;
     private GUIStyle _rowRight;
     private Texture2D _whiteTexture;
-    private Texture2D _basicAttackIconTexture;
     private Sprite _basicAttackIcon;
-    private const string BasicAttackIconPath = "RawData/!Sprites/2.png";
 
     public bool Visible { get; set; } = true;
 
@@ -400,43 +397,53 @@ public sealed class DpsOverlay : MonoBehaviour
 
         Rect rowRect = GUILayoutUtility.GetRect(0f, 22f, GUILayout.ExpandWidth(true));
 
-        GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
-        GUI.DrawTexture(rowRect, _whiteTexture);
+        float iconSize = rowRect.height;
+        float barX = rowRect.x;
 
-        GUI.color = GetBarColor(elemental, scaling);
-        GUI.DrawTexture(
-            new Rect(
-                rowRect.x,
-                rowRect.y,
-                rowRect.width * ratio,
-                rowRect.height),
-            _whiteTexture);
-
-        GUI.color = SourceNameColor;
-
-        float textX = rowRect.x + 7f;
         if (icon != null)
         {
-            Rect iconRect = new Rect(rowRect.x + 2f, rowRect.y + 2f, 18f, 18f);
+            Rect iconRect = new Rect(rowRect.x, rowRect.y, iconSize, iconSize);
+
             if (name == "Basic Attack")
             {
                 GUI.color = new Color(0.92f, 0.92f, 0.92f, 1f);
                 GUI.DrawTexture(iconRect, _whiteTexture);
                 GUI.color = Color.white;
-                Rect swordRect = new Rect(iconRect.x + 2f, iconRect.y + 2f, iconRect.width - 4f, iconRect.height - 4f);
-                DrawSprite(icon, swordRect);
+                DrawSprite(icon, iconRect);
             }
             else
             {
                 DrawSprite(icon, iconRect);
             }
-            textX = rowRect.x + 24f;
+
+            barX = iconRect.xMax;
         }
 
+        Rect barRect = new Rect(
+            barX,
+            rowRect.y,
+            Mathf.Max(0f, rowRect.xMax - barX),
+            rowRect.height);
+
+        GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
+        GUI.DrawTexture(barRect, _whiteTexture);
+
+        GUI.color = GetBarColor(elemental, scaling);
+        GUI.DrawTexture(
+            new Rect(
+                barRect.x,
+                barRect.y,
+                barRect.width * ratio,
+                barRect.height),
+            _whiteTexture);
+
+        GUI.color = SourceNameColor;
+
+        float textX = barRect.x + 7f;
         Rect nameRect = new Rect(
             textX,
             rowRect.y,
-            rowRect.width - (textX - rowRect.x) - 7f,
+            Mathf.Max(0f, barRect.width - 14f),
             rowRect.height);
 
         Rect valueRect = new Rect(
@@ -511,10 +518,8 @@ public sealed class DpsOverlay : MonoBehaviour
             return _basicAttackIcon;
         }
 
-        // Basic Attack uses the game's existing sword sprite from Rawdata/!Sprites/2.png.
-        // Do not decode the PNG ourselves; Unity's runtime image-decoding API is not
-        // available in this mod's referenced Unity assemblies. Instead, reuse the
-        // Sprite object if the game has already loaded it.
+        // The source art is the game's Rawdata/!Sprites/2.png asset. Reuse the
+        // already-loaded Unity asset instead of trying to decode the PNG ourselves.
         Sprite[] loadedSprites = Resources.FindObjectsOfTypeAll<Sprite>();
         for (int i = 0; i < loadedSprites.Length; i++)
         {
@@ -527,13 +532,33 @@ public sealed class DpsOverlay : MonoBehaviour
                     && string.Equals(sprite.texture.name, "2", StringComparison.OrdinalIgnoreCase)))
             {
                 _basicAttackIcon = sprite;
-                Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack icon found as loaded sprite name="
+                Debug.Log("[DPS Meter][v4.9 TRACE] Basic Attack icon found as loaded sprite name="
                     + sprite.name);
                 return _basicAttackIcon;
             }
         }
 
-        Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack sword sprite is not loaded yet.");
+        // Some game assets are loaded as textures rather than Sprite objects.
+        // If 2.png is present that way, wrap the already-loaded texture as a Sprite.
+        Texture2D[] loadedTextures = Resources.FindObjectsOfTypeAll<Texture2D>();
+        for (int i = 0; i < loadedTextures.Length; i++)
+        {
+            Texture2D texture = loadedTextures[i];
+            if (texture == null || !string.Equals(texture.name, "2", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            _basicAttackIcon = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, texture.width, texture.height),
+                new Vector2(0.5f, 0.5f),
+                100f);
+
+            Debug.Log("[DPS Meter][v4.9 TRACE] Basic Attack icon found as loaded texture name="
+                + texture.name);
+            return _basicAttackIcon;
+        }
+
+        Debug.Log("[DPS Meter][v4.9 TRACE] Basic Attack sword asset is not loaded yet.");
         return null;
     }
 
