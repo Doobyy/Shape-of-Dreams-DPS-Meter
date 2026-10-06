@@ -630,37 +630,88 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         TraceHealingNameMethods(actor, label);
-        TraceHealingLocalizationApi();
+        TraceHealingLocalizationApi(actor);
     }
 
-    private static void TraceHealingLocalizationApi()
+    private static bool _healingLocalizationProbeRan;
+
+    private static void TraceHealingLocalizationApi(Actor actor)
     {
-        if (_healingLocalizationApiTraced)
+        if (_healingLocalizationProbeRan || actor == null)
             return;
-        _healingLocalizationApiTraced = true;
+
+        _healingLocalizationProbeRan = true;
 
         try
         {
             Type localizationType = typeof(DewLocalization);
-            Debug.Log("[DPS Meter][HEAL LOCALIZATION API] type=" + localizationType.FullName);
-            BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            MethodInfo[] methods = localizationType.GetMethods(flags);
+            MethodInfo[] methods = localizationType.GetMethods(
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
             foreach (MethodInfo method in methods)
             {
-                string methodName = method.Name ?? "";
-                string lower = methodName.ToLowerInvariant();
-                if (!lower.Contains("name") && !lower.Contains("local") && !lower.Contains("display") && !lower.Contains("key"))
+                string lower = (method.Name ?? "").ToLowerInvariant();
+                if (!lower.Contains("name") && !lower.Contains("local") &&
+                    !lower.Contains("display") && !lower.Contains("key"))
                     continue;
+
+                if (method.ReturnType != typeof(string))
+                    continue;
+
                 ParameterInfo[] parameters = method.GetParameters();
-                string signature = string.Join(", ", parameters.Select(p => p.ParameterType.FullName + " " + p.Name).ToArray());
-                Debug.Log("[DPS Meter][HEAL LOCALIZATION API] method=" + methodName + " returnType=" + method.ReturnType.FullName + " params=(" + signature + ")");
+                if (parameters.Length != 1)
+                    continue;
+
+                Type parameterType = parameters[0].ParameterType;
+                object argument = null;
+
+                if (parameterType.IsInstanceOfType(actor))
+                {
+                    argument = actor;
+                }
+                else if (parameterType == typeof(string))
+                {
+                    string readableName = null;
+                    try
+                    {
+                        readableName = actor.GetActorReadableName();
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    if (string.IsNullOrEmpty(readableName))
+                        continue;
+
+                    argument = readableName;
+                }
+                else
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object result = method.Invoke(null, new object[] { argument });
+                    Debug.Log("[DPS Meter][HEAL LOCALIZATION PROBE] method=" + method.Name +
+                        " parameterType=" + parameterType.FullName +
+                        " argument=" + argument +
+                        " result=" + (result == null ? "<null>" : result.ToString()));
+                }
+                catch (Exception)
+                {
+                    Debug.Log("[DPS Meter][HEAL LOCALIZATION PROBE] method=" + method.Name +
+                        " parameterType=" + parameterType.FullName +
+                        " invoke=failed");
+                }
             }
         }
         catch (Exception ex)
         {
-            Debug.Log("[DPS Meter][HEAL LOCALIZATION API] inspection=threw " + ex.GetType().FullName);
+            Debug.Log("[DPS Meter][HEAL LOCALIZATION PROBE] inspection=threw " + ex.GetType().FullName);
         }
     }
+
     private static void TraceHealingNameMethods(object target, string label)
     {
         if (target == null)
