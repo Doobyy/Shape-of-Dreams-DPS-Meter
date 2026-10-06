@@ -16,8 +16,7 @@ public sealed class DPSMeter : ModBehaviour
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private readonly Dictionary<Gem, EssenceProcessorHooks> _essenceProcessorHooks = new Dictionary<Gem, EssenceProcessorHooks>();
     private readonly Dictionary<Gem, Stack<float>> _essenceProcessorStarts = new Dictionary<Gem, Stack<float>>();
-    private readonly Dictionary<Gem, System.Action<EventInfoDamage>> _essenceDamageHandlers = new Dictionary<Gem, System.Action<EventInfoDamage>>();
-    private readonly Dictionary<Gem, System.Action<EventInfoAbilityInstance>> _essenceAbilityHandlers = new Dictionary<Gem, System.Action<EventInfoAbilityInstance>>();
+        private readonly Dictionary<Gem, System.Action<EventInfoAbilityInstance>> _essenceAbilityHandlers = new Dictionary<Gem, System.Action<EventInfoAbilityInstance>>();
     private readonly Dictionary<AbilityInstance, Gem> _essenceAbilityInstances = new Dictionary<AbilityInstance, Gem>();
     private readonly List<EssenceContribution> _pendingEssenceContributions = new List<EssenceContribution>();
     private readonly Dictionary<Gem, System.Action<string>> _essenceSyncHandlers = new Dictionary<Gem, System.Action<string>>();
@@ -306,10 +305,6 @@ public sealed class DPSMeter : ModBehaviour
         gem.dealtDamageProcessor.Add(before, int.MinValue);
         gem.dealtDamageProcessor.Add(after, int.MaxValue);
 
-        System.Action<EventInfoDamage> damageHandler = info => OnEssenceDealDamage(gem, info);
-
-        gem.ActorEvent_OnDealDamage += damageHandler;
-
         System.Action<EventInfoAbilityInstance> abilityHandler =
             info => OnEssenceAbilityInstanceCreated(gem, info);
 
@@ -324,7 +319,6 @@ public sealed class DPSMeter : ModBehaviour
             After = after
         };
 
-        _essenceDamageHandlers[gem] = damageHandler;
         _essenceAbilityHandlers[gem] = abilityHandler;
         _essenceSyncHandlers[gem] = syncHandler;
         _essenceProcessorStarts[gem] = new Stack<float>();
@@ -339,17 +333,6 @@ public sealed class DPSMeter : ModBehaviour
 
         _essenceAbilityInstances[info.instance] = gem;
 
-        if (_diagnosticAbilityLogs < 20)
-        {
-            _diagnosticAbilityLogs++;
-            Debug.Log("[DPS Meter v2.3] Essence ability created: gem="
-                + gem.GetActorReadableName()
-                + " | instance=" + info.instance.GetActorReadableName()
-                + " | eventActor=" + DescribeActorChain(info.actor)
-                + " | instanceChain=" + DescribeActorChain(info.instance)
-                + " | instanceGem="
-                + (info.instance.gem != null ? info.instance.gem.GetActorReadableName() : "null"));
-        }
     }
 
     private static bool IsEssenceGem(Gem gem)
@@ -357,23 +340,6 @@ public sealed class DPSMeter : ModBehaviour
         // Gem itself is the game's Essence type. Do not use location.index:
         // an equipped Essence can legitimately occupy index 0.
         return gem != null;
-    }
-
-    private void OnEssenceDealDamage(Gem gem, EventInfoDamage info)
-    {
-        if (gem == null || info.actor == null || info.victim == null || info.damage.amount <= 0f)
-        {
-            return;
-        }
-
-        _pendingEssenceContributions.Add(new EssenceContribution
-        {
-            Source = info.actor,
-            Victim = info.victim,
-            Essence = gem,
-            Amount = Mathf.Max(0f, info.damage.amount + info.damage.discardedAmount),
-            Frame = Time.frameCount
-        });
     }
 
     private void OnEssenceProcessorBefore(Gem gem, ref DamageData data)
@@ -398,8 +364,6 @@ public sealed class DPSMeter : ModBehaviour
 
         float before = starts.Pop();
         float contribution = data.currentAmount - before;
-        bool modifiedByEssence = data.IsAmountModifiedBy(gem);
-
         if (contribution <= 0.0001f || from == null || to == null)
         {
             return;
@@ -650,22 +614,21 @@ public sealed class DPSMeter : ModBehaviour
                 gem.dealtDamageProcessor.Remove(hooks.Before);
                 gem.dealtDamageProcessor.Remove(hooks.After);
 
-                System.Action<EventInfoDamage> damageHandler;
-                if (_essenceDamageHandlers.TryGetValue(gem, out damageHandler))
+                System.Action<EventInfoAbilityInstance> abilityHandler;
+                if (_essenceAbilityHandlers.TryGetValue(gem, out abilityHandler))
                 {
-                    gem.ActorEvent_OnDealDamage -= damageHandler;
+                    gem.ActorEvent_OnAbilityInstanceCreated -= abilityHandler;
+                }
 
-                    System.Action<EventInfoAbilityInstance> abilityHandler;
-                    if (_essenceAbilityHandlers.TryGetValue(gem, out abilityHandler))
-                    {
-                        gem.ActorEvent_OnAbilityInstanceCreated -= abilityHandler;
-                    }
+                System.Action<string> syncHandler;
+                if (_essenceSyncHandlers.TryGetValue(gem, out syncHandler))
+                {
+                    gem.ClientEvent_OnPersistentSyncedDataChanged -= syncHandler;
                 }
             }
         }
 
         _essenceProcessorHooks.Clear();
-        _essenceDamageHandlers.Clear();
         _essenceAbilityHandlers.Clear();
         _essenceSyncHandlers.Clear();
         _essenceAbilityInstances.Clear();
