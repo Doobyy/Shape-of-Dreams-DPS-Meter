@@ -267,7 +267,7 @@ public sealed class DPSMeter : ModBehaviour
             try
             {
                 object memberValue = field.GetValue(value);
-                TraceHealingReferenceMember(type, field.Name, memberValue);
+                TraceHealingObjectMember(type, field.Name, field.FieldType, memberValue);
             }
             catch (Exception)
             {
@@ -289,10 +289,77 @@ public sealed class DPSMeter : ModBehaviour
             try
             {
                 object memberValue = property.GetValue(value, null);
-                TraceHealingReferenceMember(type, property.Name, memberValue);
+                TraceHealingObjectMember(type, property.Name, property.PropertyType, memberValue);
             }
             catch (Exception)
             {
+            }
+        }
+    }
+
+    private static void TraceHealingObjectMember(
+        Type ownerType,
+        string memberName,
+        Type declaredType,
+        object memberValue)
+    {
+        string declaredName = declaredType == null
+            ? "<unknown>"
+            : declaredType.FullName ?? declaredType.Name;
+
+        string valueType = memberValue == null
+            ? "null"
+            : memberValue.GetType().FullName;
+
+        Debug.Log(
+            "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
+            " declaredType=" + declaredName +
+            " valueType=" + valueType);
+
+        TraceHealingReferenceMember(ownerType, memberName, memberValue);
+
+        if (memberValue == null || memberValue is string)
+        {
+            return;
+        }
+
+        Type runtimeType = memberValue.GetType();
+        if (runtimeType.IsPrimitive || runtimeType.IsEnum)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
+                " value=" + memberValue);
+            return;
+        }
+
+        System.Collections.IEnumerable enumerable = memberValue as System.Collections.IEnumerable;
+        if (enumerable == null)
+        {
+            return;
+        }
+
+        int count = 0;
+        foreach (object item in enumerable)
+        {
+            if (item == null)
+            {
+                continue;
+            }
+
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
+                " item[" + count + "] type=" + item.GetType().FullName +
+                " value=" + item);
+
+            TraceHealingReferenceMember(item.GetType(), "item", item);
+
+            count++;
+            if (count >= 20)
+            {
+                Debug.Log(
+                    "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
+                    " item scan capped at 20");
+                break;
             }
         }
     }
