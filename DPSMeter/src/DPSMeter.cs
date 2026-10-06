@@ -19,6 +19,7 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
+    private int _healingTraceCount;
     private void Awake()
     {
         Instance = this;
@@ -135,11 +136,165 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
+        TraceHealingSource(info.actor);
+
         string sourceName = GetHealingSourceName(info.actor);
         string sourceIdentity = GetSkillSlotIdentity(info.actor);
         Sprite healingIcon = FindHealingIcon(info.actor);
         _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
 
+    }
+
+
+    private static void TraceHealingSource(Actor source)
+    {
+        DPSMeter meter = Instance;
+        if (meter == null || source == null || meter._healingTraceCount >= 10)
+        {
+            return;
+        }
+
+        meter._healingTraceCount++;
+
+        Debug.Log(
+            "[DPS Meter][HEAL TRACE] BEGIN #" + meter._healingTraceCount +
+            " source=" + DescribeHealingObject(source));
+
+        Actor current = source;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] chain[" + depth + "] " +
+                DescribeHealingObject(current));
+
+            TraceHealingReferences(current);
+            current = current.parentActor;
+            depth++;
+        }
+
+        Debug.Log("[DPS Meter][HEAL TRACE] END");
+    }
+
+    private static void TraceHealingReferences(object value)
+    {
+        if (value == null)
+        {
+            return;
+        }
+
+        Type type = value.GetType();
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+
+            if (field.Name == "parentActor" || field.Name == "gameObject" || field.Name == "transform")
+            {
+                continue;
+            }
+
+            try
+            {
+                TraceHealingReferenceMember(type, field.Name, field.GetValue(value));
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length != 0 ||
+                property.Name == "parentActor" ||
+                property.Name == "gameObject" ||
+                property.Name == "transform" ||
+                property.GetMethod == null)
+            {
+                continue;
+            }
+
+            try
+            {
+                TraceHealingReferenceMember(type, property.Name, property.GetValue(value, null));
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
+    private static void TraceHealingReferenceMember(Type ownerType, string memberName, object memberValue)
+    {
+        if (memberValue == null)
+        {
+            return;
+        }
+
+        Gem gem = memberValue as Gem;
+        if (gem != null)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
+                " -> Gem type=" + gem.GetType().Name +
+                " name=" + gem.name +
+                " original=" + gem.GetOriginalName());
+            return;
+        }
+
+        Actor actor = memberValue as Actor;
+        if (actor != null)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
+                " -> Actor " + DescribeHealingObject(actor));
+            return;
+        }
+
+        SkillTrigger skill = memberValue as SkillTrigger;
+        if (skill != null)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
+                " -> SkillTrigger name=" + skill.GetFormattedSkillTitle());
+            return;
+        }
+
+        string stringValue = memberValue as string;
+        if (!string.IsNullOrEmpty(stringValue) &&
+            (memberName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+             memberName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+             memberName.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0))
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
+                " -> string="" + stringValue + """);
+        }
+    }
+
+    private static string DescribeHealingObject(Actor actor)
+    {
+        if (actor == null)
+        {
+            return "null";
+        }
+
+        string actorName = actor.name;
+        if (string.IsNullOrEmpty(actorName))
+        {
+            actorName = "<no-name>";
+        }
+
+        return "type=" + actor.GetType().FullName + " name=" + actorName;
     }
 
     private void OnTakeShield(EventInfoShield info)
