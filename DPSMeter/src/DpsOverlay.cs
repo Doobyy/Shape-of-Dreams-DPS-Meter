@@ -126,11 +126,11 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
 
             case DisplayMode.CurrentHps:
-                DrawHealingSources(_data.CurrentPersonalHealing, _data.CurrentInstancePersonalHealing);
+                DrawHealingSources(_data.CurrentPersonalHealingRows, _data.CurrentInstancePersonalHealing);
                 break;
 
             case DisplayMode.TotalHps:
-                DrawHealingSources(_data.CumulativeHealingSources, _data.CumulativePersonalHealing);
+                DrawHealingSources(_data.CumulativeHealingRows, _data.CumulativePersonalHealing);
                 break;
 
             case DisplayMode.PartyDps:
