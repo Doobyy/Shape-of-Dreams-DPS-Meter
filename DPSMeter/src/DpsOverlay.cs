@@ -11,8 +11,6 @@ public sealed class DpsOverlay : MonoBehaviour
     {
         CurrentDps,
         DamageTotal,
-        SkillBreakdown,
-        EssenceBreakdown,
         PartyDps,
         PartyTotal
     }
@@ -86,6 +84,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 DrawPersonal(
                     _data.CurrentPersonalSkills,
                     _data.CurrentPersonalOther,
+                    _data.CurrentPersonalEssences,
                     _data.CurrentInstancePersonalDamage);
                 break;
 
@@ -94,18 +93,6 @@ public sealed class DpsOverlay : MonoBehaviour
                     _data.CumulativePersonalSkills,
                     _data.CumulativePersonalOther,
                     _data.CumulativePersonalDamage);
-                break;
-
-            case DisplayMode.SkillBreakdown:
-                DrawRows(
-                    _data.CurrentPersonalSkills,
-                    _data.CurrentInstancePersonalDamage);
-                break;
-
-            case DisplayMode.EssenceBreakdown:
-                DrawRows(
-                    _data.CurrentPersonalEssences,
-                    _data.CurrentInstancePersonalDamage);
                 break;
 
             case DisplayMode.PartyDps:
@@ -230,7 +217,7 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 if (!_headerMoved)
                 {
-                    _mode = (DisplayMode)(((int)_mode + 1) % 6);
+                    _mode = (DisplayMode)(((int)_mode + 1) % 4);
                 }
 
                 _dragging = false;
@@ -254,16 +241,6 @@ public sealed class DpsOverlay : MonoBehaviour
             case DisplayMode.DamageTotal:
                 title = "DAMAGE TOTAL";
                 metric = FormatNumber(_data.CumulativePersonalDamage) + " DAMAGE";
-                break;
-
-            case DisplayMode.SkillBreakdown:
-                title = "SKILL DAMAGE";
-                metric = FormatNumber(_data.CurrentInstancePersonalDamage) + " TOTAL";
-                break;
-
-            case DisplayMode.EssenceBreakdown:
-                title = "ESSENCE DAMAGE";
-                metric = FormatNumber(_data.CurrentInstancePersonalDamage) + " TOTAL";
                 break;
 
             case DisplayMode.PartyDps:
@@ -311,10 +288,18 @@ public sealed class DpsOverlay : MonoBehaviour
     private void DrawPersonal(
         IReadOnlyList<KeyValuePair<string, float>> sources,
         IReadOnlyList<KeyValuePair<string, float>> other,
+        IReadOnlyList<KeyValuePair<Gem, float>> essences,
         float total)
     {
         DrawSkillRows(sources, total);
         DrawRows(other, total, sources.Count);
+
+        if (essences.Count > 0)
+        {
+            GUILayout.Space(4f);
+            GUILayout.Label("ESSENCES", _small);
+            DrawRows(essences, total, sources.Count + other.Count + 1);
+        }
     }
 
     private void DrawSkillRows(
