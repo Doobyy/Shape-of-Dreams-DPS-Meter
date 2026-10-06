@@ -201,7 +201,7 @@ public sealed class DPSMeter : ModBehaviour
             }
             else if (!string.IsNullOrEmpty(skillName))
             {
-                scalingType = GetCachedSkillScaling(skillName, info.actor);
+                scalingType = GetCachedSkillScaling(skillName, skill, info.actor);
             }
             else
             {
@@ -227,7 +227,7 @@ public sealed class DPSMeter : ModBehaviour
             scalingType);
     }
 
-    private DpsData.DamageScalingType GetCachedSkillScaling(string skillName, Actor actor)
+    private DpsData.DamageScalingType GetCachedSkillScaling(string skillName, SkillTrigger skill, Actor actor)
     {
         DpsData.DamageScalingType cached;
         if (_skillScalingCache.TryGetValue(skillName, out cached))
@@ -240,6 +240,12 @@ public sealed class DPSMeter : ModBehaviour
         // Use that configured Gem source before falling back to runtime damage
         // ancestry.
         Gem sourceGem = FindDamageSourceEssence(actor);
+
+        if (sourceGem == null && skill != null)
+        {
+            sourceGem = FindGemOnSkillTrigger(skill);
+        }
+
         DpsData.DamageScalingType scaling = FindConfiguredGemScaling(sourceGem);
 
         if (scaling == DpsData.DamageScalingType.None)
@@ -253,6 +259,60 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return scaling;
+    }
+
+    private static Gem FindGemOnSkillTrigger(SkillTrigger skill)
+    {
+        if (skill == null)
+        {
+            return null;
+        }
+
+        System.Type type = skill.GetType();
+
+        System.Reflection.FieldInfo[] fields = type.GetFields(
+            System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.Public |
+            System.Reflection.BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            if (fields[i].FieldType == typeof(Gem))
+            {
+                Gem gem = fields[i].GetValue(skill) as Gem;
+                if (gem != null)
+                {
+                    return gem;
+                }
+            }
+        }
+
+        System.Reflection.PropertyInfo[] properties = type.GetProperties(
+            System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.Public |
+            System.Reflection.BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            if (properties[i].PropertyType != typeof(Gem) || !properties[i].CanRead)
+            {
+                continue;
+            }
+
+            try
+            {
+                Gem gem = properties[i].GetValue(skill, null) as Gem;
+                if (gem != null)
+                {
+                    return gem;
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        return null;
     }
 
     private DpsData.DamageScalingType GetCachedEssenceScaling(Gem gem, Actor actor)
