@@ -86,7 +86,7 @@ public sealed class DpsData
         bool isLocalPlayer,
         string skillName,
         string sourceName,
-        IReadOnlyList<Gem> essences,
+        IReadOnlyDictionary<Gem, float> essenceContributions,
         ElementalType? elemental,
         string playerName)
     {
@@ -147,18 +147,20 @@ public sealed class DpsData
             Add(_cumulativeOtherPersonal, sourceName, producedDamage);
         }
 
-        if (essences != null)
+        if (essenceContributions != null)
         {
-            for (int i = 0; i < essences.Count; i++)
+            foreach (KeyValuePair<Gem, float> pair in essenceContributions)
             {
-                Gem essence = essences[i];
-                if (essence == null)
+                Gem essence = pair.Key;
+                float contribution = pair.Value;
+
+                if (essence == null || contribution <= 0f)
                     continue;
 
-                Add(_currentPersonalEssences, essence, producedDamage);
-                Add(_cumulativePersonalEssences, essence, producedDamage);
-                AddElement(_currentPersonalEssenceElements, essence, elemental, producedDamage);
-                AddElement(_cumulativePersonalEssenceElements, essence, elemental, producedDamage);
+                Add(_currentPersonalEssences, essence, contribution);
+                Add(_cumulativePersonalEssences, essence, contribution);
+                AddElement(_currentPersonalEssenceElements, essence, elemental, contribution);
+                AddElement(_cumulativePersonalEssenceElements, essence, elemental, contribution);
             }
         }
     }
