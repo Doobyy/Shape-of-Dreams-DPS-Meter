@@ -189,16 +189,10 @@ public sealed class DpsData
             .ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalEssences =>
-        _currentPersonalEssences
-            .OrderByDescending(pair => pair.Value)
-            .Select(pair => new KeyValuePair<string, float>(GetEssenceDisplayName(pair.Key), pair.Value))
-            .ToList();
+        _currentPersonalEssences.OrderByDescending(pair => pair.Value).ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CumulativePersonalEssences =>
-        _cumulativePersonalEssences
-            .OrderByDescending(pair => pair.Value)
-            .Select(pair => new KeyValuePair<string, float>(GetEssenceDisplayName(pair.Key), pair.Value))
-            .ToList();
+        _cumulativePersonalEssences.OrderByDescending(pair => pair.Value).ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalOther =>
         _currentOtherPersonal.OrderByDescending(pair => pair.Value).ToList();
@@ -509,6 +503,14 @@ public sealed class DpsData
 
     public DamageScalingType GetCumulativeEssenceScaling(string essenceKey) => GetDominantScaling(_cumulativePersonalEssenceScaling, essenceKey);
 
+    public string GetEssenceDisplayName(string essenceKey)
+    {
+        string name;
+        return !string.IsNullOrEmpty(essenceKey) && _essenceDisplayNames.TryGetValue(essenceKey, out name) && !string.IsNullOrEmpty(name)
+            ? name
+            : essenceKey;
+    }
+
     public Sprite GetCurrentEssenceIcon(string essenceKey)
     {
         Sprite icon;
@@ -676,14 +678,6 @@ public sealed class DpsData
         return !string.IsNullOrEmpty(sourceIdentity) && _healingDisplayNames.TryGetValue(sourceIdentity, out name) && !string.IsNullOrEmpty(name)
             ? name
             : sourceIdentity;
-    }
-
-    private string GetEssenceDisplayName(string essenceKey)
-    {
-        string name;
-        return !string.IsNullOrEmpty(essenceKey) && _essenceDisplayNames.TryGetValue(essenceKey, out name) && !string.IsNullOrEmpty(name)
-            ? name
-            : essenceKey;
     }
 
     private static string GetLocalizedEssenceName(Gem gem)
