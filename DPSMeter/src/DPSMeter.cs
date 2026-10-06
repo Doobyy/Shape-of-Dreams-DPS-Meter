@@ -422,7 +422,7 @@ public sealed class DPSMeter : ModBehaviour
                 + " | flat=" + data.flatModifier
                 + " | modifiedByThisEssence=" + modifiedByEssence
                 + " | from=" + DescribeActorChain(from)
-                + " | victim=" + (to != null ? to.GetReadableName() : "null"));
+                + " | victim=" + (to != null ? to.ToString() : "null"));
         }
 
         if (contribution <= 0.0001f || from == null || to == null)
