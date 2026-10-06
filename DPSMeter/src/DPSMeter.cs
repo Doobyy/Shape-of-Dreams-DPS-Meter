@@ -183,6 +183,12 @@ public sealed class DPSMeter : ModBehaviour
         ElementalType? elementalType = info.damage.elemental;
         DpsData.DamageScalingType scalingType = DpsData.DamageScalingType.None;
 
+        Debug.Log("[DPS Meter][v4.1 TRACE] damage skill=" +
+            (skillName ?? "none") +
+            " directEssence=" + isDirectEssenceDamage +
+            " directGem=" + (directGem != null ? directGem.GetActorReadableName() : "none") +
+            " elemental=" + (elementalType.HasValue ? elementalType.Value.ToString() : "none"));
+
         // The final damage event tells us the actual elemental result. Only
         // fall back to source scaling when no elemental result was produced.
         // Scaling is cached per Memory/Essence so we do not repeatedly inspect
@@ -202,6 +208,9 @@ public sealed class DPSMeter : ModBehaviour
                 scalingType = FindDamageScalingType(info.actor);
             }
         }
+
+        Debug.Log("[DPS Meter][v4.1 TRACE] resolved scaling=" + scalingType +
+            " skill=" + (skillName ?? "none"));
 
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
 
