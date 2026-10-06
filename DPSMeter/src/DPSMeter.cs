@@ -736,7 +736,14 @@ public sealed class DPSMeter : ModBehaviour
                                     " index=" + index +
                                     " itemType=" + (item.GetType().FullName ?? item.GetType().Name));
 
-                                TraceHealingReferenceMembers(item, "guidance." + field.Name + "[" + index + "]");
+                                if (string.Equals(field.Name, "_basicEffects", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    TraceGuidanceBasicEffect(item, index);
+                                }
+                                else
+                                {
+                                    TraceHealingReferenceMembers(item, "guidance." + field.Name + "[" + index + "]");
+                                }
                             }
 
                             index++;
@@ -745,6 +752,10 @@ public sealed class DPSMeter : ModBehaviour
                                 break;
                             }
                         }
+
+                        Debug.Log(
+                            "[DPS Meter][GUIDANCE ACTOR ENUM] field=" + field.Name +
+                            " count=" + index);
                     }
                 }
                 catch (Exception)
@@ -755,6 +766,69 @@ public sealed class DPSMeter : ModBehaviour
             type = type.BaseType;
         }
     }
+
+    private static void TraceGuidanceBasicEffect(object effect, int index)
+    {
+        if (effect == null)
+        {
+            return;
+        }
+
+        Type type = effect.GetType();
+        Debug.Log(
+            "[DPS Meter][GUIDANCE BASIC EFFECT] index=" + index +
+            " type=" + (type.FullName ?? type.Name));
+
+        while (type != null && type != typeof(object))
+        {
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                if (field.IsStatic || typeof(Delegate).IsAssignableFrom(field.FieldType))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(effect);
+                    if (value == null)
+                    {
+                        continue;
+                    }
+
+                    UnityEngine.Object unityObject = value as UnityEngine.Object;
+                    if (unityObject != null)
+                    {
+                        Debug.Log(
+                            "[DPS Meter][GUIDANCE BASIC EFFECT FIELD] " +
+                            field.Name +
+                            " type=" + field.FieldType.FullName +
+                            " valueType=" + value.GetType().FullName +
+                            " valueName=" + (unityObject.name ?? "<null>"));
+                    }
+                    else
+                    {
+                        Debug.Log(
+                            "[DPS Meter][GUIDANCE BASIC EFFECT FIELD] " +
+                            field.Name +
+                            " type=" + field.FieldType.FullName +
+                            " valueType=" + value.GetType().FullName +
+                            " value=" + Convert.ToString(value));
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            type = type.BaseType;
+        }
+    }
+
 
     private static void TraceHealingEventReferences(EventInfoHeal info)
     {
