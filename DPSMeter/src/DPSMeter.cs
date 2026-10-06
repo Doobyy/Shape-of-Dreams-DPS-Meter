@@ -187,7 +187,7 @@ public sealed class DPSMeter : ModBehaviour
 
         string skillName = skill != null
             ? skill.GetFormattedSkillTitle()
-            : "Basic / Other";
+            : null;
 
         ElementalType? elementalType = info.damage.elemental;
 
@@ -198,7 +198,7 @@ public sealed class DPSMeter : ModBehaviour
             appliedDamage,
             isLocalPlayer,
             skillName,
-            skillName,
+            "Basic / Other",
             essences,
             elementalType,
             playerName);
