@@ -352,7 +352,7 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             DamageRow row = rows[i];
-            DrawDamageRow(row.Name, row.Amount, total, maxAmount, i, row.Elemental, row.Icon);
+            DrawDamageRow(row.Name, row.Amount, total, i, row.Elemental, row.Icon);
         }
     }
 
