@@ -161,9 +161,9 @@ public sealed class DPSMeter : ModBehaviour
             sourceName = GetLocalizedEssenceName(healingGem) ?? sourceName;
         }
 
-        // Keep the raw healing event traceable for the known unresolved
-        // non-Essence healing sources while we identify their player-facing
-        // names and icons (Health Orb / Shrine of Guidance / Power of Guidance).
+        // Temporarily trace every healing event so runtime sources such as
+        // Shrine of Guidance and Power of Guidance can be identified even
+        // when their actor name does not contain the expected generic key.
         TraceUnresolvedHealingSource(info.actor, healingGem, sourceName);
 
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
@@ -522,25 +522,16 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
-    private static void TraceUnresolvedHealingSource(Actor source, Gem resolvedGem, string resolvedName)
+    p    private static void TraceUnresolvedHealingSource(Actor source, Gem resolvedGem, string resolvedName)
     {
         if (source == null)
         {
             return;
         }
 
-        string rawName = source.name ?? string.Empty;
-        bool trace = rawName.IndexOf("se_generichealovertime", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            rawName.IndexOf("Hero_Bismuth", StringComparison.OrdinalIgnoreCase) >= 0;
-
-        if (!trace)
-        {
-            return;
-        }
-
         Debug.Log(
             "[DPS Meter][HEAL TRACE] eventActor=" + source.GetType().FullName +
-            " name=" + rawName +
+            " name=" + (source.name ?? "<null>") +
             " resolvedGem=" + (resolvedGem == null ? "<null>" : GetEssenceIdentity(resolvedGem)) +
             " resolvedName=" + (resolvedName ?? "<null>"));
 
@@ -566,10 +557,7 @@ public sealed class DPSMeter : ModBehaviour
             current = current.parentActor;
             depth++;
         }
-    }
-
-
-    private static string GetHealingSourceName(Actor source)
+    } private static string GetHealingSourceName(Actor source)
     {
         string starName = TryGetStarDisplayName(source);
         if (!string.IsNullOrEmpty(starName))
