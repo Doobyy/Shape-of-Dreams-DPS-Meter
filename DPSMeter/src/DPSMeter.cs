@@ -338,6 +338,27 @@ public sealed class DPSMeter : ModBehaviour
             }
         }
 
+        PropertyInfo networkGemProperty = type.GetProperty(
+            "Network_gem",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        if (networkGemProperty != null &&
+            networkGemProperty.GetIndexParameters().Length == 0 &&
+            networkGemProperty.GetMethod != null)
+        {
+            try
+            {
+                Gem gem = networkGemProperty.GetValue(value, null) as Gem;
+                if (gem != null)
+                {
+                    return gem;
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
         FieldInfo gemField = type.GetField(
             "_gem",
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
