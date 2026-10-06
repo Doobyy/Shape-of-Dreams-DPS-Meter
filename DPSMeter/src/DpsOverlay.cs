@@ -30,13 +30,13 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.73";
+    private const string DevelopmentVersion = "v4.74";
 
     private DpsData _data;
     private Vector2 _scroll;
     private DisplayMode _mode;
 
-    private Rect _windowRect = new Rect(20f, 20f, 260f, 272f);
+    private Rect _windowRect = new Rect(20f, 20f, 260f, 197f);
     private bool _dragging;
     private bool _resizing;
     private Vector2 _dragOffset;
@@ -59,6 +59,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _rowRight;
     private Texture2D _whiteTexture;
     private Sprite _basicAttackIcon;
+    private Texture2D _healingExpandIcon;
+    private Texture2D _barrierExpandIcon;
 
     public bool Visible { get; set; } = true;
 
@@ -344,7 +346,7 @@ public sealed class DpsOverlay : MonoBehaviour
             float maxCollapsedHeight = Mathf.Max(90f, Screen.height - _windowRect.y - 10f);
 
             _collapsedWindowHeight = Mathf.Min(
-                Mathf.Max(272f, desiredHeight),
+                Mathf.Max(197f, desiredHeight),
                 maxCollapsedHeight);
         }
 
@@ -444,7 +446,7 @@ public sealed class DpsOverlay : MonoBehaviour
         switch (_mode)
         {
             case DisplayMode.CurrentDps:
-                title = "CURRENT DPS  " + DevelopmentVersion;
+                title = "CURRENT DPS";
                 metric = FormatNumber(_data.CurrentPersonalDps) + " DPS";
                 break;
 
@@ -500,6 +502,25 @@ public sealed class DpsOverlay : MonoBehaviour
                 headerRect.height),
             metric,
             _headerRight);
+
+        if (_mode == DisplayMode.CurrentDps)
+        {
+            GUIStyle versionStyle = new GUIStyle(_small)
+            {
+                fontSize = 8,
+                alignment = TextAnchor.LowerRight,
+                normal = { textColor = new Color(0.42f, 0.42f, 0.44f, 0.55f) }
+            };
+
+            GUI.Label(
+                new Rect(
+                    _windowRect.x + 6f,
+                    _windowRect.yMax - 15f,
+                    _windowRect.width - 12f,
+                    11f),
+                DevelopmentVersion,
+                versionStyle);
+        }
     }
 
     private Rect GetReloadButtonRect()
@@ -626,15 +647,19 @@ public sealed class DpsOverlay : MonoBehaviour
         GUILayout.BeginHorizontal();
         GUILayout.FlexibleSpace();
 
-        if (GUILayout.Button(_showHealing ? "+" : "+", toggleStyle, GUILayout.Width(20f), GUILayout.Height(16f)))
+        Rect healingRect = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f), GUILayout.Height(20f));
+        if (GUI.Button(healingRect, GUIContent.none, GUIStyle.none))
         {
             _showHealing = !_showHealing;
         }
+        DrawExpandIcon(GetHealingExpandIcon(), healingRect, _showHealing);
 
-        if (GUILayout.Button(_showBarrier ? "🛡" : "🛡", toggleStyle, GUILayout.Width(20f), GUILayout.Height(16f)))
+        Rect barrierRect = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f), GUILayout.Height(20f));
+        if (GUI.Button(barrierRect, GUIContent.none, GUIStyle.none))
         {
             _showBarrier = !_showBarrier;
         }
+        DrawExpandIcon(GetBarrierExpandIcon(), barrierRect, _showBarrier);
 
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
@@ -989,6 +1014,109 @@ public sealed class DpsOverlay : MonoBehaviour
 
         return string.Equals(name, "2", StringComparison.OrdinalIgnoreCase)
             || string.Equals(name, "2.png", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private Texture2D GetHealingExpandIcon()
+    {
+        if (_healingExpandIcon != null)
+        {
+            return _healingExpandIcon;
+        }
+
+        _healingExpandIcon = CreateExpandIcon(false);
+        return _healingExpandIcon;
+    }
+
+    private Texture2D GetBarrierExpandIcon()
+    {
+        if (_barrierExpandIcon != null)
+        {
+            return _barrierExpandIcon;
+        }
+
+        _barrierExpandIcon = CreateExpandIcon(true);
+        return _barrierExpandIcon;
+    }
+
+    private static Texture2D CreateExpandIcon(bool shield)
+    {
+        const int size = 24;
+        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        texture.filterMode = FilterMode.Point;
+
+        Color clear = new Color(0f, 0f, 0f, 0f);
+        Color ink = new Color(0.78f, 0.78f, 0.80f, 0.95f);
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                texture.SetPixel(x, y, clear);
+            }
+        }
+
+        if (shield)
+        {
+            for (int y = 3; y <= 20; y++)
+            {
+                float halfWidth = 8f - (Mathf.Abs(y - 12f) * 0.18f);
+                int left = Mathf.RoundToInt(12f - halfWidth);
+                int right = Mathf.RoundToInt(12f + halfWidth);
+
+                if (y == 3 || y == 4 || y == 19 || y == 20 || y <= 7)
+                {
+                    for (int x = left; x <= right; x++)
+                    {
+                        if (x == left || x == right || y == 3 || y == 4)
+                            texture.SetPixel(x, y, ink);
+                    }
+                }
+                else
+                {
+                    for (int x = left; x <= right; x++)
+                    {
+                        if (x == left || x == right)
+                            texture.SetPixel(x, y, ink);
+                    }
+                }
+            }
+
+            for (int i = 0; i < 6; i++)
+            {
+                texture.SetPixel(12, 9 + i, ink);
+                texture.SetPixel(11, 10 + i, ink);
+                texture.SetPixel(13, 10 + i, ink);
+            }
+        }
+        else
+        {
+            for (int i = 5; i <= 18; i++)
+            {
+                texture.SetPixel(12, i, ink);
+                texture.SetPixel(i, 12, ink);
+            }
+        }
+
+        texture.Apply();
+        return texture;
+    }
+
+    private static void DrawExpandIcon(Texture2D icon, Rect rect, bool active)
+    {
+        if (icon == null)
+            return;
+
+        GUI.color = active
+            ? Color.white
+            : new Color(0.62f, 0.62f, 0.64f, 0.78f);
+
+        GUI.DrawTexture(
+            new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, rect.height - 4f),
+            icon,
+            ScaleMode.ScaleToFit,
+            true);
+
+        GUI.color = Color.white;
     }
 
     private static void DrawSprite(Sprite sprite, Rect rect)
