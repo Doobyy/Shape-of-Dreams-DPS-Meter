@@ -459,6 +459,11 @@ public sealed class DPSMeter : ModBehaviour
 
         TraceHealingLinkMembers(actor, "actor", depth);
 
+        if (actor.GetType().Name == "Se_Star_L_HealOnAttack")
+        {
+            TraceHealOnAttackDetails(actor);
+        }
+
         AbilityInstance ability = actor as AbilityInstance;
         if (ability != null && ability.gem != null)
         {
@@ -473,6 +478,107 @@ public sealed class DPSMeter : ModBehaviour
             Debug.Log("[DPS Meter][HEAL TRACE] Heal actor[" + depth + "] firstTrigger type=" +
                 firstTrigger.GetType().FullName + " name=" + firstTrigger.name);
             TraceHealingLinkMembers(firstTrigger, "firstTrigger", depth);
+        }
+    }
+
+    private static void TraceHealOnAttackDetails(Actor actor)
+    {
+        Type type = actor.GetType();
+
+        Debug.Log("[DPS Meter][HEAL TRACE] ===== HEAL ON ATTACK DETAILS =====");
+        Debug.Log("[DPS Meter][HEAL TRACE] HealOnAttack runtime type=" + type.FullName);
+        Debug.Log("[DPS Meter][HEAL TRACE] HealOnAttack name=" + actor.name);
+
+        Type currentType = type;
+        int typeDepth = 0;
+
+        while (currentType != null && typeDepth < 8)
+        {
+            FieldInfo[] fields = currentType.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                if (field == null)
+                {
+                    continue;
+                }
+
+                string name = field.Name;
+                if (name.IndexOf("star", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("effect", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("data", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("variant", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("display", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("gem", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                object value = null;
+                try
+                {
+                    value = field.GetValue(actor);
+                }
+                catch (Exception)
+                {
+                }
+
+                Debug.Log("[DPS Meter][HEAL TRACE] HealOnAttack." + field.Name +
+                    " declaredOn=" + currentType.FullName +
+                    " type=" + field.FieldType.FullName +
+                    " value=" + DescribeDiagnosticValue(value));
+            }
+
+            PropertyInfo[] properties = currentType.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < properties.Length; i++)
+            {
+                PropertyInfo property = properties[i];
+                if (property == null || property.GetIndexParameters().Length != 0 ||
+                    !property.CanRead)
+                {
+                    continue;
+                }
+
+                string name = property.Name;
+                if (name.IndexOf("star", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("heal", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("effect", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("data", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("variant", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("display", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("gem", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                object value = null;
+                try
+                {
+                    value = property.GetValue(actor, null);
+                }
+                catch (Exception)
+                {
+                }
+
+                Debug.Log("[DPS Meter][HEAL TRACE] HealOnAttack." + property.Name +
+                    " declaredOn=" + currentType.FullName +
+                    " propertyType=" + property.PropertyType.FullName +
+                    " value=" + DescribeDiagnosticValue(value));
+            }
+
+            currentType = currentType.BaseType;
+            typeDepth++;
         }
     }
 
