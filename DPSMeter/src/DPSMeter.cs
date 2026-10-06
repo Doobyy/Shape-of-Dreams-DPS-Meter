@@ -583,7 +583,8 @@ public sealed class DPSMeter : ModBehaviour
 
         string rawName = info.actor.name ?? string.Empty;
         bool targeted = rawName.IndexOf("Hero_Bismuth", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            rawName.IndexOf("Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase) >= 0;
+            rawName.IndexOf("Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            rawName.IndexOf("Se_LingeringAuraOfGuidance", StringComparison.OrdinalIgnoreCase) >= 0;
 
         if (!targeted)
         {
