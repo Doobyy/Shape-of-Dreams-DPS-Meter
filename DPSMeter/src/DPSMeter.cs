@@ -522,7 +522,7 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
-    p    private static void TraceUnresolvedHealingSource(Actor source, Gem resolvedGem, string resolvedName)
+    private static void TraceUnresolvedHealingSource(Actor source, Gem resolvedGem, string resolvedName)
     {
         if (source == null)
         {
