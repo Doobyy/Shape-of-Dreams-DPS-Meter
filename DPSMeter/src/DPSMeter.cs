@@ -357,12 +357,6 @@ public sealed class DPSMeter : ModBehaviour
 
     private static void TraceHealingEvent(EventInfoHeal info)
     {
-        if (info == null)
-        {
-            Debug.Log("[DPS Meter][HEAL TRACE] EventInfoHeal instance=null");
-            return;
-        }
-
         Type eventType = info.GetType();
         Debug.Log("[DPS Meter][HEAL TRACE] EventInfoHeal runtime type=" + eventType.FullName);
 
@@ -801,7 +795,7 @@ public sealed class DPSMeter : ModBehaviour
 
             return DpsData.DamageScalingType.None;
         }
-        catch (System.Exception ex)
+        catch (System.Exception)
         {
             return DpsData.DamageScalingType.None;
         }
