@@ -153,6 +153,12 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         string sourceName = GetHealingSourceName(info.actor);
+        string localizedActorName = TryGetLocalizedHealingActorName(info.actor);
+        if (!string.IsNullOrEmpty(localizedActorName))
+        {
+            sourceName = localizedActorName;
+        }
+
         string sourceIdentity = GetSkillSlotIdentity(info.actor);
 
         if (healingGem != null)
@@ -576,6 +582,86 @@ public sealed class DPSMeter : ModBehaviour
 
     private static readonly HashSet<string> _healingNameTraceCache = new HashSet<string>();
     private static bool _healingLocalizationApiTraced;
+
+    private static string TryGetLocalizedHealingActorName(Actor source)
+    {
+        if (source == null)
+            return null;
+
+        string originalName = null;
+        string skillKey = null;
+
+        try
+        {
+            originalName = source.GetOriginalName();
+            skillKey = DewLocalization.GetSkillKey(source.GetType());
+            if (string.IsNullOrEmpty(skillKey) && !string.IsNullOrEmpty(originalName))
+                skillKey = DewLocalization.GetSkillKey(originalName);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrEmpty(skillKey))
+            return null;
+
+        try
+        {
+            Type localizationType = typeof(DewLocalization);
+            MethodInfo[] methods = localizationType.GetMethods(
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < methods.Length; i++)
+            {
+                MethodInfo method = methods[i];
+                string lower = (method.Name ?? string.Empty).ToLowerInvariant();
+
+                if (method.ReturnType != typeof(string) ||
+                    lower.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 ||
+                    lower.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
+                ParameterInfo[] parameters = method.GetParameters();
+                if (parameters.Length != 1)
+                    continue;
+
+                Type parameterType = parameters[0].ParameterType;
+                object argument = null;
+
+                if (parameterType == typeof(string))
+                    argument = skillKey;
+                else if (parameterType == typeof(Type))
+                    argument = source.GetType();
+                else if (parameterType.IsInstanceOfType(source))
+                    argument = source;
+                else
+                    continue;
+
+                try
+                {
+                    object result = method.Invoke(null, new object[] { argument });
+                    string text = result as string;
+                    if (!string.IsNullOrEmpty(text) &&
+                        text.IndexOf("!Se_", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        text.IndexOf("!.", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        return text;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        return null;
+    }
+
+
 
     private static void TraceUnresolvedHealingSource(EventInfoHeal info, Gem resolvedGem, string resolvedName)
     {
