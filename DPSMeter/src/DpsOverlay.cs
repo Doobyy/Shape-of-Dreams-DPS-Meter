@@ -331,7 +331,7 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             KeyValuePair<string, float> row = rows[i];
-            DrawDamageRow(row.Key, row.Value, total, indexOffset + i, _data.GetCurrentSkillElement(row.Key), null);
+            DrawDamageRow(row.Key, row.Value, total, indexOffset + i, _data.GetCurrentSkillElement(row.Key), _data.GetSkillIcon(row.Key));
         }
     }
 
