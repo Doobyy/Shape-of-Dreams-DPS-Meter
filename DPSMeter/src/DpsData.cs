@@ -44,12 +44,36 @@ public sealed class DpsData
     private readonly Dictionary<string, float> _cumulativePersonalHealing = new Dictionary<string, float>();
     private readonly Dictionary<string, Sprite> _cumulativePersonalHealingIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, string> _healingDisplayNames = new Dictionary<string, string>();
+    private readonly Dictionary<string, float> _currentPersonalBarrier = new Dictionary<string, float>();
+    private readonly Dictionary<string, Sprite> _currentPersonalBarrierIcons = new Dictionary<string, Sprite>();
+    private readonly Dictionary<string, float> _cumulativePersonalBarrier = new Dictionary<string, float>();
+    private readonly Dictionary<string, Sprite> _cumulativePersonalBarrierIcons = new Dictionary<string, Sprite>();
+    private readonly Dictionary<string, string> _barrierDisplayNames = new Dictionary<string, string>();
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
     private bool _pendingInstanceReset;
 
     public float CurrentInstancePersonalHealing { get; private set; }
     public float CumulativePersonalHealing { get; private set; }
+    public float CurrentInstancePersonalBarrier { get; private set; }
+    public float CumulativePersonalBarrier { get; private set; }
+
+    public float BarrierStartedAt { get; private set; }
+    public float LastBarrierAt { get; private set; }
+    public int CurrentBarrierCount { get; private set; }
+    public float CumulativeBarrierStartedAt { get; private set; }
+    public float LastCumulativeBarrierAt { get; private set; }
+
+    public float CurrentBarrierDuration =>
+        CurrentBarrierCount == 0 ? 0f : Mathf.Max(0.001f, LastBarrierAt - BarrierStartedAt);
+
+    public float CurrentPersonalBps =>
+        CurrentBarrierCount == 0 ? 0f : CurrentInstancePersonalBarrier / CurrentBarrierDuration;
+
+    public float TotalPersonalBps =>
+        CumulativePersonalBarrier <= 0f || CumulativeBarrierStartedAt <= 0f
+            ? 0f
+            : CumulativePersonalBarrier / Mathf.Max(0.001f, LastCumulativeBarrierAt - CumulativeBarrierStartedAt);
 
     public float HealingStartedAt { get; private set; }
     public float LastHealAt { get; private set; }
@@ -102,6 +126,18 @@ public sealed class DpsData
 
     public float CurrentPartyAppliedDps =>
         CurrentHitCount == 0 ? 0f : CurrentInstancePartyAppliedDamage / CurrentDuration;
+
+    public IReadOnlyList<BreakdownRow> CurrentPersonalBarrierRows =>
+        _currentPersonalBarrier
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new BreakdownRow { Identity = pair.Key, Name = GetBarrierDisplayName(pair.Key), Amount = pair.Value })
+            .ToList();
+
+    public IReadOnlyList<BreakdownRow> CumulativeBarrierRows =>
+        _cumulativePersonalBarrier
+            .OrderByDescending(pair => pair.Value)
+            .Select(pair => new BreakdownRow { Identity = pair.Key, Name = GetBarrierDisplayName(pair.Key), Amount = pair.Value })
+            .ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalHealing =>
         _currentPersonalHealing
@@ -168,6 +204,55 @@ public sealed class DpsData
 
     public IReadOnlyList<KeyValuePair<string, float>> CumulativeParty =>
         _cumulativeParty.OrderByDescending(pair => pair.Value).ToList();
+
+    public void AddBarrier(float barrier, string sourceIdentity, string sourceName, Sprite icon)
+    {
+        if (barrier <= 0f)
+        {
+            return;
+        }
+
+        if (_pendingInstanceReset)
+        {
+            ClearCurrentInstance();
+            _pendingInstanceReset = false;
+        }
+
+        float now = Time.time;
+
+        if (CurrentBarrierCount == 0)
+        {
+            BarrierStartedAt = now;
+        }
+
+        if (CumulativeBarrierStartedAt <= 0f)
+        {
+            CumulativeBarrierStartedAt = now;
+        }
+
+        LastBarrierAt = now;
+        LastCumulativeBarrierAt = now;
+        CurrentBarrierCount++;
+
+        CurrentInstancePersonalBarrier += barrier;
+        CumulativePersonalBarrier += barrier;
+
+        string identity = string.IsNullOrEmpty(sourceIdentity) ? sourceName : sourceIdentity;
+        if (string.IsNullOrEmpty(identity))
+        {
+            identity = "Unknown Barrier";
+        }
+
+        Add(_currentPersonalBarrier, identity, barrier);
+        Add(_cumulativePersonalBarrier, identity, barrier);
+        _barrierDisplayNames[identity] = string.IsNullOrEmpty(sourceName) ? identity : sourceName;
+
+        if (icon != null)
+        {
+            _currentPersonalBarrierIcons[identity] = icon;
+            _cumulativePersonalBarrierIcons[identity] = icon;
+        }
+    }
 
     public void AddHealing(float healing, string sourceIdentity, string sourceName, Sprite icon)
     {
@@ -322,9 +407,13 @@ public sealed class DpsData
     private void ClearCurrentInstance()
     {
         CurrentInstancePersonalHealing = 0f;
+        CurrentInstancePersonalBarrier = 0f;
         HealingStartedAt = 0f;
+        BarrierStartedAt = 0f;
         LastHealAt = 0f;
         CurrentHealCount = 0;
+        LastBarrierAt = 0f;
+        CurrentBarrierCount = 0;
 
         CurrentInstancePersonalDamage = 0f;
         CurrentInstancePersonalAppliedDamage = 0f;
@@ -338,6 +427,8 @@ public sealed class DpsData
 
         _currentPersonalHealing.Clear();
         _currentPersonalHealingIcons.Clear();
+        _currentPersonalBarrier.Clear();
+        _currentPersonalBarrierIcons.Clear();
         _currentPersonalSkills.Clear();
         _currentPersonalEssences.Clear();
         _currentPersonalSkillElements.Clear();
@@ -356,8 +447,11 @@ public sealed class DpsData
         _pendingInstanceReset = false;
 
         CumulativePersonalHealing = 0f;
+        CumulativePersonalBarrier = 0f;
         CumulativeHealingStartedAt = 0f;
+        CumulativeBarrierStartedAt = 0f;
         LastCumulativeHealAt = 0f;
+        LastCumulativeBarrierAt = 0f;
         CumulativePersonalDamage = 0f;
         CumulativePersonalAppliedDamage = 0f;
         CumulativePersonalOverkill = 0f;
@@ -368,6 +462,9 @@ public sealed class DpsData
         _cumulativePersonalHealing.Clear();
         _cumulativePersonalHealingIcons.Clear();
         _healingDisplayNames.Clear();
+        _cumulativePersonalBarrier.Clear();
+        _cumulativePersonalBarrierIcons.Clear();
+        _barrierDisplayNames.Clear();
         _cumulativePersonalSkills.Clear();
         _skillIcons.Clear();
         _skillDisplayNames.Clear();
@@ -413,6 +510,18 @@ public sealed class DpsData
     {
         Sprite icon;
         return !string.IsNullOrEmpty(essenceKey) && _cumulativePersonalEssenceIcons.TryGetValue(essenceKey, out icon) ? icon : null;
+    }
+
+    public Sprite GetCurrentBarrierIcon(string sourceIdentity)
+    {
+        Sprite icon;
+        return !string.IsNullOrEmpty(sourceIdentity) && _currentPersonalBarrierIcons.TryGetValue(sourceIdentity, out icon) ? icon : null;
+    }
+
+    public Sprite GetCumulativeBarrierIcon(string sourceIdentity)
+    {
+        Sprite icon;
+        return !string.IsNullOrEmpty(sourceIdentity) && _cumulativePersonalBarrierIcons.TryGetValue(sourceIdentity, out icon) ? icon : null;
     }
 
     public Sprite GetCurrentHealingIcon(string sourceName)
@@ -542,6 +651,14 @@ public sealed class DpsData
         return !string.IsNullOrEmpty(skillIdentity) && _skillDisplayNames.TryGetValue(skillIdentity, out name) && !string.IsNullOrEmpty(name)
             ? name
             : skillIdentity;
+    }
+
+    private string GetBarrierDisplayName(string sourceIdentity)
+    {
+        string name;
+        return !string.IsNullOrEmpty(sourceIdentity) && _barrierDisplayNames.TryGetValue(sourceIdentity, out name) && !string.IsNullOrEmpty(name)
+            ? name
+            : sourceIdentity;
     }
 
     private string GetHealingDisplayName(string sourceIdentity)
