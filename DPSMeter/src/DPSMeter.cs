@@ -253,6 +253,34 @@ public sealed class DPSMeter : ModBehaviour
         return scaling;
     }
 
+    private void TraceAbilityChildren(AbilityInstance source)
+    {
+        Actor[] children = source.children;
+        if (children == null)
+            return;
+
+        foreach (Actor child in children)
+        {
+            AbilityInstance instance = child as AbilityInstance;
+            if (instance == null)
+                continue;
+
+            DamageInstance damageInstance = instance as DamageInstance;
+            Gem gem = instance.gem;
+            string gemName = gem != null ? gem.GetActorReadableName() : "none";
+
+            if (damageInstance != null)
+            {
+                ScalingValue scaling = damageInstance.dmgFactor;
+                Debug.Log($"[DPS Meter][v3.8 TRACE] MysticDagger child type={instance.GetType().Name} gem={gemName} scaling=ad={scaling.adFactor}, ap={scaling.apFactor}, addedHp={scaling.addedHpFactor}, base={scaling.baseValue} elemental={damageInstance.elemental}");
+            }
+            else
+            {
+                Debug.Log($"[DPS Meter][v3.8 TRACE] MysticDagger child type={instance.GetType().Name} gem={gemName} no DamageInstance");
+            }
+        }
+    }
+
     private void TraceAbilitySource(Actor actor)
     {
         Actor current = actor;
@@ -274,6 +302,9 @@ public sealed class DPSMeter : ModBehaviour
                     : "no DamageInstance/dmgFactor";
 
                 Debug.Log($"[DPS Meter][v3.8 TRACE] AbilityInstance type={typeName} gem={gemName} scaling={scalingText}");
+
+                if (typeName == "Ai_E_MysticDagger")
+                    TraceAbilityChildren(instance);
             }
 
             current = current.parentActor;
