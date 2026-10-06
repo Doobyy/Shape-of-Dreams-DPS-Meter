@@ -191,10 +191,10 @@ public sealed class DPSMeter : ModBehaviour
                 + " | pending=" + _pendingEssenceContributions.Count);
         }
 
-        // v2.8 diagnostic: inspect the client-side damage event and its
-        // ReactionChain. The server-only dealtDamageProcessor cannot tell us
-        // how a modifier Essence changed a Memory hit from the client.
-        if (_diagnosticDamageEventLogs < 80)
+        // v2.9 diagnostic: log every qualifying local-player damage event,
+        // not only direct Essence events. This lets us compare Memory hits
+        // with and without a modifier Essence present.
+        if (_diagnosticDamageEventLogs < 120 && isLocalPlayer)
         {
             List<string> reactionEssences = new List<string>();
 
@@ -206,27 +206,43 @@ public sealed class DPSMeter : ModBehaviour
                 }
             }
 
-            if (reactionEssences.Count > 0 || directGem != null)
+            List<string> chainGems = new List<string>();
+            Actor chainActor = info.actor;
+            int chainDepth = 0;
+            while (chainActor != null && chainDepth < 12)
             {
-                _diagnosticDamageEventLogs++;
+                AbilityInstance chainInstance = chainActor as AbilityInstance;
+                if (chainInstance != null && chainInstance.gem != null)
+                {
+                    chainGems.Add(chainInstance.gem.GetActorReadableName());
+                }
 
-                Debug.Log("[DPS Meter v2.8] Damage event trace: "
-                    + "amount=" + info.damage.amount
-                    + " | discarded=" + info.damage.discardedAmount
-                    + " | produced=" + producedDamage
-                    + " | elemental=" + (info.damage.elemental.HasValue
-                        ? info.damage.elemental.Value.ToString()
-                        : "null")
-                    + " | type=" + info.damage.type
-                    + " | attributes=" + info.damage.attributes
-                    + " | procCoefficient=" + info.damage.procCoefficient
-                    + " | actor=" + DescribeActorChainDetailed(info.actor)
-                    + " | directGem=" + (directGem != null
-                        ? directGem.GetActorReadableName()
-                        : "null")
-                    + " | reactionEssences=" + string.Join(", ", reactionEssences.ToArray())
-                    + " | reactionChain=" + info.chain.ToString());
+                chainActor = chainActor.parentActor;
+                chainDepth++;
             }
+
+            _diagnosticDamageEventLogs++;
+
+            Debug.Log("[DPS Meter v2.9] Damage event trace: "
+                + "amount=" + info.damage.amount
+                + " | discarded=" + info.damage.discardedAmount
+                + " | produced=" + producedDamage
+                + " | elemental=" + (info.damage.elemental.HasValue
+                    ? info.damage.elemental.Value.ToString()
+                    : "null")
+                + " | type=" + info.damage.type
+                + " | attributes=" + info.damage.attributes
+                + " | procCoefficient=" + info.damage.procCoefficient
+                + " | actor=" + DescribeActorChainDetailed(info.actor)
+                + " | directGem=" + (directGem != null
+                    ? directGem.GetActorReadableName()
+                    : "null")
+                + " | abilityGem=" + (abilityGem != null
+                    ? abilityGem.GetActorReadableName()
+                    : "null")
+                + " | reactionEssences=" + string.Join(", ", reactionEssences.ToArray())
+                + " | chainGems=" + string.Join(", ", chainGems.ToArray())
+                + " | reactionChain=" + info.chain.ToString());
         }
 
         Dictionary<Gem, float> essenceContributions = ConsumeEssenceContributions(
