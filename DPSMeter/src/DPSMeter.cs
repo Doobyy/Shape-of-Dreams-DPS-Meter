@@ -197,7 +197,7 @@ public sealed class DPSMeter : ModBehaviour
             producedDamage,
             appliedDamage,
             isLocalPlayer,
-            skill,
+            skillName,
             skillName,
             essences,
             elementalType,
