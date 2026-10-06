@@ -19,7 +19,6 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
-    private int _healingTraceCount;
     private void Awake()
     {
         Instance = this;
@@ -137,90 +136,11 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        TraceHealingSource(info.actor);
-
         string sourceName = GetHealingSourceName(info.actor);
         string sourceIdentity = GetSkillSlotIdentity(info.actor);
         Sprite healingIcon = FindHealingIcon(info.actor);
         _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
 
-    }
-
-
-    private static void TraceHealingSource(Actor source)
-    {
-        DPSMeter meter = Instance;
-        if (meter == null || source == null || meter._healingTraceCount >= 3)
-        {
-            return;
-        }
-
-        meter._healingTraceCount++;
-        Debug.Log("[DPS Meter][HEAL TRACE] ENTER source=" + DescribeHealingObject(source));
-
-        try
-        {
-            Type starEffectType = typeof(Actor).Assembly.GetType("StarEffect");
-            if (starEffectType == null)
-            {
-                Debug.Log("[DPS Meter][HEAL TRACE] StarEffect TYPE NOT FOUND");
-                return;
-            }
-
-            UnityEngine.Object[] objects = Resources.FindObjectsOfTypeAll(starEffectType);
-            if (objects == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < objects.Length; i++)
-            {
-                UnityEngine.Object value = objects[i];
-                if (value == null ||
-                    value.name.IndexOf("Se_Star_L_HealOnAttack", StringComparison.OrdinalIgnoreCase) < 0)
-                {
-                    continue;
-                }
-
-                Debug.Log("[DPS Meter][HEAL TRACE] TARGET STAR EFFECT FOUND name=" + value.name);
-
-                PropertyInfo playerProperty = value.GetType().GetProperty(
-                    "player",
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-                if (playerProperty == null || playerProperty.GetMethod == null)
-                {
-                    return;
-                }
-
-                object player = playerProperty.GetValue(value, null);
-                if (player == null)
-                {
-                    return;
-                }
-
-                PropertyInfo loadoutProperty = player.GetType().GetProperty(
-                    "selectedLoadout",
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-                if (loadoutProperty == null || loadoutProperty.GetMethod == null)
-                {
-                    return;
-                }
-
-                object loadout = loadoutProperty.GetValue(player, null);
-
-                Debug.Log(
-                    "[DPS Meter][HEAL TRACE] SELECTED LOADOUT type=" +
-                    (loadout == null ? "null" : loadout.GetType().FullName));
-
-                TraceHealingObjectMembers("SelectedLoadout", loadout);
-                return;
-            }
-        }
-        catch (Exception)
-        {
-        }
     }
 
 
@@ -296,56 +216,6 @@ public sealed class DPSMeter : ModBehaviour
         return location.ToString();
     }
 
-
-    private static void TraceHealingObjectMembers(string label, object value)
-    {
-        if (value == null)
-        {
-            return;
-        }
-
-        Type type = value.GetType();
-        Debug.Log("[DPS Meter][HEAL TRACE] OBJECT SCAN " + label + " type=" + type.FullName);
-
-        FieldInfo[] fields = type.GetFields(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-
-            try
-            {
-                object memberValue = field.GetValue(value);
-                TraceHealingObjectMember(type, field.Name, field.FieldType, memberValue);
-            }
-            catch (Exception)
-            {
-            }
-        }
-
-        PropertyInfo[] properties = type.GetProperties(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        for (int i = 0; i < properties.Length; i++)
-        {
-            PropertyInfo property = properties[i];
-
-            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
-            {
-                continue;
-            }
-
-            try
-            {
-                object memberValue = property.GetValue(value, null);
-                TraceHealingObjectMember(type, property.Name, property.PropertyType, memberValue);
-            }
-            catch (Exception)
-            {
-            }
-        }
-    }
 
     private static void ResolveBarrierSource(
         object statusEffect,
@@ -432,76 +302,6 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
-    private static void TraceHealingObjectMember(
-        Type ownerType,
-        string memberName,
-        Type declaredType,
-        object memberValue)
-    {
-        string declaredName = declaredType == null
-            ? "<unknown>"
-            : declaredType.FullName ?? declaredType.Name;
-
-        string valueType = memberValue == null
-            ? "null"
-            : memberValue.GetType().FullName;
-
-        Debug.Log(
-            "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
-            " declaredType=" + declaredName +
-            " valueType=" + valueType);
-
-        TraceHealingReferenceMember(ownerType, memberName, memberValue);
-
-        if (memberValue == null || memberValue is string)
-        {
-            return;
-        }
-
-        Type runtimeType = memberValue.GetType();
-        if (runtimeType.IsPrimitive || runtimeType.IsEnum)
-        {
-            Debug.Log(
-                "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
-                " value=" + memberValue);
-            return;
-        }
-
-        System.Collections.IEnumerable enumerable = memberValue as System.Collections.IEnumerable;
-        if (enumerable == null)
-        {
-            return;
-        }
-
-        int count = 0;
-        foreach (object item in enumerable)
-        {
-            if (item == null)
-            {
-                continue;
-            }
-
-            Debug.Log(
-                "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
-                " item[" + count + "] type=" + item.GetType().FullName +
-                " value=" + item);
-
-            TraceHealingReferenceMember(item.GetType(), "item", item);
-            TraceHealingObjectMembers(
-                ownerType.Name + "." + memberName + "[" + count + "]",
-                item);
-
-            count++;
-            if (count >= 20)
-            {
-                Debug.Log(
-                    "[DPS Meter][HEAL TRACE] OBJECT MEMBER " + ownerType.Name + "." + memberName +
-                    " item scan capped at 20");
-                break;
-            }
-        }
-    }
-
     private static Gem FindDirectGemMember(object value)
     {
         if (value == null)
@@ -554,72 +354,50 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
-    private static void TraceHealingReferenceMember(Type ownerType, string memberName, object memberValue)
+    private static string TryGetStarDisplayName(Actor source)
     {
-        if (memberValue == null)
+        if (source == null)
         {
-            return;
+            return null;
         }
 
-        Gem gem = memberValue as Gem;
-        if (gem != null)
+        string key = source.name;
+        if (string.IsNullOrEmpty(key))
         {
-            Debug.Log(
-                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
-                " -> Gem type=" + gem.GetType().Name +
-                " name=" + gem.name +
-                " original=" + gem.GetOriginalName());
-            return;
+            return null;
         }
 
-        Actor actor = memberValue as Actor;
-        if (actor != null)
+        int suffix = key.IndexOf('(');
+        if (suffix > 0)
         {
-            Debug.Log(
-                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
-                " -> Actor " + DescribeHealingObject(actor));
-            return;
+            key = key.Substring(0, suffix).Trim();
         }
 
-        SkillTrigger skill = memberValue as SkillTrigger;
-        if (skill != null)
+        if (!key.StartsWith("Se_Star_", StringComparison.OrdinalIgnoreCase))
         {
-            Debug.Log(
-                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
-                " -> SkillTrigger name=" + skill.GetFormattedSkillTitle());
-            return;
+            return null;
         }
 
-        string stringValue = memberValue as string;
-        if (!string.IsNullOrEmpty(stringValue) &&
-            (memberName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
-             memberName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
-             memberName.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0))
+        try
         {
-            Debug.Log(
-                "[DPS Meter][HEAL TRACE] " + ownerType.Name + "." + memberName +
-                " -> string=\"" + stringValue + "\"");
+            string displayName = DewLocalization.GetStarName(key);
+            return string.IsNullOrEmpty(displayName) ? null : displayName;
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 
-    private static string DescribeHealingObject(Actor actor)
-    {
-        if (actor == null)
-        {
-            return "null";
-        }
-
-        string actorName = actor.name;
-        if (string.IsNullOrEmpty(actorName))
-        {
-            actorName = "<no-name>";
-        }
-
-        return "type=" + actor.GetType().FullName + " name=" + actorName;
-    }
 
     private static string GetHealingSourceName(Actor source)
     {
+        string starName = TryGetStarDisplayName(source);
+        if (!string.IsNullOrEmpty(starName))
+        {
+            return starName;
+        }
+
         if (source == null)
         {
             return "Unknown Healing";
