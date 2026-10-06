@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -118,19 +117,14 @@ public sealed class DPSMeter : ModBehaviour
         List<Gem> essences = new List<Gem>();
         Gem directGem = ability != null ? ability.gem : null;
 
+        if (directGem == null)
+        {
+            directGem = info.actor.FindFirstOfType<Gem>();
+        }
+
         if (directGem != null)
         {
             essences.Add(directGem);
-        }
-
-        Gem[] heroGems = sourceHero.GetComponentsInChildren<Gem>(true);
-        for (int i = 0; i < heroGems.Length; i++)
-        {
-            Gem candidate = heroGems[i];
-            if (candidate != null && !essences.Contains(candidate) && IsDamageModifiedBy(info.damage, candidate))
-            {
-                essences.Add(candidate);
-            }
         }
 
         string skillName = skill != null
@@ -150,46 +144,6 @@ public sealed class DPSMeter : ModBehaviour
             essences,
             elementalType,
             playerName);
-    }
-
-    private static bool IsDamageModifiedBy(FinalDamageData finalDamage, Gem gem)
-    {
-        if (gem == null)
-        {
-            return false;
-        }
-
-        FieldInfo[] fields = finalDamage.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < fields.Length; i++)
-        {
-            object value = fields[i].GetValue(finalDamage);
-            if (value is DamageData damageData && damageData.IsAmountModifiedBy(gem))
-            {
-                return true;
-            }
-        }
-
-        PropertyInfo[] properties = finalDamage.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < properties.Length; i++)
-        {
-            if (properties[i].GetIndexParameters().Length != 0)
-            {
-                continue;
-            }
-
-            if (!typeof(DamageData).IsAssignableFrom(properties[i].PropertyType))
-            {
-                continue;
-            }
-
-            object value = properties[i].GetValue(finalDamage, null);
-            if (value is DamageData damageData && damageData.IsAmountModifiedBy(gem))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static string GetEssenceLabel(Gem gem)
