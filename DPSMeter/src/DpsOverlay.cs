@@ -25,7 +25,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color ApScalingBarColor = new Color(0.18f, 0.50f, 0.55f, 0.68f);
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.13";
+    private const string DevelopmentVersion = "v4.14";
 
     private DpsData _data;
     private Vector2 _scroll;
