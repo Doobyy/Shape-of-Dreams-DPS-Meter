@@ -15,14 +15,6 @@ public sealed class DPSMeter : ModBehaviour
     private bool _subscribed;
     private Hero _currentHero;
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
-    private readonly Dictionary<Gem, EssenceProcessorHooks> _essenceProcessorHooks = new Dictionary<Gem, EssenceProcessorHooks>();
-
-    private sealed class EssenceProcessorHooks
-    {
-        public DataProcessor<DamageData, Actor, Entity> Before;
-        public DataProcessor<DamageData, Actor, Entity> After;
-    }
-
     private void Awake()
     {
         Instance = this;
@@ -155,15 +147,16 @@ public sealed class DPSMeter : ModBehaviour
         // case the damage event's actor chain can contain the Gem even when
         // the first AbilityInstance is not the Essence's instance.
         Gem directGem = FindDamageSourceEssence(info.actor);
-        AbilityInstance abilityInstance = info.actor.FindFirstOfType<AbilityInstance>();
-        Gem abilityGem = null;
-        if (abilityInstance != null)
+        Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
+        bool isDirectEssenceDamage = IsEssenceGem(directGem);
+
+        if (isDirectEssenceDamage)
         {
-            _essenceAbilityInstances.TryGetValue(abilityInstance, out abilityGem);
+            essenceContributions[directGem] = producedDamage;
         }
+
         // Essence-generated damage is already represented by its Essence row.
         // Do not also attribute that same hit to the parent Memory/Skill.
-        bool isDirectEssenceDamage = IsEssenceGem(directGem);
 
         string skillName = !isDirectEssenceDamage && skill != null
             ? skill.GetFormattedSkillTitle()
