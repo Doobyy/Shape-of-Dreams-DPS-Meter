@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.32";
+    private const string DevelopmentVersion = "v4.33";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -44,6 +44,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private float _resizeStartHealingHeight;
     private bool _headerMoved;
     private bool _showHealing;
+    private bool _showBarrier;
     private float _collapsedWindowHeight;
 
     private GUIStyle _header;
@@ -147,15 +148,15 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal)
         {
-            Rect healingRect = new Rect(
+            Rect breakdownRect = new Rect(
                 _windowRect.x + 6f,
                 _windowRect.y + _collapsedWindowHeight - 20f,
                 _windowRect.width - 12f,
                 Mathf.Max(20f, _windowRect.height - _collapsedWindowHeight + 20f));
 
-            GUILayout.BeginArea(healingRect);
+            GUILayout.BeginArea(breakdownRect);
 
-            DrawHealingToggle();
+            DrawBreakdownToggles();
 
             if (_showHealing)
             {
@@ -166,6 +167,17 @@ public sealed class DpsOverlay : MonoBehaviour
                     _mode == DisplayMode.CurrentDps
                         ? _data.CurrentInstancePersonalHealing
                         : _data.CumulativePersonalHealing);
+            }
+
+            if (_showBarrier)
+            {
+                DrawBarrierBreakdown(
+                    _mode == DisplayMode.CurrentDps
+                        ? _data.CurrentPersonalBarrierRows
+                        : _data.CumulativeBarrierRows,
+                    _mode == DisplayMode.CurrentDps
+                        ? _data.CurrentInstancePersonalBarrier
+                        : _data.CumulativePersonalBarrier);
             }
 
             GUILayout.EndArea();
@@ -199,21 +211,12 @@ public sealed class DpsOverlay : MonoBehaviour
                 _resizing = true;
                 _resizeStartMouse = e.mousePosition;
 
-                float resizeHealingHeight = 0f;
-                if (_showHealing
-                    && (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal))
-                {
-                    int rowCount = _mode == DisplayMode.CurrentDps
-                        ? (_data.CurrentPersonalHealing != null ? _data.CurrentPersonalHealing.Count : 0)
-                        : (_data.CumulativeHealingSources != null ? _data.CumulativeHealingSources.Count : 0);
-
-                    resizeHealingHeight = 16f + 22f + 22f + (rowCount * 22f) + 4f;
-                }
+                float resizeBreakdownHeight = GetExpandedBreakdownHeight();
 
                 _resizeStartSize = new Vector2(
                     _windowRect.width,
                     _collapsedWindowHeight);
-                _resizeStartHealingHeight = resizeHealingHeight;
+                _resizeStartHealingHeight = resizeBreakdownHeight;
                 _resizeMoved = false;
 
                 e.Use();
@@ -322,27 +325,54 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private void UpdateWindowHeightForHealing()
     {
-        if (!_showHealing
-            || (_mode != DisplayMode.CurrentDps && _mode != DisplayMode.DamageTotal))
+        float breakdownHeight = GetExpandedBreakdownHeight();
+        if (breakdownHeight <= 0f)
         {
             _windowRect.height = _collapsedWindowHeight;
             return;
         }
 
-        IReadOnlyList<DpsData.BreakdownRow> rows =
-            _mode == DisplayMode.CurrentDps
-                ? _data.CurrentPersonalHealingRows
-                : _data.CumulativeHealingRows;
-
-        int rowCount = rows != null ? rows.Count : 0;
-        float healingHeight = 16f + 22f + 22f + (rowCount * 22f) + 4f;
         float maxHeight = Mathf.Max(
             _collapsedWindowHeight,
             Screen.height - _windowRect.y - 10f);
 
         _windowRect.height = Mathf.Min(
-            _collapsedWindowHeight + healingHeight,
+            _collapsedWindowHeight + breakdownHeight,
             maxHeight);
+    }
+
+    private float GetExpandedBreakdownHeight()
+    {
+        if (_mode != DisplayMode.CurrentDps && _mode != DisplayMode.DamageTotal)
+        {
+            return 0f;
+        }
+
+        float height = 16f;
+
+        if (_showHealing)
+        {
+            IReadOnlyList<DpsData.BreakdownRow> rows =
+                _mode == DisplayMode.CurrentDps
+                    ? _data.CurrentPersonalHealingRows
+                    : _data.CumulativeHealingRows;
+
+            int rowCount = rows != null ? rows.Count : 0;
+            height += 22f + 22f + (rowCount * 22f) + 4f;
+        }
+
+        if (_showBarrier)
+        {
+            IReadOnlyList<DpsData.BreakdownRow> rows =
+                _mode == DisplayMode.CurrentDps
+                    ? _data.CurrentPersonalBarrierRows
+                    : _data.CumulativeBarrierRows;
+
+            int rowCount = rows != null ? rows.Count : 0;
+            height += 22f + 22f + (rowCount * 22f) + 4f;
+        }
+
+        return height;
     }
 
     private void DrawHeader(Rect headerRect)
@@ -511,7 +541,7 @@ public sealed class DpsOverlay : MonoBehaviour
         }
     }
 
-    private void DrawHealingToggle()
+    private void DrawBreakdownToggles()
     {
         GUIStyle toggleStyle = new GUIStyle(_small)
         {
@@ -522,10 +552,104 @@ public sealed class DpsOverlay : MonoBehaviour
             hover = { textColor = Color.white }
         };
 
-        if (GUILayout.Button(_showHealing ? "▲" : "▼", toggleStyle, GUILayout.Height(16f)))
+        GUILayout.BeginHorizontal();
+        GUILayout.FlexibleSpace();
+
+        if (GUILayout.Button(_showHealing ? "+" : "+", toggleStyle, GUILayout.Width(20f), GUILayout.Height(16f)))
         {
             _showHealing = !_showHealing;
         }
+
+        if (GUILayout.Button(_showBarrier ? "🛡" : "🛡", toggleStyle, GUILayout.Width(20f), GUILayout.Height(16f)))
+        {
+            _showBarrier = !_showBarrier;
+        }
+
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
+    }
+
+    private void DrawBarrierBreakdown(IReadOnlyList<DpsData.BreakdownRow> rows, float total)
+    {
+        float bps = _mode == DisplayMode.CurrentDps
+            ? _data.CurrentPersonalBps
+            : _data.TotalPersonalBps;
+
+        GUILayout.Label(
+            "----------  " + FormatNumber(bps) + " BPS  ----------",
+            _small);
+
+        DrawBarrierSources(rows, total);
+    }
+
+    private void DrawBarrierSources(IReadOnlyList<DpsData.BreakdownRow> rows, float total)
+    {
+        if (rows == null || rows.Count == 0)
+        {
+            GUILayout.Label("No barrier generated yet.", _small);
+            return;
+        }
+
+        float maxAmount = rows[0].Amount;
+        bool cumulative = _mode == DisplayMode.DamageTotal;
+
+        for (int i = 0; i < rows.Count; i++)
+        {
+            DpsData.BreakdownRow row = rows[i];
+            Sprite icon = cumulative
+                ? _data.GetCumulativeBarrierIcon(row.Identity)
+                : _data.GetCurrentBarrierIcon(row.Identity);
+
+            DrawBarrierRow(row.Name, row.Amount, total, maxAmount, icon);
+        }
+    }
+
+    private void DrawBarrierRow(string name, float amount, float total, float maxAmount, Sprite icon)
+    {
+        float ratio = maxAmount > 0f ? Mathf.Clamp01(amount / maxAmount) : 0f;
+        float percent = total > 0f ? Mathf.Clamp01(amount / total) * 100f : 0f;
+
+        Rect rowRect = GUILayoutUtility.GetRect(0f, 22f, GUILayout.ExpandWidth(true));
+        rowRect.x = Mathf.Round(rowRect.x);
+        rowRect.y = Mathf.Round(rowRect.y);
+        rowRect.width = Mathf.Round(rowRect.width);
+        rowRect.height = Mathf.Round(rowRect.height);
+
+        float iconSize = rowRect.height;
+        float barX = rowRect.x;
+
+        if (icon != null)
+        {
+            Rect iconRect = new Rect(rowRect.x, rowRect.y, iconSize, iconSize);
+            DrawSprite(icon, iconRect);
+            barX = iconRect.xMax;
+        }
+
+        Rect barRect = new Rect(
+            barX,
+            rowRect.y,
+            Mathf.Max(0f, rowRect.xMax - barX),
+            rowRect.height);
+
+        GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
+        GUI.DrawTexture(barRect, _whiteTexture);
+
+        GUI.color = new Color(0.28f, 0.50f, 0.68f, 0.68f);
+        GUI.DrawTexture(
+            new Rect(barRect.x, barRect.y, barRect.width * ratio, barRect.height),
+            _whiteTexture);
+
+        GUI.color = SourceNameColor;
+        GUI.Label(
+            new Rect(barRect.x + 7f, rowRect.y, Mathf.Max(0f, barRect.width - 14f), rowRect.height),
+            StripRichTextTags(name),
+            _row);
+        GUI.Label(
+            new Rect(rowRect.x + 7f, rowRect.y, rowRect.width - 14f, rowRect.height),
+            FormatNumber(amount) + "  " + percent.ToString("0.0") + "%",
+            _rowRight);
+
+        GUI.color = Color.white;
     }
 
     private void DrawHealingBreakdown(IReadOnlyList<DpsData.BreakdownRow> rows, float total)
