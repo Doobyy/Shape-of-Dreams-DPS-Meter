@@ -18,7 +18,6 @@ public sealed class DPSMeter : ModBehaviour
     private Hero _currentHero;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
-    private static int _barrierTraceCount;
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
@@ -190,10 +189,9 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        // Barrier events expose the actual Essence directly on the shield
-        // status effect (for example Se_GenericShield_Stacking.gem). Prefer
-        // that immediate Gem instead of attributing the barrier to the skill
-        // that happened to trigger the Essence.
+        // Prefer the Gem directly attached to the barrier status effect.
+        // This identifies the actual barrier creator rather than the skill
+        // that happened to trigger an Essence.
         Gem directGem = FindDirectGemMember(statusActor);
         if (directGem != null)
         {
@@ -210,9 +208,8 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        // Innate Memory barriers expose the originating SkillTrigger through
-        // the status effect's parentActor chain. Stop at the first skill
-        // rather than recursively searching unrelated object fields.
+        // Innate Memory barriers expose their originating skill through the
+        // status effect's parentActor chain.
         Actor current = statusActor.parentActor;
         int depth = 0;
         while (current != null && depth < 8)
@@ -269,7 +266,9 @@ public sealed class DPSMeter : ModBehaviour
             "gem",
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-        if (gemProperty != null && gemProperty.GetIndexParameters().Length == 0 && gemProperty.GetMethod != null)
+        if (gemProperty != null &&
+            gemProperty.GetIndexParameters().Length == 0 &&
+            gemProperty.GetMethod != null)
         {
             try
             {
@@ -301,6 +300,658 @@ public sealed class DPSMeter : ModBehaviour
             catch (Exception)
             {
             }
+        }
+
+        return null;
+    }
+
+    private void OnTakeDamage(EventInfoDamage info)
+    {
+        if (info.actor == null || info.victim == null)
+        {
+            return;
+        }
+
+        float appliedDamage = Mathf.Max(0f, info.damage.amount);
+        float producedDamage = appliedDamage + Mathf.Max(0f, info.damage.discardedAmount);
+
+        if (producedDamage <= 0f)
+        {
+            return;
+        }
+
+        DewPlayer local = DewPlayer.local;
+
+        if (local == null || local.hero == null)
+        {
+            return;
+        }
+
+        Hero sourceHero = info.actor.firstEntity as Hero;
+
+        if (sourceHero == null)
+        {
+            return;
+        }
+
+        DewPlayer sourcePlayer = FindPlayer(sourceHero);
+
+        if (sourcePlayer == null || !sourcePlayer.isHumanPlayer)
+        {
+            return;
+        }
+
+        bool isLocalPlayer = sourcePlayer == local;
+
+
+        SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
+        // An Essence can create its own AbilityInstance/child actor. In that
+        // case the damage event's actor chain can contain the Gem even when
+        // the first AbilityInstance is not the Essence's instance.
+        Gem directGem = FindDamageSourceEssence(info.actor);
+        Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
+        bool isDirectEssenceDamage = directGem != null;
+
+        if (isDirectEssenceDamage)
+        {
+            essenceContributions[directGem] = producedDamage;
+        }
+
+        // Essence-generated damage is already represented by its Essence row.
+        // Do not also attribute that same hit to the parent Memory/Skill.
+
+        string skillName = null;
+        string skillIdentity = null;
+        string sourceName = "Other";
+        bool isBasicAttack = !isDirectEssenceDamage && skill == null;
+
+        if (isLocalPlayer && isBasicAttack && _overlay != null)
+        {
+            Sprite basicAttackIcon = FindSpriteInActorChain(info.actor);
+            if (basicAttackIcon != null)
+            {
+                _overlay.SetBasicAttackIcon(basicAttackIcon);
+            }
+        }
+
+        if (!isDirectEssenceDamage)
+        {
+            if (skill != null)
+            {
+                skillIdentity = GetSkillSlotIdentity(info.actor, skill);
+                string formattedSkillName = skill.GetFormattedSkillTitle();
+
+                if (!string.IsNullOrEmpty(formattedSkillName))
+                {
+                    skillName = formattedSkillName;
+                }
+            }
+
+            if (string.IsNullOrEmpty(skillName) && isBasicAttack)
+            {
+                sourceName = "Basic Attack";
+            }
+        }
+
+        if (isLocalPlayer && skill != null && !string.IsNullOrEmpty(skillName))
+        {
+            Sprite icon = FindSkillIcon(skill);
+            _data.RegisterSkillIcon(skillIdentity, icon);
+        }
+
+        ElementalType? elementalType = info.damage.elemental;
+        DpsData.DamageScalingType scalingType = DpsData.DamageScalingType.None;
+
+        // The final damage event tells us the actual elemental result. Only
+        // fall back to source scaling when no elemental result was produced.
+        // Basic attacks are treated as AD-scaled when the game does not expose
+        // a more specific runtime scaling source.
+        if (!elementalType.HasValue)
+        {
+            if (isDirectEssenceDamage)
+            {
+                scalingType = GetCachedEssenceScaling(directGem, info.actor);
+            }
+            else if (!string.IsNullOrEmpty(skillName))
+            {
+                scalingType = GetCachedSkillScaling(skillIdentity, skill, info.actor);
+            }
+            else if (isBasicAttack)
+            {
+                scalingType = DpsData.DamageScalingType.Ad;
+            }
+            else
+            {
+                scalingType = FindDamageScalingType(info.actor);
+
+                if (isLocalPlayer && string.IsNullOrEmpty(skillName) && !string.IsNullOrEmpty(sourceName))
+                {
+                    _data.RegisterOtherIcon(sourceName, FindActorIcon(info.actor));
+                }
+            }
+        }
+
+        string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
+
+        _data.AddDamage(
+            producedDamage,
+            appliedDamage,
+            isLocalPlayer,
+            skillIdentity,
+            skillName,
+            sourceName,
+            essenceContributions,
+            elementalType,
+            playerName,
+            isDirectEssenceDamage,
+            scalingType);
+    }
+
+    private DpsData.DamageScalingType GetCachedSkillScaling(string skillIdentity, SkillTrigger skill, Actor actor)
+    {
+        DpsData.DamageScalingType cached;
+        if (_skillScalingCache.TryGetValue(skillIdentity, out cached))
+        {
+            return cached;
+        }
+
+        // Some Memories, such as Mystic Dagger, are configured by an
+        // Essence Gem whose spawned AbilityInstance is not a DamageInstance.
+        // Use that configured Gem source before falling back to runtime damage
+        // ancestry.
+        Gem sourceGem = FindDamageSourceEssence(actor);
+
+        if (sourceGem == null && skill != null)
+        {
+            sourceGem = FindGemOnSkillTrigger(skill, actor);
+        }
+
+        DpsData.DamageScalingType scaling = FindConfiguredGemScaling(sourceGem);
+
+        if (scaling == DpsData.DamageScalingType.None)
+        {
+            scaling = FindDamageScalingType(actor);
+        }
+
+        if (scaling != DpsData.DamageScalingType.None)
+        {
+            _skillScalingCache[skillIdentity] = scaling;
+        }
+
+        return scaling;
+    }
+
+    private static Gem FindGemOnSkillTrigger(SkillTrigger skill, Actor actor)
+    {
+        if (skill == null || actor == null)
+        {
+            return null;
+        }
+
+        Hero hero = actor.firstEntity as Hero;
+        if (hero == null || hero.Skill == null)
+        {
+            return null;
+        }
+
+        HeroSkillLocation location;
+        if (!hero.Skill.TryGetSkillLocation(skill, out location))
+        {
+            return null;
+        }
+
+        IEnumerable<Gem> gems = hero.Skill.GetGemsInSkill(location);
+        if (gems == null)
+        {
+            return null;
+        }
+
+        foreach (Gem gem in gems)
+        {
+            if (gem == null)
+            {
+                continue;
+            }
+
+            DpsData.DamageScalingType scaling = FindConfiguredGemScaling(gem);
+            if (scaling != DpsData.DamageScalingType.None)
+            {
+                return gem;
+            }
+        }
+
+        return null;
+    }
+
+    private DpsData.DamageScalingType GetCachedEssenceScaling(Gem gem, Actor actor)
+    {
+        if (gem == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        DpsData.DamageScalingType cached;
+        if (_essenceScalingCache.TryGetValue(gem, out cached))
+        {
+            return cached;
+        }
+
+        DpsData.DamageScalingType scaling = FindConfiguredGemScaling(gem);
+        if (scaling == DpsData.DamageScalingType.None)
+        {
+            scaling = FindDamageScalingType(actor);
+        }
+
+        if (scaling != DpsData.DamageScalingType.None)
+        {
+            _essenceScalingCache[gem] = scaling;
+        }
+
+        return scaling;
+    }
+
+
+
+
+
+
+
+    private static DpsData.DamageScalingType FindConfiguredAbilityScaling(AbilityInstance instance, int depth)
+    {
+        if (instance == null || depth > 6)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        DamageInstance damageInstance = instance as DamageInstance;
+        if (damageInstance != null)
+        {
+            DpsData.DamageScalingType scaling = GetScalingType(damageInstance.dmgFactor);
+            if (scaling != DpsData.DamageScalingType.None)
+            {
+                return scaling;
+            }
+        }
+
+        List<Actor> children = instance.children;
+        if (children == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child == null)
+            {
+                continue;
+            }
+
+            DpsData.DamageScalingType scaling = FindConfiguredAbilityScaling(child, depth + 1);
+            if (scaling != DpsData.DamageScalingType.None)
+            {
+                return scaling;
+            }
+        }
+
+        return DpsData.DamageScalingType.None;
+    }
+
+    private static DpsData.DamageScalingType GetScalingType(ScalingValue scaling)
+    {
+        float ad = Mathf.Max(0f, scaling.adFactor);
+        float ap = Mathf.Max(0f, scaling.apFactor);
+        float hp = Mathf.Max(0f, scaling.addedHpFactor);
+
+        if (ad <= 0f && ap <= 0f && hp <= 0f)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        if (ap > ad && ap >= hp)
+        {
+            return DpsData.DamageScalingType.Ap;
+        }
+
+        if (hp > ad && hp > ap)
+        {
+            return DpsData.DamageScalingType.Hp;
+        }
+
+        return DpsData.DamageScalingType.Ad;
+    }
+
+    private static DpsData.DamageScalingType FindConfiguredGemScaling(Gem gem)
+    {
+        if (gem == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        try
+        {
+                        if (gem.skill == null)
+            {
+                return DpsData.DamageScalingType.None;
+            }
+
+            if (gem.skill.currentConfig == null)
+            {
+                return DpsData.DamageScalingType.None;
+            }
+
+            AbilityInstance configured = gem.skill.currentConfig.spawnedInstance;
+
+            if (configured == null)
+            {
+                return DpsData.DamageScalingType.None;
+            }
+
+            if (configured.GetType().Name == "Ai_E_MysticDagger")
+            {
+                System.Reflection.FieldInfo damageField = configured.GetType().GetField(
+                    "damage",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+
+                if (damageField == null)
+                {
+                    return DpsData.DamageScalingType.None;
+                }
+
+                object value = damageField.GetValue(configured);
+
+                if (!(value is ScalingValue))
+                {
+                    return DpsData.DamageScalingType.None;
+                }
+
+                ScalingValue scaling = (ScalingValue)value;
+
+                return GetScalingType(scaling);
+            }
+
+            DamageInstance damageInstance = configured as DamageInstance;
+
+            if (damageInstance != null)
+            {
+                ScalingValue damageScaling = damageInstance.dmgFactor;
+
+                DpsData.DamageScalingType directScaling = GetScalingType(damageScaling);
+                if (directScaling != DpsData.DamageScalingType.None)
+                {
+                    return directScaling;
+                }
+            }
+
+            // Some Essences expose their scaling on a child DamageInstance
+            // rather than on the configured root AbilityInstance. Search the
+            // configured ability tree before giving up and falling back to the
+            // runtime damage actor.
+            DpsData.DamageScalingType childScaling = FindConfiguredAbilityScaling(configured, 0);
+            if (childScaling != DpsData.DamageScalingType.None)
+            {
+                return childScaling;
+            }
+
+            return DpsData.DamageScalingType.None;
+        }
+        catch (System.Exception)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+    }
+
+
+
+
+
+
+
+
+
+    private static DpsData.DamageScalingType FindDamageScalingType(Actor actor)
+    {
+        DamageInstance damageInstance = FindDamageInstance(actor);
+
+        if (damageInstance != null)
+        {
+            DpsData.DamageScalingType scaling = GetScalingType(damageInstance.dmgFactor);
+            if (scaling != DpsData.DamageScalingType.None)
+            {
+                return scaling;
+            }
+        }
+
+        // Some runtime projectile/skill actors are not DamageInstance subclasses.
+        // Their actual damage scaling is exposed as a ScalingValue field on the
+        // actor itself (for example, a field named "damage"). Prefer that exact
+        // runtime damage field before broader damage fields such as normalDamage
+        // so a parent projectile's metadata does not win over the hit actor.
+        DpsData.DamageScalingType runtimeScaling = FindRuntimeDamageScaling(actor, "damage");
+        if (runtimeScaling != DpsData.DamageScalingType.None)
+        {
+            return runtimeScaling;
+        }
+
+        runtimeScaling = FindRuntimeDamageScaling(actor, "normalDamage");
+        if (runtimeScaling != DpsData.DamageScalingType.None)
+        {
+            return runtimeScaling;
+        }
+
+        return FindRuntimeDamageScaling(actor, null);
+    }
+
+    private static DpsData.DamageScalingType FindRuntimeDamageScaling(Actor actor, string preferredFieldName)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            FieldInfo[] fields = current.GetType().GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+
+                if (field.FieldType != typeof(ScalingValue))
+                {
+                    continue;
+                }
+
+                if (preferredFieldName != null &&
+                    !string.Equals(field.Name, preferredFieldName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (preferredFieldName == null &&
+                    field.Name.IndexOf("damage", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    ScalingValue scaling = (ScalingValue)field.GetValue(current);
+                    DpsData.DamageScalingType result = GetScalingType(scaling);
+
+                    if (result != DpsData.DamageScalingType.None)
+                    {
+                        return result;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return DpsData.DamageScalingType.None;
+    }
+
+    private static DamageInstance FindDamageInstance(Actor actor)
+    {
+        if (actor == null)
+        {
+            return null;
+        }
+
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            DamageInstance damageInstance = current as DamageInstance;
+            if (damageInstance != null)
+            {
+                return damageInstance;
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
+    private static Sprite FindSpriteMember(object target)
+    {
+        if (target == null)
+            return null;
+
+        Type type = target.GetType();
+
+        FieldInfo iconField = type.GetField("icon", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (iconField != null && typeof(Sprite).IsAssignableFrom(iconField.FieldType))
+            return iconField.GetValue(target) as Sprite;
+
+        PropertyInfo iconProperty = type.GetProperty("icon", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (iconProperty != null && typeof(Sprite).IsAssignableFrom(iconProperty.PropertyType))
+            return iconProperty.GetValue(target, null) as Sprite;
+
+        FieldInfo spriteField = type.GetField("sprite", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (spriteField != null && typeof(Sprite).IsAssignableFrom(spriteField.FieldType))
+            return spriteField.GetValue(target) as Sprite;
+
+        PropertyInfo spriteProperty = type.GetProperty("sprite", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (spriteProperty != null && typeof(Sprite).IsAssignableFrom(spriteProperty.PropertyType))
+            return spriteProperty.GetValue(target, null) as Sprite;
+
+        return null;
+    }
+
+    private static Sprite FindSpriteInActorChain(Actor actor)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            Sprite icon = FindSpriteMember(current);
+            if (icon != null)
+            {
+                return icon;
+            }
+
+            AbilityInstance instance = current as AbilityInstance;
+            if (instance != null && instance.gem != null)
+            {
+                icon = FindSpriteMember(instance.gem);
+                if (icon != null)
+                {
+                    return icon;
+                }
+
+                if (instance.gem.skill != null)
+                {
+                    icon = FindSpriteMember(instance.gem.skill);
+                    if (icon != null)
+                    {
+                        return icon;
+                    }
+
+                    if (instance.gem.skill.currentConfig != null)
+                    {
+                        icon = FindSpriteMember(instance.gem.skill.currentConfig);
+                        if (icon != null)
+                        {
+                            return icon;
+                        }
+                    }
+                }
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
+    private static Sprite FindSkillIcon(SkillTrigger skill)
+    {
+        if (skill == null)
+            return null;
+
+        if (skill.currentConfig != null && skill.currentConfig.triggerIcon != null)
+            return skill.currentConfig.triggerIcon;
+
+        if (skill.configs != null)
+        {
+            for (int i = 0; i < skill.configs.Length; i++)
+            {
+                if (skill.configs[i] != null && skill.configs[i].triggerIcon != null)
+                    return skill.configs[i].triggerIcon;
+            }
+        }
+
+        return FindSpriteMember(skill.currentConfig) ?? FindSpriteMember(skill);
+    }
+
+    private static Sprite FindActorIcon(Actor actor)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            Sprite icon = FindSpriteMember(current);
+            if (icon != null)
+                return icon;
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
+    private static Gem FindDamageSourceEssence(Actor actor)
+    {
+        if (actor == null)
+        {
+            return null;
+        }
+
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            AbilityInstance instance = current as AbilityInstance;
+            if (instance != null && instance.gem != null)
+            {
+                return instance.gem;
+            }
+
+            current = current.parentActor;
+            depth++;
         }
 
         return null;
