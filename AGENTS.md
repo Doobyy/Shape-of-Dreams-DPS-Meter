@@ -18,6 +18,14 @@ Before changing existing behavior, read this file and inspect the current source
 - Every real feature patch increments the displayed version by 0.1. Compile-only fixes and diagnostics do not need a version bump unless explicitly intended.
 - When behavior is confirmed working in-game, record the solution here so it is not accidentally lost later.
 
+## Compile-Safety Rules
+
+- **Compile-ready means structurally complete, not just logically plausible.** Before committing a patch, verify every newly referenced type, method, property, field, enum, and signature actually exists in the current source or in a confirmed game API. In particular, if a patch introduces a new helper/data type (such as a nested class), it must be explicitly added to the file before any property or caller references it.
+- **Trace the full compile-time dependency chain before patching.** For every changed method signature, update all declarations and every call site. For every renamed/introduced symbol, search the entire repository for references and definitions before considering the patch complete.
+- **Do not claim a patch is compile-ready based only on inspecting the changed snippet.** The current repository must be re-fetched after each related file change and checked for missing definitions, stale signatures, and mismatched types.
+- **When using GitHub file edits, fetch the resulting file after the edit and inspect the actual committed content.** Do not rely on the intended patch text or tool success response as proof that the resulting source contains all required definitions.
+- **A compile failure is a patch failure, not a user testing step.** If the assistant introduced the compile error, immediately fix the repository to a buildable state before asking the user to test anything.
+
 ## Critical Identity Rule: Skill Gems
 
 Skill tracking has two different concepts:
@@ -95,7 +103,7 @@ The healing toggle expands the outer overlay while preserving the user's configu
 
 ## Version / Current State
 
-Current displayed version: v4.31.
+Current displayed version: v4.32.
 
 Recent verified work includes:
 - Healing generated amount / overheal tracking.
