@@ -130,7 +130,7 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        float healing = Mathf.Max(0f, info.amount);
+        float healing = Mathf.Max(0f, info.amount) + Mathf.Max(0f, info.discardedAmount);
 
         if (healing <= 0f)
         {
