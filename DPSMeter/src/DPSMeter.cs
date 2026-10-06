@@ -174,6 +174,17 @@ public sealed class DPSMeter : ModBehaviour
         string sourceName = "Other";
         bool isBasicAttack = !isDirectEssenceDamage && skill == null;
 
+        if (isLocalPlayer && isBasicAttack && _overlay != null)
+        {
+            Sprite basicAttackIcon = FindSpriteInActorChain(info.actor);
+            if (basicAttackIcon != null)
+            {
+                _overlay.SetBasicAttackIcon(basicAttackIcon);
+                Debug.Log("[DPS Meter][v4.11 TRACE] Basic Attack icon captured from actor chain sprite=" + basicAttackIcon.name +
+                    " texture=" + (basicAttackIcon.texture != null ? basicAttackIcon.texture.name : "none"));
+            }
+        }
+
         if (!isDirectEssenceDamage)
         {
             if (skill != null)
@@ -766,6 +777,54 @@ public sealed class DPSMeter : ModBehaviour
             if (damageInstance != null)
             {
                 return damageInstance;
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
+    private static Sprite FindSpriteInActorChain(Actor actor)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            Sprite icon = FindSpriteMember(current);
+            if (icon != null)
+            {
+                return icon;
+            }
+
+            AbilityInstance instance = current as AbilityInstance;
+            if (instance != null && instance.gem != null)
+            {
+                icon = FindSpriteMember(instance.gem);
+                if (icon != null)
+                {
+                    return icon;
+                }
+
+                if (instance.gem.skill != null)
+                {
+                    icon = FindSpriteMember(instance.gem.skill);
+                    if (icon != null)
+                    {
+                        return icon;
+                    }
+
+                    if (instance.gem.skill.currentConfig != null)
+                    {
+                        icon = FindSpriteMember(instance.gem.skill.currentConfig);
+                        if (icon != null)
+                        {
+                            return icon;
+                        }
+                    }
+                }
             }
 
             current = current.parentActor;
