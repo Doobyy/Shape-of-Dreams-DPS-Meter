@@ -30,7 +30,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.76";
+    private const string DevelopmentVersion = "v4.77";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -648,18 +648,16 @@ public sealed class DpsOverlay : MonoBehaviour
         GUILayout.FlexibleSpace();
 
         Rect healingRect = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f), GUILayout.Height(20f));
-        if (GUI.Button(healingRect, GUIContent.none, GUIStyle.none))
+        if (GUI.Button(healingRect, new GUIContent("\u2665"), GUIStyle.none))
         {
             _showHealing = !_showHealing;
         }
-        DrawExpandIcon(GetHealingExpandIcon(), healingRect, _showHealing);
 
         Rect barrierRect = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f), GUILayout.Height(20f));
-        if (GUI.Button(barrierRect, GUIContent.none, GUIStyle.none))
+        if (GUI.Button(barrierRect, new GUIContent("\u26E8"), GUIStyle.none))
         {
             _showBarrier = !_showBarrier;
         }
-        DrawExpandIcon(GetBarrierExpandIcon(), barrierRect, _showBarrier);
 
         GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
