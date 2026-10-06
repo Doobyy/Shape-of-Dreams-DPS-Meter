@@ -575,6 +575,7 @@ public sealed class DPSMeter : ModBehaviour
 
 
     private static readonly HashSet<string> _healingNameTraceCache = new HashSet<string>();
+    private static bool _healingLocalizationApiTraced;
 
     private static void TraceUnresolvedHealingSource(EventInfoHeal info, Gem resolvedGem, string resolvedName)
     {
@@ -629,8 +630,37 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         TraceHealingNameMethods(actor, label);
+        TraceHealingLocalizationApi();
     }
 
+    private static void TraceHealingLocalizationApi()
+    {
+        if (_healingLocalizationApiTraced)
+            return;
+        _healingLocalizationApiTraced = true;
+
+        try
+        {
+            Type localizationType = typeof(DewLocalization);
+            Debug.Log("[DPS Meter][HEAL LOCALIZATION API] type=" + localizationType.FullName);
+            BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+            MethodInfo[] methods = localizationType.GetMethods(flags);
+            foreach (MethodInfo method in methods)
+            {
+                string methodName = method.Name ?? "";
+                string lower = methodName.ToLowerInvariant();
+                if (!lower.Contains("name") && !lower.Contains("local") && !lower.Contains("display") && !lower.Contains("key"))
+                    continue;
+                ParameterInfo[] parameters = method.GetParameters();
+                string signature = string.Join(", ", parameters.Select(p => p.ParameterType.FullName + " " + p.Name).ToArray());
+                Debug.Log("[DPS Meter][HEAL LOCALIZATION API] method=" + methodName + " returnType=" + method.ReturnType.FullName + " params=(" + signature + ")");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.Log("[DPS Meter][HEAL LOCALIZATION API] inspection=threw " + ex.GetType().FullName);
+        }
+    }
     private static void TraceHealingNameMethods(object target, string label)
     {
         if (target == null)
