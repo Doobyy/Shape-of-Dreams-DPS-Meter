@@ -360,23 +360,8 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static DpsData.DamageScalingType FindConfiguredGemScaling(Gem gem)
+    private static DpsData.DamageScalingType GetScalingType(ScalingValue scaling)
     {
-        if (gem == null || gem.skill == null || gem.skill.currentConfig == null)
-        {
-            return DpsData.DamageScalingType.None;
-        }
-
-        AbilityInstance configured = gem.skill.currentConfig.spawnedInstance;
-        DamageInstance damageInstance = configured as DamageInstance;
-
-        if (damageInstance == null)
-        {
-            return DpsData.DamageScalingType.None;
-        }
-
-        ScalingValue scaling = damageInstance.dmgFactor;
-
         float ad = Mathf.Max(0f, scaling.adFactor);
         float ap = Mathf.Max(0f, scaling.apFactor);
         float hp = Mathf.Max(0f, scaling.addedHpFactor);
@@ -397,6 +382,30 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return DpsData.DamageScalingType.Ad;
+    }
+
+    private static DpsData.DamageScalingType FindConfiguredGemScaling(Gem gem)
+    {
+        if (gem == null || gem.skill == null || gem.skill.currentConfig == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        AbilityInstance configured = gem.skill.currentConfig.spawnedInstance;
+
+        if (configured is Ai_E_MysticDagger mysticDagger)
+        {
+            return GetScalingType(mysticDagger.damage);
+        }
+
+        DamageInstance damageInstance = configured as DamageInstance;
+
+        if (damageInstance == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        return GetScalingType(damageInstance.dmgFactor);
     }
 
     private void TraceAbilityChildren(AbilityInstance source)
