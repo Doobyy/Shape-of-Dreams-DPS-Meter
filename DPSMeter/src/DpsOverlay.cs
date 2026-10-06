@@ -413,10 +413,18 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = Color.white;
     }
 
-    private static Color GetBarColor(ElementalType? elemental)
+    private static Color GetBarColor(ElementalType? elemental, DpsData.DamageScalingType scaling)
     {
         if (!elemental.HasValue)
-            return DefaultBarColor;
+        {
+            switch (scaling)
+            {
+                case DpsData.DamageScalingType.Ad: return AdScalingBarColor;
+                case DpsData.DamageScalingType.Ap: return ApScalingBarColor;
+                case DpsData.DamageScalingType.Hp: return HpScalingBarColor;
+                default: return DefaultBarColor;
+            }
+        }
 
         switch (elemental.Value.ToString())
         {
