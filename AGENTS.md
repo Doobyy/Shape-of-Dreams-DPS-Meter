@@ -31,8 +31,9 @@ Before changing existing behavior, read this file and inspect the current source
 Skill tracking has two different concepts:
 
 1. Stable skill-gem identity/source
-   - The skill gem is tied to its source/slot identity: Q, E, R, or RM.
-   - This identity is used internally to recognize that damage/healing belongs to the same equipped skill gem.
+   - The skill gem is identified internally by the game's HeroSkillLocation returned from Hero.Skill.TryGetSkillLocation(skill, out location).
+   - This game-provided slot identity is used internally to recognize that damage/healing belongs to the same equipped skill gem.
+   - Do NOT hardcode current keybind labels such as Q, E, R, or RM; players can change those bindings.
    - These identifiers are NOT player-facing labels.
 
 2. Display name
@@ -54,7 +55,7 @@ Do NOT use the formatted display title as the sole internal aggregation key.
 Do NOT replace the visible skill name with Q/E/R/RM.
 
 The correct model is:
-    stable Q/E/R/RM identity
+    game HeroSkillLocation identity
         -> internal aggregation key
         -> current formatted skill name for display
 
@@ -112,7 +113,8 @@ Recent verified work includes:
 - Working expandable healing overlay resize.
 - Skill/Essence icon handling.
 - Damage scaling detection improvements.
-- Barrier event discovery diagnostics.
+- Barrier generation tracking is implemented from ClientEventManager.OnTakeShield using EventInfoShield.finalAmount.
+- Barrier rows and BPS are implemented; per-source attribution falls back to the generated shield/status effect when a source skill cannot be resolved.
 
 ## Diagnostics / Logging
 
