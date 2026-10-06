@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.18";
+    private const string DevelopmentVersion = "v4.19";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -127,15 +127,20 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
         }
 
-        if (_showHealing && (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal))
+        if (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal)
         {
-            DrawHealingBreakdown(
-                _mode == DisplayMode.CurrentDps
-                    ? _data.CurrentPersonalHealing
-                    : _data.CumulativeHealingSources,
-                _mode == DisplayMode.CurrentDps
-                    ? _data.CurrentInstancePersonalHealing
-                    : _data.CumulativePersonalHealing);
+            DrawHealingToggle();
+
+            if (_showHealing)
+            {
+                DrawHealingBreakdown(
+                    _mode == DisplayMode.CurrentDps
+                        ? _data.CurrentPersonalHealing
+                        : _data.CumulativeHealingSources,
+                    _mode == DisplayMode.CurrentDps
+                        ? _data.CurrentInstancePersonalHealing
+                        : _data.CumulativePersonalHealing);
+            }
         }
 
         GUILayout.EndScrollView();
@@ -161,11 +166,10 @@ public sealed class DpsOverlay : MonoBehaviour
             16f);
 
         float reloadWidth = 74f;
-        float chevronWidth = 22f;
         float metricWidth = headerRect.width * 0.35f;
-        float titleWidth = headerRect.width - metricWidth - reloadWidth - chevronWidth - 8f;
+        float titleWidth = headerRect.width - metricWidth - reloadWidth - 8f;
         Rect reloadRect = new Rect(
-            headerRect.x + titleWidth + chevronWidth + metricWidth + 6f,
+            headerRect.x + titleWidth + metricWidth + 6f,
             headerRect.y + 1f,
             reloadWidth,
             headerRect.height - 2f);
@@ -177,23 +181,6 @@ public sealed class DpsOverlay : MonoBehaviour
                 _resizing = true;
                 _resizeStartMouse = e.mousePosition;
                 _resizeStartSize = _windowRect.size;
-                e.Use();
-                return;
-            }
-
-            Rect chevronRect = new Rect(
-                headerRect.x + titleWidth,
-                headerRect.y + 1f,
-                chevronWidth,
-                headerRect.height - 2f);
-
-            if (chevronRect.Contains(e.mousePosition))
-            {
-                if (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal)
-                {
-                    _showHealing = !_showHealing;
-                }
-
                 e.Use();
                 return;
             }
@@ -441,9 +428,32 @@ public sealed class DpsOverlay : MonoBehaviour
         }
     }
 
+    private void DrawHealingToggle()
+    {
+        GUIStyle toggleStyle = new GUIStyle(_small)
+        {
+            alignment = TextAnchor.MiddleCenter,
+            fontSize = 9,
+            normal = { textColor = new Color(0.72f, 0.72f, 0.72f, 0.85f) },
+            hover = { textColor = Color.white }
+        };
+
+        if (GUILayout.Button(_showHealing ? "▲" : "▼", toggleStyle, GUILayout.Height(10f)))
+        {
+            _showHealing = !_showHealing;
+        }
+    }
+
     private void DrawHealingBreakdown(IReadOnlyList<KeyValuePair<string, float>> rows, float total)
     {
-        GUILayout.Label("----------", _small);
+        float hps = _mode == DisplayMode.CurrentDps
+            ? _data.CurrentPersonalHps
+            : _data.TotalPersonalHps;
+
+        GUILayout.Label(
+            "----------  " + FormatNumber(hps) + " HPS  ----------",
+            _small);
+
         DrawHealingSources(rows, total);
     }
 
@@ -490,7 +500,7 @@ public sealed class DpsOverlay : MonoBehaviour
             _row);
         GUI.Label(
             new Rect(rowRect.x + 7f, rowRect.y, rowRect.width - 14f, rowRect.height),
-            FormatNumber(amount) + "  " + percent.ToString("0.0"),
+            FormatNumber(amount) + "  " + percent.ToString("0.0") + "%",
             _rowRight);
 
         GUI.color = Color.white;
