@@ -529,6 +529,11 @@ public sealed class DPSMeter : ModBehaviour
 
             TraceHealingReferenceMember(item.GetType(), "item", item);
 
+            if (item.GetType().Name == "LoadoutStarItem")
+            {
+                TraceHealingObjectMembers("LoadoutStarItem[" + count + "]", item);
+            }
+
             count++;
             if (count >= 20)
             {
