@@ -34,6 +34,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void AttachToClientEvents()
     {
+        Debug.Log("[DPS Meter][DIAGNOSTIC] v4.46 loaded");
         ClientEventManager currentManager = ClientEventManager.instance;
 
         if (currentManager == null)
