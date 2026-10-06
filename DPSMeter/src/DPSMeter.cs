@@ -126,7 +126,7 @@ public sealed class DPSMeter : ModBehaviour
         for (int i = 0; i < heroGems.Length; i++)
         {
             Gem candidate = heroGems[i];
-            if (candidate != null && !essences.Contains(candidate) && info.damage.IsAmountModifiedBy(candidate))
+            if (candidate != null && !essences.Contains(candidate) && info.damage.origin != null && info.damage.origin.IsAmountModifiedBy(candidate))
             {
                 essences.Add(candidate);
             }
