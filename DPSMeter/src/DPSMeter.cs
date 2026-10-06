@@ -393,9 +393,16 @@ public sealed class DPSMeter : ModBehaviour
 
         AbilityInstance configured = gem.skill.currentConfig.spawnedInstance;
 
-        if (configured is Ai_E_MysticDagger mysticDagger)
+        if (configured != null && configured.GetType().Name == "Ai_E_MysticDagger")
         {
-            return GetScalingType(mysticDagger.damage);
+            System.Reflection.FieldInfo damageField = configured.GetType().GetField(
+                "damage",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+
+            if (damageField != null && damageField.FieldType == typeof(ScalingValue))
+            {
+                return GetScalingType((ScalingValue)damageField.GetValue(configured));
+            }
         }
 
         DamageInstance damageInstance = configured as DamageInstance;
