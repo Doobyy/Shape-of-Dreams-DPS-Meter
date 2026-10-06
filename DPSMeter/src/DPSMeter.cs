@@ -582,78 +582,187 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         string rawName = info.actor.name ?? string.Empty;
-        bool targeted = rawName.IndexOf("Hero_Bismuth", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            rawName.IndexOf("Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            rawName.IndexOf("Se_LingeringAuraOfGuidance", StringComparison.OrdinalIgnoreCase) >= 0;
 
-        // While the player is inside the Guidance zone, capture every heal
-        // actor briefly so the actual runtime actor can be identified even if
-        // the zone uses a different/generated name than the known status key.
-        Actor guidanceParent = info.actor.parentActor;
+        // Keep this diagnostic focused on the source metadata needed to turn
+        // an internal healing actor into the game's player-facing name.
         if (rawName.IndexOf("Se_LingeringAuraOfGuidance", StringComparison.OrdinalIgnoreCase) >= 0)
         {
-            Debug.Log("[DPS Meter][GUIDANCE ACTOR TRACE] type=" + info.actor.GetType().FullName + " name=" + rawName);
-            TraceGuidanceActorFields(info.actor);
+            Actor parent = info.actor.parentActor;
+            Debug.Log(
+                "[DPS Meter][GUIDANCE SOURCE METADATA] actor=" + rawName +
+                " parent=" + (parent == null ? "<null>" : parent.name));
+
+            if (parent != null)
+            {
+                TraceGuidanceParentMetadata(parent);
+            }
         }
 
-        Debug.Log(
-            "[DPS Meter][HEAL SOURCE TRACE] actor=" + info.actor.GetType().FullName +
-            " name=" + rawName +
-            " parent=" + (info.actor.parentActor == null ? "<null>" : info.actor.parentActor.name) +
-            " amount=" + info.amount +
-            " discarded=" + info.discardedAmount +
-            " targeted=" + targeted);
+        if (rawName.IndexOf("Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            Debug.Log(
+                "[DPS Meter][GENERIC HEAL SOURCE METADATA] actor=" + rawName +
+                " parent=" + (info.actor.parentActor == null ? "<null>" : info.actor.parentActor.name));
 
-        Debug.Log(
-            "[DPS Meter][HEAL TRACE] eventActor=" + info.actor.GetType().FullName +
-            " name=" + rawName +
-            " resolvedGem=" + (resolvedGem == null ? "<null>" : GetEssenceIdentity(resolvedGem)) +
-            " resolvedName=" + (resolvedName ?? "<null>") +
-            " infoType=" + info.GetType().FullName);
-
-        // The actor/parent dumps above were useful for finding the generic
-        // Health Orb chain, but they did not identify the originating effect.
-        // Trace only the EventInfoHeal reference fields now, including the
-        // contents of reference-type collections such as BasicEffect lists.
-        TraceHealingEventReferences(info);
+            TraceGenericHealSourceMetadata(info.actor);
+        }
     }
 
-    private static void TraceGuidanceParentFields(Actor parent)
+
+
+    private static void TraceGenericHealSourceMetadata(Actor actor)
     {
-        Type type = parent.GetType();
-        while (type != null && type != typeof(object))
+        if (actor == null)
         {
-            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            return;
+        }
+
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 4)
+        {
+            Debug.Log(
+                "[DPS Meter][GENERIC HEAL ACTOR] depth=" + depth +
+                " type=" + current.GetType().FullName +
+                " name=" + current.name);
+
+            TraceMetadataObject(current, "[DPS Meter][GENERIC HEAL FIELD]");
+            current = current.parentActor;
+            depth++;
+        }
+    }
+
+    private static void TraceMetadataObject(object value, string prefix)
+    {
+        if (value == null)
+        {
+            return;
+        }
+
+        Type type = value.GetType();
+
+        for (int depth = 0; type != null && depth < 2; depth++, type = type.BaseType)
+        {
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
             for (int i = 0; i < fields.Length; i++)
             {
                 FieldInfo field = fields[i];
-                if (field.IsStatic || typeof(Delegate).IsAssignableFrom(field.FieldType))
+                string fieldName = field.Name.ToLowerInvariant();
+
+                if (fieldName.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("id", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("display", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("title", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("text", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("description", StringComparison.Ordinal) < 0)
+                {
                     continue;
+                }
+
+                try
+                {
+                    object fieldValue = field.GetValue(value);
+                    Debug.Log(
+                        prefix + " " + type.Name + "." + field.Name +
+                        " type=" + field.FieldType.FullName +
+                        " valueType=" + (fieldValue == null ? "<null>" : fieldValue.GetType().FullName) +
+                        " value=" + (fieldValue == null ? "<null>" : fieldValue.ToString()));
+                }
+                catch (Exception ex)
+                {
+                    Debug.Log(prefix + " " + type.Name + "." + field.Name +
+                        " threw=" + ex.GetType().Name);
+                }
+            }
+        }
+    }
+
+    private static void TraceGuidanceParentMetadata(Actor parent)
+    {
+        if (parent == null)
+        {
+            return;
+        }
+
+        Type type = parent.GetType();
+
+        while (type != null && typeof(Actor).IsAssignableFrom(type))
+        {
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                string fieldName = field.Name.ToLowerInvariant();
+
+                if (fieldName.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("id", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("data", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("modifier", StringComparison.Ordinal) < 0)
+                {
+                    continue;
+                }
 
                 try
                 {
                     object value = field.GetValue(parent);
                     if (value == null)
+                    {
+                        Debug.Log("[DPS Meter][GUIDANCE PARENT FIELD] " + type.Name + "." + field.Name + "=<null>");
                         continue;
-
-                    UnityEngine.Object unityObject = value as UnityEngine.Object;
-                    if (unityObject != null)
-                    {
-                        Debug.Log("[DPS Meter][GUIDANCE FIELD] " + field.Name + " type=" + field.FieldType.FullName + " valueType=" + value.GetType().FullName + " valueName=" + (unityObject.name ?? "<null>"));
                     }
-                    else
+
+                    Debug.Log(
+                        "[DPS Meter][GUIDANCE PARENT FIELD] " + type.Name + "." + field.Name +
+                        " type=" + field.FieldType.FullName +
+                        " valueType=" + value.GetType().FullName +
+                        " value=" + value);
+
+                    if (value is System.Collections.IEnumerable enumerable && !(value is string))
                     {
-                        string textValue = value is string ? (string)value : Convert.ToString(value);
-                        Debug.Log("[DPS Meter][GUIDANCE FIELD] " + field.Name + " type=" + field.FieldType.FullName + " value=" + (textValue ?? "<null>"));
+                        int count = 0;
+                        foreach (object item in enumerable)
+                        {
+                            if (count++ >= 20)
+                            {
+                                break;
+                            }
+
+                            Debug.Log(
+                                "[DPS Meter][GUIDANCE PARENT ITEM] " + type.Name + "." + field.Name +
+                                "[" + (count - 1) + "] type=" +
+                                (item == null ? "<null>" : item.GetType().FullName) +
+                                " value=" + (item == null ? "<null>" : item.ToString()));
+
+                            if (item != null)
+                            {
+                                TraceMetadataObject(item, "[DPS Meter][GUIDANCE PARENT ITEM FIELD]");
+                            }
+                        }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Debug.Log("[DPS Meter][GUIDANCE PARENT FIELD] " + type.Name + "." + field.Name +
+                        " threw=" + ex.GetType().Name);
                 }
             }
+
             type = type.BaseType;
         }
     }
+
+
 
 
     private static void TraceGuidanceActorFields(Actor actor)
