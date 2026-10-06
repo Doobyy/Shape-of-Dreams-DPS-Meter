@@ -6,13 +6,13 @@ namespace DPSMeter;
 
 public sealed class DpsData
 {
-    private readonly Dictionary<SkillTrigger, float> _currentPersonalSkills = new Dictionary<SkillTrigger, float>();
-    private readonly Dictionary<SkillTrigger, float> _cumulativePersonalSkills = new Dictionary<SkillTrigger, float>();
+    private readonly Dictionary<string, float> _currentPersonalSkills = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _cumulativePersonalSkills = new Dictionary<string, float>();
     private readonly Dictionary<Gem, float> _currentPersonalEssences = new Dictionary<Gem, float>();
     private readonly Dictionary<Gem, float> _cumulativePersonalEssences = new Dictionary<Gem, float>();
     private readonly Dictionary<string, float> _currentOtherPersonal = new Dictionary<string, float>();
-    private readonly Dictionary<SkillTrigger, Dictionary<ElementalType, float>> _currentPersonalSkillElements = new Dictionary<SkillTrigger, Dictionary<ElementalType, float>>();
-    private readonly Dictionary<SkillTrigger, Dictionary<ElementalType, float>> _cumulativePersonalSkillElements = new Dictionary<SkillTrigger, Dictionary<ElementalType, float>>();
+    private readonly Dictionary<string, Dictionary<ElementalType, float>> _currentPersonalSkillElements = new Dictionary<string, Dictionary<ElementalType, float>>();
+    private readonly Dictionary<string, Dictionary<ElementalType, float>> _cumulativePersonalSkillElements = new Dictionary<string, Dictionary<ElementalType, float>>();
     private readonly Dictionary<Gem, Dictionary<ElementalType, float>> _currentPersonalEssenceElements = new Dictionary<Gem, Dictionary<ElementalType, float>>();
     private readonly Dictionary<Gem, Dictionary<ElementalType, float>> _cumulativePersonalEssenceElements = new Dictionary<Gem, Dictionary<ElementalType, float>>();
     private readonly Dictionary<string, float> _cumulativeOtherPersonal = new Dictionary<string, float>();
@@ -54,10 +54,10 @@ public sealed class DpsData
     public float CurrentPartyAppliedDps =>
         CurrentHitCount == 0 ? 0f : CurrentInstancePartyAppliedDamage / CurrentDuration;
 
-    public IReadOnlyList<KeyValuePair<SkillTrigger, float>> CurrentPersonalSkills =>
+    public IReadOnlyList<KeyValuePair<string, float>> CurrentPersonalSkills =>
         _currentPersonalSkills.OrderByDescending(pair => pair.Value).ToList();
 
-    public IReadOnlyList<KeyValuePair<SkillTrigger, float>> CumulativePersonalSkills =>
+    public IReadOnlyList<KeyValuePair<string, float>> CumulativePersonalSkills =>
         _cumulativePersonalSkills.OrderByDescending(pair => pair.Value).ToList();
 
     public IReadOnlyList<KeyValuePair<Gem, float>> CurrentPersonalEssences =>
@@ -82,7 +82,7 @@ public sealed class DpsData
         float producedDamage,
         float appliedDamage,
         bool isLocalPlayer,
-        SkillTrigger skill,
+        string skillName,
         string sourceName,
         IReadOnlyList<Gem> essences,
         ElementalType? elemental,
@@ -126,12 +126,12 @@ public sealed class DpsData
         CurrentInstancePersonalOverkill += overkill;
         CumulativePersonalOverkill += overkill;
 
-        if (skill != null)
+        if (!string.IsNullOrEmpty(skillName))
         {
-            Add(_currentPersonalSkills, skill, producedDamage);
-            Add(_cumulativePersonalSkills, skill, producedDamage);
-            AddElement(_currentPersonalSkillElements, skill, elemental, producedDamage);
-            AddElement(_cumulativePersonalSkillElements, skill, elemental, producedDamage);
+            Add(_currentPersonalSkills, skillName, producedDamage);
+            Add(_cumulativePersonalSkills, skillName, producedDamage);
+            AddElement(_currentPersonalSkillElements, skillName, elemental, producedDamage);
+            AddElement(_cumulativePersonalSkillElements, skillName, elemental, producedDamage);
         }
         else
         {
@@ -206,7 +206,7 @@ public sealed class DpsData
         map[key] = current + amount;
     }
 
-    public ElementalType? GetCurrentSkillElement(SkillTrigger skill) => GetDominantElement(_currentPersonalSkillElements, skill);
+    public ElementalType? GetCurrentSkillElement(string skillName) => GetDominantElement(_currentPersonalSkillElements, skillName);
 
     public ElementalType? GetCurrentEssenceElement(Gem gem) => GetDominantElement(_currentPersonalEssenceElements, gem);
 
@@ -259,7 +259,7 @@ public sealed class DpsData
         map[key] = current + amount;
     }
 
-    private static void Add(Dictionary<SkillTrigger, float> map, SkillTrigger key, float amount)
+    private static void Add(Dictionary<string, float> map, SkillTrigger key, float amount)
     {
         float current;
         map.TryGetValue(key, out current);
