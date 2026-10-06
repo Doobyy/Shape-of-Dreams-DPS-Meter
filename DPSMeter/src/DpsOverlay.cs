@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.56";
+    private const string DevelopmentVersion = "v4.57";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -440,7 +440,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             case DisplayMode.DamageTotal:
                 title = "DAMAGE TOTAL";
-                metric = FormatNumber(_data.CumulativePersonalDamage) + " DAMAGE";
+                metric = FormatNumber(_data.CumulativePersonalDamage);
                 break;
 
             case DisplayMode.CurrentHps:
@@ -450,7 +450,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             case DisplayMode.TotalHps:
                 title = "TOTAL HPS";
-                metric = FormatNumber(_data.TotalPersonalHps) + " HPS";
+                metric = FormatNumber(_data.TotalPersonalHps);
                 break;
 
             case DisplayMode.PartyDps:
@@ -460,7 +460,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             default:
                 title = "PARTY TOTAL";
-                metric = FormatNumber(_data.CumulativePartyDamage) + " DAMAGE";
+                metric = FormatNumber(_data.CumulativePartyDamage);
                 break;
         }
 
