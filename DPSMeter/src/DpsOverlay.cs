@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.IO;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -47,7 +48,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _rowRight;
     private Texture2D _whiteTexture;
     private Texture2D _basicAttackIconTexture;
-    private const string BasicAttackIconPath = "Rawdata/!Sprites/2.png";
+    private Sprite _basicAttackIcon;
+    private const string BasicAttackIconPath = "RawData/!Sprites/2.png";
 
     public bool Visible { get; set; } = true;
 
@@ -487,28 +489,47 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private Sprite GetBasicAttackIcon()
     {
-        if (_basicAttackIconTexture != null)
+        if (_basicAttackIcon != null)
         {
-            return Sprite.Create(
-                _basicAttackIconTexture,
-                new Rect(0f, 0f, _basicAttackIconTexture.width, _basicAttackIconTexture.height),
-                new Vector2(0.5f, 0.5f),
-                100f);
+            return _basicAttackIcon;
         }
 
-        Texture2D loaded = Resources.Load<Texture2D>(BasicAttackIconPath);
-        if (loaded == null)
+        string assemblyPath = typeof(DpsOverlay).Assembly.Location;
+        string assemblyDirectory = Path.GetDirectoryName(assemblyPath);
+        string iconPath = Path.Combine(assemblyDirectory, BasicAttackIconPath);
+
+        if (!File.Exists(iconPath))
         {
-            Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack icon not found at " + BasicAttackIconPath);
+            Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack icon not found at " + iconPath);
             return null;
         }
 
-        _basicAttackIconTexture = loaded;
-        return Sprite.Create(
-            loaded,
-            new Rect(0f, 0f, loaded.width, loaded.height),
-            new Vector2(0.5f, 0.5f),
-            100f);
+        try
+        {
+            byte[] bytes = File.ReadAllBytes(iconPath);
+            Texture2D loaded = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            if (!ImageConversion.LoadImage(loaded, bytes))
+            {
+                Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack icon failed to load from " + iconPath);
+                UnityEngine.Object.Destroy(loaded);
+                return null;
+            }
+
+            _basicAttackIconTexture = loaded;
+            _basicAttackIcon = Sprite.Create(
+                loaded,
+                new Rect(0f, 0f, loaded.width, loaded.height),
+                new Vector2(0.5f, 0.5f),
+                100f);
+
+            return _basicAttackIcon;
+        }
+        catch (Exception ex)
+        {
+            Debug.Log("[DPS Meter][v4.8 TRACE] Basic Attack icon load failed="
+                + ex.GetType().Name + ": " + ex.Message);
+            return null;
+        }
     }
 
     private static void DrawSprite(Sprite sprite, Rect rect)
@@ -656,8 +677,7 @@ public sealed class DpsOverlay : MonoBehaviour
             fontSize = 12,
             alignment = TextAnchor.MiddleLeft,
             wordWrap = false,
-            clipping = TextClipping.Clip,
-            fontStyle = FontStyle.Bold
+            clipping = TextClipping.Clip
         };
 
         _rowRight = new GUIStyle(_row)
