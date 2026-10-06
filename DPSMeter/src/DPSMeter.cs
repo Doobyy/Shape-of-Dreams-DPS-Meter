@@ -14,7 +14,7 @@ public sealed class DPSMeter : ModBehaviour
     private DpsOverlay _overlay;
     private bool _subscribed;
     private Hero _currentHero;
-    private int _lastTravelTargetNode = int.MinValue;
+    private readonly System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
 
     private void Awake()
     {
@@ -22,6 +22,7 @@ public sealed class DPSMeter : ModBehaviour
         _data = new DpsData();
         _overlay = gameObject.AddComponent<DpsOverlay>();
         _overlay.Initialize(_data);
+        _travelInterruptHandler = OnTravelToNodeInterrupt;
 
         CallOnNetworkedManager<ClientEventManager>(AttachToClientEvents, DetachFromClientEvents);
         CallOnNetworkedManager<ZoneManager>(AttachToZoneManager, DetachFromZoneManager);
@@ -93,26 +94,15 @@ public sealed class DPSMeter : ModBehaviour
         AttachToZoneManager();
     }
 
-    private void Update()
+    private bool OnTravelToNodeInterrupt(EventInfoTravelToNodeInterrupt info)
     {
-        Rift_RoomExit exit = Rift_RoomExit.softInstance;
-        if (exit == null)
-        {
-            return;
-        }
-
-        int targetNode = exit.nextNodeIndex;
-        if (targetNode == _lastTravelTargetNode)
-        {
-            return;
-        }
-
-        _lastTravelTargetNode = targetNode;
-        if (_data.CurrentHitCount > 0)
+        if (_data != null)
         {
             _data.ResetCurrentInstance();
-            Debug.Log("[DPS Meter] Reset current damage window for node transition target " + targetNode + ".");
+            Debug.Log("[DPS Meter] Reset current damage window for node travel " + info.from + " -> " + info.to + ".");
         }
+
+        return false;
     }
 
     private void OnTakeDamage(EventInfoDamage info)
@@ -168,7 +158,10 @@ public sealed class DPSMeter : ModBehaviour
         {
             foreach (Gem candidate in sourceHero.Skill.gems.Values)
             {
-                if (candidate != null && !essences.Contains(candidate) && IsDamageModifiedBy(info.damage, candidate))
+                if (candidate == null || essences.Contains(candidate))
+                    continue;
+
+                if (skill != null && candidate.skill == skill)
                 {
                     essences.Add(candidate);
                 }
@@ -179,7 +172,7 @@ public sealed class DPSMeter : ModBehaviour
         for (int i = 0; i < heroGems.Length; i++)
         {
             Gem candidate = heroGems[i];
-            if (candidate != null && !essences.Contains(candidate) && IsDamageModifiedBy(info.damage, candidate))
+            if (candidate != null && !essences.Contains(candidate) && skill != null && candidate.skill == skill)
             {
                 essences.Add(candidate);
             }
@@ -188,6 +181,11 @@ public sealed class DPSMeter : ModBehaviour
         string skillName = skill != null
             ? skill.GetFormattedSkillTitle()
             : null;
+
+        if (isLocalPlayer && skill != null && !string.IsNullOrEmpty(skillName))
+        {
+            _data.RegisterSkillIcon(skillName, FindSkillIcon(skill));
+        }
 
         ElementalType? elementalType = info.damage.elemental;
 
@@ -202,6 +200,36 @@ public sealed class DPSMeter : ModBehaviour
             essences,
             elementalType,
             playerName);
+    }
+
+    private static Sprite FindSkillIcon(SkillTrigger skill)
+    {
+        if (skill == null)
+            return null;
+
+        FieldInfo[] fields = skill.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < fields.Length; i++)
+        {
+            if (fields[i].FieldType == typeof(Sprite))
+            {
+                Sprite icon = fields[i].GetValue(skill) as Sprite;
+                if (icon != null)
+                    return icon;
+            }
+        }
+
+        PropertyInfo[] properties = skill.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < properties.Length; i++)
+        {
+            if (properties[i].GetIndexParameters().Length != 0 || properties[i].PropertyType != typeof(Sprite))
+                continue;
+
+            Sprite icon = properties[i].GetValue(skill, null) as Sprite;
+            if (icon != null)
+                return icon;
+        }
+
+        return null;
     }
 
     private static bool IsDamageModifiedBy(FinalDamageData finalDamage, Gem gem)
@@ -325,7 +353,8 @@ public sealed class DPSMeter : ModBehaviour
 
         _zoneManager = currentManager;
         _zoneManager.ClientEvent_OnZoneLoadStarted += OnZoneLoadStarted;
-        Debug.Log("[DPS Meter] Zone reset listener attached.");
+        _zoneManager.AddTravelToNodeInterrupt(_travelInterruptHandler);
+        Debug.Log("[DPS Meter] Zone/node reset listeners attached.");
     }
 
     private void DetachFromZoneManager()
@@ -333,6 +362,7 @@ public sealed class DPSMeter : ModBehaviour
         if (_zoneManager != null)
         {
             _zoneManager.ClientEvent_OnZoneLoadStarted -= OnZoneLoadStarted;
+            _zoneManager.RemoveTravelToNodeInterrupt(_travelInterruptHandler);
         }
 
         _zoneManager = null;
