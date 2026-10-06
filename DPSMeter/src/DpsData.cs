@@ -259,10 +259,4 @@ public sealed class DpsData
         map[key] = current + amount;
     }
 
-    private static void Add(Dictionary<string, float> map, SkillTrigger key, float amount)
-    {
-        float current;
-        map.TryGetValue(key, out current);
-        map[key] = current + amount;
-    }
 }
