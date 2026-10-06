@@ -164,7 +164,7 @@ public sealed class DPSMeter : ModBehaviour
         // Temporarily trace every healing event so runtime sources such as
         // Shrine of Guidance and Power of Guidance can be identified even
         // when their actor name does not contain the expected generic key.
-        TraceUnresolvedHealingSource(info.actor, healingGem, sourceName);
+        TraceUnresolvedHealingSource(info, healingGem, sourceName);
 
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
         _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
@@ -522,18 +522,31 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
-    private static void TraceUnresolvedHealingSource(Actor source, Gem resolvedGem, string resolvedName)
+    private static void TraceUnresolvedHealingSource(EventInfoHeal info, Gem resolvedGem, string resolvedName)
     {
-        if (source == null)
+        if (info == null || info.actor == null)
+        {
+            return;
+        }
+
+        Actor source = info.actor;
+        string rawName = source.name ?? string.Empty;
+        bool targeted = rawName.IndexOf("Hero_Bismuth", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            rawName.IndexOf("Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            rawName.IndexOf("Pickup_RegenOrb", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            rawName.IndexOf("Ai_RegenOrb_Projectile", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        if (!targeted)
         {
             return;
         }
 
         Debug.Log(
             "[DPS Meter][HEAL TRACE] eventActor=" + source.GetType().FullName +
-            " name=" + (source.name ?? "<null>") +
+            " name=" + rawName +
             " resolvedGem=" + (resolvedGem == null ? "<null>" : GetEssenceIdentity(resolvedGem)) +
-            " resolvedName=" + (resolvedName ?? "<null>"));
+            " resolvedName=" + (resolvedName ?? "<null>") +
+            " infoType=" + info.GetType().FullName);
 
         Actor current = source;
         int depth = 0;
@@ -541,7 +554,6 @@ public sealed class DPSMeter : ModBehaviour
         {
             Gem directGem = FindDirectGemMember(current);
             SkillTrigger skill = current.firstTrigger as SkillTrigger;
-
             string starName = TryGetStarDisplayName(current);
             string skillName = skill == null ? null : skill.GetFormattedSkillTitle();
 
@@ -554,8 +566,92 @@ public sealed class DPSMeter : ModBehaviour
                 " star=" + (starName ?? "<null>") +
                 " skill=" + (skillName ?? "<null>"));
 
+            TraceHealingMembers(current, depth);
             current = current.parentActor;
             depth++;
+        }
+
+        TraceHealingMembers(info, -1);
+    }
+
+    private static void TraceHealingMembers(object target, int depth)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        Type type = target.GetType();
+        string prefix = depth < 0
+            ? "[DPS Meter][HEAL EVENT]"
+            : "[DPS Meter][HEAL ACTOR]";
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+
+            if (field.IsStatic || field.FieldType == typeof(Delegate) ||
+                typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType))
+            {
+                continue;
+            }
+
+            Type valueType = field.FieldType;
+            if (!valueType.IsPrimitive && valueType != typeof(string) &&
+                !valueType.IsEnum && valueType != typeof(decimal))
+            {
+                continue;
+            }
+
+            try
+            {
+                object value = field.GetValue(target);
+                Debug.Log(
+                    prefix + " field=" + field.Name +
+                    " type=" + valueType.FullName +
+                    " value=" + (value == null ? "<null>" : value.ToString()));
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length != 0 ||
+                property.GetMethod == null ||
+                property.GetMethod.IsStatic ||
+                typeof(UnityEngine.Object).IsAssignableFrom(property.PropertyType))
+            {
+                continue;
+            }
+
+            Type valueType = property.PropertyType;
+            if (!valueType.IsPrimitive && valueType != typeof(string) &&
+                !valueType.IsEnum && valueType != typeof(decimal))
+            {
+                continue;
+            }
+
+            try
+            {
+                object value = property.GetValue(target, null);
+                Debug.Log(
+                    prefix + " property=" + property.Name +
+                    " type=" + valueType.FullName +
+                    " value=" + (value == null ? "<null>" : value.ToString()));
+            }
+            catch (Exception)
+            {
+            }
         }
     } private static string GetHealingSourceName(Actor source)
     {
