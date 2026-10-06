@@ -13,6 +13,8 @@ public sealed class DpsOverlay : MonoBehaviour
         DamageTotal,
         CurrentHps,
         TotalHps,
+        CurrentBps,
+        BarrierTotal,
         PartyDps,
         PartyTotal
     }
@@ -28,7 +30,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.57";
+    private const string DevelopmentVersion = "v4.58";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -133,6 +135,14 @@ public sealed class DpsOverlay : MonoBehaviour
 
             case DisplayMode.TotalHps:
                 DrawHealingSources(_data.CumulativeHealingRows, _data.CumulativePersonalHealing);
+                break;
+
+            case DisplayMode.CurrentBps:
+                DrawBarrierBreakdown(_data.CurrentPersonalBarrierRows, _data.CurrentInstancePersonalBarrier);
+                break;
+
+            case DisplayMode.BarrierTotal:
+                DrawBarrierBreakdown(_data.CumulativePersonalBarrierRows, _data.CumulativePersonalBarrier);
                 break;
 
             case DisplayMode.PartyDps:
@@ -316,7 +326,7 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 if (!_headerMoved)
                 {
-                    _mode = (DisplayMode)(((int)_mode + 1) % 6);
+                    _mode = (DisplayMode)(((int)_mode + 1) % 8);
                 }
 
                 _dragging = false;
@@ -449,8 +459,18 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
 
             case DisplayMode.TotalHps:
-                title = "TOTAL HPS";
+                title = "HEALS TOTAL";
                 metric = FormatNumber(_data.TotalPersonalHps);
+                break;
+
+            case DisplayMode.CurrentBps:
+                title = "CURRENT BPS";
+                metric = FormatNumber(_data.CurrentPersonalBps) + " BPS";
+                break;
+
+            case DisplayMode.BarrierTotal:
+                title = "BARRIER TOTAL";
+                metric = FormatNumber(_data.CumulativePersonalBarrier);
                 break;
 
             case DisplayMode.PartyDps:
