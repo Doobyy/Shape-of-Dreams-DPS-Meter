@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -15,6 +14,25 @@ public sealed class DPSMeter : ModBehaviour
     private bool _subscribed;
     private Hero _currentHero;
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
+    private readonly Dictionary<Gem, EssenceProcessorHooks> _essenceProcessorHooks = new Dictionary<Gem, EssenceProcessorHooks>();
+    private readonly Dictionary<Gem, Stack<float>> _essenceProcessorStarts = new Dictionary<Gem, Stack<float>>();
+    private readonly List<EssenceContribution> _pendingEssenceContributions = new List<EssenceContribution>();
+    private float _nextEssenceProcessorRefreshTime;
+
+    private sealed class EssenceProcessorHooks
+    {
+        public DataProcessor<DamageData, Actor, Entity> Before;
+        public DataProcessor<DamageData, Actor, Entity> After;
+    }
+
+    private sealed class EssenceContribution
+    {
+        public Actor Source;
+        public Entity Victim;
+        public Gem Essence;
+        public float Amount;
+        public int Frame;
+    }
 
     private void Awake()
     {
@@ -23,6 +41,7 @@ public sealed class DPSMeter : ModBehaviour
         _overlay = gameObject.AddComponent<DpsOverlay>();
         _overlay.Initialize(_data);
         _travelInterruptHandler = OnTravelToNodeInterrupt;
+        RefreshEssenceProcessors();
 
         CallOnNetworkedManager<ClientEventManager>(AttachToClientEvents, DetachFromClientEvents);
         CallOnNetworkedManager<ZoneManager>(AttachToZoneManager, DetachFromZoneManager);
@@ -145,36 +164,15 @@ public sealed class DPSMeter : ModBehaviour
 
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
         AbilityInstance ability = info.actor.FindFirstOfType<AbilityInstance>();
-
-        List<Gem> essences = new List<Gem>();
         Gem directGem = ability != null ? ability.gem : null;
+        Dictionary<Gem, float> essenceContributions = ConsumeEssenceContributions(info.actor, info.victim, directGem, producedDamage);
 
         if (directGem != null)
         {
-            essences.Add(directGem);
-        }
-
-        if (sourceHero.Skill != null && sourceHero.Skill.gems != null)
-        {
-            foreach (Gem candidate in sourceHero.Skill.gems.Values)
+            float directAmount;
+            if (!essenceContributions.TryGetValue(directGem, out directAmount))
             {
-                if (candidate == null || essences.Contains(candidate))
-                    continue;
-
-                if (skill != null && candidate.skill == skill)
-                {
-                    essences.Add(candidate);
-                }
-            }
-        }
-
-        Gem[] heroGems = sourceHero.GetComponentsInChildren<Gem>(true);
-        for (int i = 0; i < heroGems.Length; i++)
-        {
-            Gem candidate = heroGems[i];
-            if (candidate != null && !essences.Contains(candidate) && skill != null && candidate.skill == skill)
-            {
-                essences.Add(candidate);
+                essenceContributions[directGem] = producedDamage;
             }
         }
 
@@ -198,7 +196,7 @@ public sealed class DPSMeter : ModBehaviour
             isLocalPlayer,
             skillName,
             "Basic / Other",
-            essences,
+            essenceContributions,
             elementalType,
             playerName);
     }
@@ -223,49 +221,170 @@ public sealed class DPSMeter : ModBehaviour
         return null;
     }
 
-    private static bool IsDamageModifiedBy(FinalDamageData finalDamage, Gem gem)
+    private void Update()
     {
-        if (gem == null)
+        if (Time.time >= _nextEssenceProcessorRefreshTime)
         {
-            return false;
+            _nextEssenceProcessorRefreshTime = Time.time + 0.5f;
+            RefreshEssenceProcessors();
         }
-
-        FieldInfo[] fields = finalDamage.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < fields.Length; i++)
-        {
-            object value = fields[i].GetValue(finalDamage);
-            if (value is DamageData damageData && damageData.IsAmountModifiedBy(gem))
-            {
-                return true;
-            }
-        }
-
-        PropertyInfo[] properties = finalDamage.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < properties.Length; i++)
-        {
-            if (properties[i].GetIndexParameters().Length != 0)
-            {
-                continue;
-            }
-
-            if (!typeof(DamageData).IsAssignableFrom(properties[i].PropertyType))
-            {
-                continue;
-            }
-
-            object value = properties[i].GetValue(finalDamage, null);
-            if (value is DamageData damageData && damageData.IsAmountModifiedBy(gem))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
-    private static string GetEssenceLabel(Gem gem)
+    private void RefreshEssenceProcessors()
     {
-        return gem != null ? gem.GetActorReadableName() : null;
+        if (DewPlayer.gamePlayers == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < DewPlayer.gamePlayers.Count; i++)
+        {
+            DewPlayer player = DewPlayer.gamePlayers[i];
+            if (player == null || player.hero == null)
+            {
+                continue;
+            }
+
+            Hero hero = player.hero;
+
+            if (hero.Skill != null && hero.Skill.gems != null)
+            {
+                foreach (Gem gem in hero.Skill.gems.Values)
+                {
+                    AttachEssenceProcessor(gem);
+                }
+            }
+
+            Gem[] heroGems = hero.GetComponentsInChildren<Gem>(true);
+            for (int j = 0; j < heroGems.Length; j++)
+            {
+                AttachEssenceProcessor(heroGems[j]);
+            }
+        }
+    }
+
+    private void AttachEssenceProcessor(Gem gem)
+    {
+        if (gem == null || _essenceProcessorHooks.ContainsKey(gem))
+        {
+            return;
+        }
+
+        DataProcessor<DamageData, Actor, Entity> before =
+            (ref DamageData data, Actor from, Entity to) => OnEssenceProcessorBefore(gem, ref data);
+
+        DataProcessor<DamageData, Actor, Entity> after =
+            (ref DamageData data, Actor from, Entity to) => OnEssenceProcessorAfter(gem, ref data, from, to);
+
+        gem.dealtDamageProcessor.Add(before, int.MinValue);
+        gem.dealtDamageProcessor.Add(after, int.MaxValue);
+
+        _essenceProcessorHooks[gem] = new EssenceProcessorHooks
+        {
+            Before = before,
+            After = after
+        };
+
+        _essenceProcessorStarts[gem] = new Stack<float>();
+    }
+
+    private void OnEssenceProcessorBefore(Gem gem, ref DamageData data)
+    {
+        Stack<float> starts;
+        if (!_essenceProcessorStarts.TryGetValue(gem, out starts))
+        {
+            starts = new Stack<float>();
+            _essenceProcessorStarts[gem] = starts;
+        }
+
+        starts.Push(data.currentAmount);
+    }
+
+    private void OnEssenceProcessorAfter(Gem gem, ref DamageData data, Actor from, Entity to)
+    {
+        Stack<float> starts;
+        if (!_essenceProcessorStarts.TryGetValue(gem, out starts) || starts.Count == 0)
+        {
+            return;
+        }
+
+        float before = starts.Pop();
+        float contribution = data.currentAmount - before;
+
+        if (contribution <= 0.0001f || from == null || to == null)
+        {
+            return;
+        }
+
+        _pendingEssenceContributions.Add(new EssenceContribution
+        {
+            Source = from,
+            Victim = to,
+            Essence = gem,
+            Amount = contribution,
+            Frame = Time.frameCount
+        });
+    }
+
+    private Dictionary<Gem, float> ConsumeEssenceContributions(
+        Actor source,
+        Entity victim,
+        Gem directGem,
+        float producedDamage)
+    {
+        Dictionary<Gem, float> result = new Dictionary<Gem, float>();
+
+        for (int i = _pendingEssenceContributions.Count - 1; i >= 0; i--)
+        {
+            EssenceContribution pending = _pendingEssenceContributions[i];
+
+            if (pending.Frame != Time.frameCount)
+            {
+                if (pending.Frame < Time.frameCount - 1)
+                {
+                    _pendingEssenceContributions.RemoveAt(i);
+                }
+
+                continue;
+            }
+
+            if (pending.Source != source || pending.Victim != victim)
+            {
+                continue;
+            }
+
+            _pendingEssenceContributions.RemoveAt(i);
+
+            if (pending.Essence == null || pending.Essence == directGem)
+            {
+                continue;
+            }
+
+            float current;
+            result.TryGetValue(pending.Essence, out current);
+            result[pending.Essence] = current + pending.Amount;
+        }
+
+        return result;
+    }
+
+    private void DetachEssenceProcessors()
+    {
+        foreach (KeyValuePair<Gem, EssenceProcessorHooks> pair in _essenceProcessorHooks)
+        {
+            Gem gem = pair.Key;
+            EssenceProcessorHooks hooks = pair.Value;
+
+            if (gem != null && hooks != null)
+            {
+                gem.dealtDamageProcessor.Remove(hooks.Before);
+                gem.dealtDamageProcessor.Remove(hooks.After);
+            }
+        }
+
+        _essenceProcessorHooks.Clear();
+        _essenceProcessorStarts.Clear();
+        _pendingEssenceContributions.Clear();
     }
 
     private DewPlayer FindPlayer(Hero hero)
@@ -308,6 +427,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnDestroy()
     {
+        DetachEssenceProcessors();
         DetachFromClientEvents();
         DetachFromZoneManager();
 
