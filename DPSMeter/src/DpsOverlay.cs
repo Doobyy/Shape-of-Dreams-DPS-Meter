@@ -93,10 +93,13 @@ public sealed class DpsOverlay : MonoBehaviour
             _windowRect.x + 6f,
             headerRect.yMax + 2f,
             _windowRect.width - 12f,
-            Mathf.Max(20f, _windowRect.height - 36f));
+            Mathf.Max(20f, _collapsedWindowHeight - 50f));
 
         GUILayout.BeginArea(contentRect);
-        _scroll = GUILayout.BeginScrollView(_scroll);
+        _scroll = GUILayout.BeginScrollView(
+            _scroll,
+            GUILayout.Width(contentRect.width),
+            GUILayout.Height(contentRect.height));
 
         switch (_mode)
         {
@@ -142,9 +145,9 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             Rect healingRect = new Rect(
                 _windowRect.x + 6f,
-                _windowRect.y + _collapsedWindowHeight - 32f,
+                _windowRect.y + _collapsedWindowHeight - 20f,
                 _windowRect.width - 12f,
-                Mathf.Max(20f, _windowRect.height - _collapsedWindowHeight + 32f));
+                Mathf.Max(20f, _windowRect.height - _collapsedWindowHeight + 20f));
 
             GUILayout.BeginArea(healingRect);
 
