@@ -17,11 +17,11 @@ public sealed class DpsOverlay : MonoBehaviour
         PartyTotal
     }
 
-    private static readonly Color DefaultBarColor = new Color(0.30f, 0.30f, 0.30f, 0.90f);
-    private static readonly Color FireBarColor = new Color(0.62f, 0.18f, 0.18f, 0.90f);
-    private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.90f);
-    private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.90f);
-    private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.90f);
+    private static readonly Color DefaultBarColor = new Color(0.30f, 0.30f, 0.30f, 0.68f);
+    private static readonly Color FireBarColor = new Color(0.62f, 0.18f, 0.18f, 0.68f);
+    private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.68f);
+    private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.68f);
+    private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.68f);
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -262,19 +262,35 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
         }
 
+        float reloadWidth = 74f;
+        float metricWidth = headerRect.width * 0.35f;
+        float titleWidth = headerRect.width - metricWidth - reloadWidth - 6f;
+
         GUI.Label(
-            new Rect(headerRect.x, headerRect.y, headerRect.width * 0.55f, headerRect.height),
+            new Rect(headerRect.x, headerRect.y, titleWidth, headerRect.height),
             title,
             _header);
 
         GUI.Label(
             new Rect(
-                headerRect.x + headerRect.width * 0.55f,
+                headerRect.x + titleWidth,
                 headerRect.y,
-                headerRect.width * 0.45f,
+                metricWidth,
                 headerRect.height),
             metric,
             _header);
+
+        if (GUI.Button(
+            new Rect(
+                headerRect.x + titleWidth + metricWidth + 6f,
+                headerRect.y + 1f,
+                reloadWidth,
+                headerRect.height - 2f),
+            "RELOAD"))
+        {
+            Debug.Log("[DPS Meter] Reloading active mods...");
+            DewMod.ReloadFromActiveMods();
+        }
     }
 
     private void DrawPersonal(
