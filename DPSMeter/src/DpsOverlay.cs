@@ -21,7 +21,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.68f);
     private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.68f);
     private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.68f);
-    private const string DevelopmentVersion = "v1.4";
+    private const string DevelopmentVersion = "v1.5";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -336,7 +336,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             rows.Add(new DamageRow
             {
-                Name = row.Key.GetActorReadableName(),
+                Name = GetEssenceDisplayName(row.Key),
                 Amount = row.Value,
                 Elemental = _data.GetCurrentEssenceElement(row.Key),
                 Icon = row.Key.icon
@@ -482,6 +482,36 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         return title;
+    }
+
+    private static string GetEssenceDisplayName(Gem gem)
+    {
+        if (gem == null)
+        {
+            return "Essence";
+        }
+
+        string name = gem.GetOriginalName();
+
+        if (string.IsNullOrEmpty(name))
+        {
+            name = gem.GetActorReadableName();
+        }
+
+        if (name.StartsWith("Gem_"))
+        {
+            name = name.Substring(4);
+
+            int separator = name.IndexOf('_');
+            if (separator > 0 && separator <= 2)
+            {
+                name = name.Substring(separator + 1);
+            }
+        }
+
+        name = name.Replace('_', ' ').Trim();
+
+        return string.IsNullOrEmpty(name) ? "Essence" : "Essence of " + name;
     }
 
     private static string FormatNumber(float value)
