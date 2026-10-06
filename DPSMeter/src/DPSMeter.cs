@@ -168,9 +168,27 @@ public sealed class DPSMeter : ModBehaviour
         // Essence-generated damage is already represented by its Essence row.
         // Do not also attribute that same hit to the parent Memory/Skill.
 
-        string skillName = !isDirectEssenceDamage && skill != null
-            ? skill.GetFormattedSkillTitle()
-            : null;
+        string skillName = null;
+        string sourceName = "Other";
+        bool isBasicAttack = !isDirectEssenceDamage && skill == null;
+
+        if (!isDirectEssenceDamage)
+        {
+            if (skill != null)
+            {
+                string formattedSkillName = skill.GetFormattedSkillTitle();
+
+                if (!string.IsNullOrEmpty(formattedSkillName))
+                {
+                    skillName = formattedSkillName;
+                }
+            }
+
+            if (string.IsNullOrEmpty(skillName) && isBasicAttack)
+            {
+                sourceName = "Basic Attack";
+            }
+        }
 
         if (isLocalPlayer && skill != null && !string.IsNullOrEmpty(skillName))
         {
@@ -183,16 +201,16 @@ public sealed class DPSMeter : ModBehaviour
         ElementalType? elementalType = info.damage.elemental;
         DpsData.DamageScalingType scalingType = DpsData.DamageScalingType.None;
 
-        Debug.Log("[DPS Meter][v4.4 TRACE] damage skill=" +
-            (skillName ?? "none") +
+        Debug.Log("[DPS Meter][v4.5 TRACE] damage skill=" +
+            (skillName ?? sourceName) +
             " directEssence=" + isDirectEssenceDamage +
             " directGem=" + (directGem != null ? directGem.GetActorReadableName() : "none") +
             " elemental=" + (elementalType.HasValue ? elementalType.Value.ToString() : "none"));
 
         // The final damage event tells us the actual elemental result. Only
         // fall back to source scaling when no elemental result was produced.
-        // Scaling is cached per Memory/Essence so we do not repeatedly inspect
-        // the DamageInstance after the source has been identified once.
+        // Basic attacks are treated as AD-scaled when the game does not expose
+        // a more specific runtime scaling source.
         if (!elementalType.HasValue)
         {
             if (isDirectEssenceDamage)
@@ -203,14 +221,18 @@ public sealed class DPSMeter : ModBehaviour
             {
                 scalingType = GetCachedSkillScaling(skillName, skill, info.actor);
             }
+            else if (isBasicAttack)
+            {
+                scalingType = DpsData.DamageScalingType.Ad;
+            }
             else
             {
                 scalingType = FindDamageScalingType(info.actor);
             }
         }
 
-        Debug.Log("[DPS Meter][v4.4 TRACE] resolved scaling=" + scalingType +
-            " skill=" + (skillName ?? "none"));
+        Debug.Log("[DPS Meter][v4.5 TRACE] resolved scaling=" + scalingType +
+            " skill=" + (skillName ?? sourceName));
 
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
 
@@ -219,7 +241,7 @@ public sealed class DPSMeter : ModBehaviour
             appliedDamage,
             isLocalPlayer,
             skillName,
-            "Basic / Other",
+            sourceName,
             essenceContributions,
             elementalType,
             playerName,
