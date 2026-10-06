@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using HarmonyLib;
+using System.Reflection;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -7,72 +7,6 @@ namespace DPSMeter;
 public sealed class DPSMeter : ModBehaviour
 {
     public static DPSMeter Instance { get; private set; }
-
-    private static readonly List<DamageProcessingContext> _damageContexts = new List<DamageProcessingContext>();
-
-    private sealed class DamageProcessingContext
-    {
-        public Actor actor;
-        public Entity victim;
-        public readonly List<Gem> essences = new List<Gem>();
-    }
-
-    internal static List<Gem> GetActiveModifierEssences(Actor actor, Entity victim)
-    {
-        for (int i = _damageContexts.Count - 1; i >= 0; i--)
-        {
-            DamageProcessingContext context = _damageContexts[i];
-            if (context.actor == actor && context.victim == victim)
-            {
-                return new List<Gem>(context.essences);
-            }
-        }
-
-        return null;
-    }
-
-    [HarmonyPatch(typeof(Entity), nameof(Entity.ProcessReceivedDamage))]
-    private static class ProcessReceivedDamagePatch
-    {
-        [HarmonyPrefix]
-        private static void Prefix(Entity __instance, Actor actor)
-        {
-            _damageContexts.Add(new DamageProcessingContext
-            {
-                actor = actor,
-                victim = __instance
-            });
-        }
-
-        [HarmonyPostfix]
-        private static void Postfix()
-        {
-            if (_damageContexts.Count > 0)
-            {
-                _damageContexts.RemoveAt(_damageContexts.Count - 1);
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(DamageData), nameof(DamageData.SetAmountModifiedBy), typeof(Actor))]
-    private static class SetAmountModifiedByPatch
-    {
-        [HarmonyPostfix]
-        private static void Postfix(Actor actor)
-        {
-            Gem gem = actor as Gem;
-            if (gem == null || _damageContexts.Count == 0)
-            {
-                return;
-            }
-
-            DamageProcessingContext context = _damageContexts[_damageContexts.Count - 1];
-            if (!context.essences.Contains(gem))
-            {
-                context.essences.Add(gem);
-            }
-        }
-    }
 
     private ClientEventManager _clientEvents;
     private ZoneManager _zoneManager;
@@ -184,26 +118,18 @@ public sealed class DPSMeter : ModBehaviour
         List<Gem> essences = new List<Gem>();
         Gem directGem = ability != null ? ability.gem : null;
 
-        if (directGem == null)
-        {
-            directGem = info.actor.FindFirstOfType<Gem>();
-        }
-
         if (directGem != null)
         {
             essences.Add(directGem);
         }
 
-        List<Gem> modifierEssences = GetActiveModifierEssences(info.actor, info.victim);
-        if (modifierEssences != null)
+        Gem[] heroGems = sourceHero.GetComponentsInChildren<Gem>(true);
+        for (int i = 0; i < heroGems.Length; i++)
         {
-            for (int i = 0; i < modifierEssences.Count; i++)
+            Gem candidate = heroGems[i];
+            if (candidate != null && !essences.Contains(candidate) && IsDamageModifiedBy(info.damage, candidate))
             {
-                Gem modifierGem = modifierEssences[i];
-                if (modifierGem != null && !essences.Contains(modifierGem))
-                {
-                    essences.Add(modifierGem);
-                }
+                essences.Add(candidate);
             }
         }
 
@@ -224,6 +150,46 @@ public sealed class DPSMeter : ModBehaviour
             essences,
             elementalType,
             playerName);
+    }
+
+    private static bool IsDamageModifiedBy(FinalDamageData finalDamage, Gem gem)
+    {
+        if (gem == null)
+        {
+            return false;
+        }
+
+        FieldInfo[] fields = finalDamage.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < fields.Length; i++)
+        {
+            object value = fields[i].GetValue(finalDamage);
+            if (value is DamageData damageData && damageData.IsAmountModifiedBy(gem))
+            {
+                return true;
+            }
+        }
+
+        PropertyInfo[] properties = finalDamage.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < properties.Length; i++)
+        {
+            if (properties[i].GetIndexParameters().Length != 0)
+            {
+                continue;
+            }
+
+            if (!typeof(DamageData).IsAssignableFrom(properties[i].PropertyType))
+            {
+                continue;
+            }
+
+            object value = properties[i].GetValue(finalDamage, null);
+            if (value is DamageData damageData && damageData.IsAmountModifiedBy(gem))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string GetEssenceLabel(Gem gem)
