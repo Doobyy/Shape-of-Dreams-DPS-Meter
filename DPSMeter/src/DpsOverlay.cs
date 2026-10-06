@@ -25,7 +25,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color ApScalingBarColor = new Color(0.18f, 0.50f, 0.55f, 0.68f);
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.92f, 0.92f, 0.92f, 1f);
-    private const string DevelopmentVersion = "v4.9";
+    private const string DevelopmentVersion = "v4.10";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -47,6 +47,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _rowRight;
     private Texture2D _whiteTexture;
     private Sprite _basicAttackIcon;
+    private bool _basicAttackIconScanLogged;
 
     public bool Visible { get; set; } = true;
 
@@ -397,6 +398,13 @@ public sealed class DpsOverlay : MonoBehaviour
 
         Rect rowRect = GUILayoutUtility.GetRect(0f, 22f, GUILayout.ExpandWidth(true));
 
+        // Keep IMGUI text and bar edges on whole pixels. Fractional positions can
+        // make small fonts look noticeably soft even when the font itself is sharp.
+        rowRect.x = Mathf.Round(rowRect.x);
+        rowRect.y = Mathf.Round(rowRect.y);
+        rowRect.width = Mathf.Round(rowRect.width);
+        rowRect.height = Mathf.Round(rowRect.height);
+
         float iconSize = rowRect.height;
         float barX = rowRect.x;
 
@@ -452,22 +460,10 @@ public sealed class DpsOverlay : MonoBehaviour
             rowRect.width - 14f,
             rowRect.height);
 
-        DrawCrispWeightedLabel(nameRect, name, _row, false);
-        DrawCrispWeightedLabel(valueRect, FormatNumber(amount) + "  " + percent.ToString("0.0"), _rowRight, true);
+        GUI.Label(nameRect, name, _row);
+        GUI.Label(valueRect, FormatNumber(amount) + "  " + percent.ToString("0.0"), _rowRight);
 
         GUI.color = Color.white;
-    }
-
-    private static void DrawCrispWeightedLabel(Rect rect, string text, GUIStyle style, bool rightAligned)
-    {
-        // Unity IMGUI's Bold font can make small text look soft. A one-pixel
-        // integer-offset duplicate adds a little weight while keeping the
-        // original glyph rendering crisp.
-        Rect weightRect = rect;
-        weightRect.x += rightAligned ? -1f : 1f;
-
-        GUI.Label(weightRect, text, style);
-        GUI.Label(rect, text, style);
     }
 
     private static string StripRichTextTags(string text)
@@ -518,8 +514,8 @@ public sealed class DpsOverlay : MonoBehaviour
             return _basicAttackIcon;
         }
 
-        // The source art is the game's Rawdata/!Sprites/2.png asset. Reuse the
-        // already-loaded Unity asset instead of trying to decode the PNG ourselves.
+        // Rawdata/!Sprites/2.png is not a Resources path, so Resources.Load cannot
+        // locate it. First reuse a Sprite/Texture that the game has already loaded.
         Sprite[] loadedSprites = Resources.FindObjectsOfTypeAll<Sprite>();
         for (int i = 0; i < loadedSprites.Length; i++)
         {
@@ -527,24 +523,21 @@ public sealed class DpsOverlay : MonoBehaviour
             if (sprite == null)
                 continue;
 
-            if (string.Equals(sprite.name, "2", StringComparison.OrdinalIgnoreCase)
-                || (sprite.texture != null
-                    && string.Equals(sprite.texture.name, "2", StringComparison.OrdinalIgnoreCase)))
+            if (IsBasicAttackAssetName(sprite.name)
+                || (sprite.texture != null && IsBasicAttackAssetName(sprite.texture.name)))
             {
                 _basicAttackIcon = sprite;
-                Debug.Log("[DPS Meter][v4.9 TRACE] Basic Attack icon found as loaded sprite name="
-                    + sprite.name);
+                Debug.Log("[DPS Meter][v4.10 TRACE] Basic Attack icon candidate sprite=" +
+                    sprite.name + " texture=" + (sprite.texture != null ? sprite.texture.name : "none"));
                 return _basicAttackIcon;
             }
         }
 
-        // Some game assets are loaded as textures rather than Sprite objects.
-        // If 2.png is present that way, wrap the already-loaded texture as a Sprite.
         Texture2D[] loadedTextures = Resources.FindObjectsOfTypeAll<Texture2D>();
         for (int i = 0; i < loadedTextures.Length; i++)
         {
             Texture2D texture = loadedTextures[i];
-            if (texture == null || !string.Equals(texture.name, "2", StringComparison.OrdinalIgnoreCase))
+            if (texture == null || !IsBasicAttackAssetName(texture.name))
                 continue;
 
             _basicAttackIcon = Sprite.Create(
@@ -553,13 +546,68 @@ public sealed class DpsOverlay : MonoBehaviour
                 new Vector2(0.5f, 0.5f),
                 100f);
 
-            Debug.Log("[DPS Meter][v4.9 TRACE] Basic Attack icon found as loaded texture name="
-                + texture.name);
+            Debug.Log("[DPS Meter][v4.10 TRACE] Basic Attack icon candidate texture=" +
+                texture.name + " size=" + texture.width + "x" + texture.height);
             return _basicAttackIcon;
         }
 
-        Debug.Log("[DPS Meter][v4.9 TRACE] Basic Attack sword asset is not loaded yet.");
+        // Do this once per overlay lifetime. The important part of this trace is
+        // that it tells us what Unity object names actually exist at runtime;
+        // we should not guess another file-loading API without that evidence.
+        if (!_basicAttackIconScanLogged)
+        {
+            _basicAttackIconScanLogged = true;
+            Debug.Log("[DPS Meter][v4.10 TRACE] Basic Attack source asset not found by loaded Sprite/Texture name. Candidate loaded assets:");
+
+            for (int i = 0; i < loadedSprites.Length; i++)
+            {
+                Sprite sprite = loadedSprites[i];
+                if (sprite == null)
+                    continue;
+
+                string name = sprite.name ?? string.Empty;
+                string textureName = sprite.texture != null ? sprite.texture.name : string.Empty;
+                if (ContainsBasicAttackTraceTerm(name) || ContainsBasicAttackTraceTerm(textureName))
+                {
+                    Debug.Log("[DPS Meter][v4.10 TRACE] Sprite candidate name=" + name +
+                        " texture=" + textureName +
+                        " size=" + (sprite.texture != null ? sprite.texture.width + "x" + sprite.texture.height : "none"));
+                }
+            }
+
+            for (int i = 0; i < loadedTextures.Length; i++)
+            {
+                Texture2D texture = loadedTextures[i];
+                if (texture == null || !ContainsBasicAttackTraceTerm(texture.name))
+                    continue;
+
+                Debug.Log("[DPS Meter][v4.10 TRACE] Texture candidate name=" + texture.name +
+                    " size=" + texture.width + "x" + texture.height);
+            }
+        }
+
         return null;
+    }
+
+    private static bool IsBasicAttackAssetName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+            return false;
+
+        return string.Equals(name, "2", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(name, "2.png", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ContainsBasicAttackTraceTerm(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+            return false;
+
+        return name.IndexOf("sword", StringComparison.OrdinalIgnoreCase) >= 0
+            || name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0
+            || name.IndexOf("basic", StringComparison.OrdinalIgnoreCase) >= 0
+            || string.Equals(name, "2", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(name, "2.png", StringComparison.OrdinalIgnoreCase);
     }
 
     private static void DrawSprite(Sprite sprite, Rect rect)
@@ -705,9 +753,13 @@ public sealed class DpsOverlay : MonoBehaviour
         _row = new GUIStyle(GUI.skin.label)
         {
             fontSize = 12,
+            fontStyle = FontStyle.Normal,
             alignment = TextAnchor.MiddleLeft,
             wordWrap = false,
-            clipping = TextClipping.Clip
+            richText = false,
+            clipping = TextClipping.Clip,
+            padding = new RectOffset(0, 0, 0, 0),
+            contentOffset = Vector2.zero
         };
 
         _rowRight = new GUIStyle(_row)
