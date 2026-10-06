@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.24";
+    private const string DevelopmentVersion = "v4.25";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -45,6 +45,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private float _collapsedWindowHeight;
 
     private GUIStyle _header;
+    private GUIStyle _headerRight;
     private GUIStyle _row;
     private GUIStyle _small;
     private GUIStyle _barBackground;
@@ -370,7 +371,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 metricWidth,
                 headerRect.height),
             metric,
-            _header);
+            _headerRight);
     }
 
     private Rect GetReloadButtonRect()
@@ -899,6 +900,11 @@ public sealed class DpsOverlay : MonoBehaviour
             fontStyle = FontStyle.Bold,
             alignment = TextAnchor.MiddleLeft,
             wordWrap = false
+        };
+
+        _headerRight = new GUIStyle(_header)
+        {
+            alignment = TextAnchor.MiddleRight
         };
 
         _row = new GUIStyle(GUI.skin.label)
