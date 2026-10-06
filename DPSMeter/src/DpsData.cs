@@ -84,7 +84,7 @@ public sealed class DpsData
         bool isLocalPlayer,
         SkillTrigger skill,
         string sourceName,
-        Gem essence,
+        IReadOnlyList<Gem> essences,
         ElementalType? elemental,
         string playerName)
     {
@@ -139,12 +139,19 @@ public sealed class DpsData
             Add(_cumulativeOtherPersonal, sourceName, producedDamage);
         }
 
-        if (essence != null)
+        if (essences != null)
         {
-            Add(_currentPersonalEssences, essence, producedDamage);
-            Add(_cumulativePersonalEssences, essence, producedDamage);
-            AddElement(_currentPersonalEssenceElements, essence, elemental, producedDamage);
-            AddElement(_cumulativePersonalEssenceElements, essence, elemental, producedDamage);
+            for (int i = 0; i < essences.Count; i++)
+            {
+                Gem essence = essences[i];
+                if (essence == null)
+                    continue;
+
+                Add(_currentPersonalEssences, essence, producedDamage);
+                Add(_cumulativePersonalEssences, essence, producedDamage);
+                AddElement(_currentPersonalEssenceElements, essence, elemental, producedDamage);
+                AddElement(_cumulativePersonalEssenceElements, essence, elemental, producedDamage);
+            }
         }
     }
 
