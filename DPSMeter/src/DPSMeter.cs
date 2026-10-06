@@ -574,6 +574,70 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
+    private static void TraceHealingIdentity(Actor source)
+    {
+        if (source == null) return;
+        Debug.Log("[DPS Meter][HEAL IDENTITY] actorType=" + source.GetType().FullName + " name=" + (source.name ?? "<null>"));
+        TraceHealingIdentityObject(source, "actor", 0, new List<object>());
+    }
+
+    private static void TraceHealingIdentityObject(object target, string path, int depth, List<object> seen)
+    {
+        if (target == null || depth > 2) return;
+        for (int i = 0; i < seen.Count; i++) if (object.ReferenceEquals(seen[i], target)) return;
+        seen.Add(target);
+        Type type = target.GetType();
+        while (type != null && type != typeof(object))
+        {
+            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                if (field.IsStatic || typeof(Delegate).IsAssignableFrom(field.FieldType)) continue;
+                try { TraceHealingIdentityValue(field.GetValue(target), path + "." + field.Name, field.FieldType, depth, seen); } catch (Exception) { }
+            }
+            type = type.BaseType;
+        }
+    }
+
+    private static void TraceHealingIdentityValue(object value, string path, Type declaredType, int depth, List<object> seen)
+    {
+        if (value == null) return;
+        Type valueType = value.GetType();
+        if (valueType.IsPrimitive || valueType.IsEnum || value is string || value is decimal)
+        {
+            if (value is string || valueType.IsEnum)
+                Debug.Log("[DPS Meter][HEAL IDENTITY VALUE] path=" + path + " value=" + value);
+            return;
+        }
+        if (typeof(UnityEngine.Object).IsAssignableFrom(valueType))
+        {
+            UnityEngine.Object obj = value as UnityEngine.Object;
+            Debug.Log("[DPS Meter][HEAL IDENTITY UNITY] path=" + path + " type=" + (valueType.FullName ?? valueType.Name) + " name=" + (obj == null ? "<null>" : obj.name));
+            return;
+        }
+        if (value is System.Collections.IEnumerable enumerable && !(value is string))
+        {
+            int index = 0;
+            foreach (object item in enumerable)
+            {
+                if (item != null && index < 16)
+                {
+                    Debug.Log("[DPS Meter][HEAL IDENTITY ITEM] path=" + path + " index=" + index + " type=" + (item.GetType().FullName ?? item.GetType().Name));
+                    TraceHealingIdentityObject(item, path + "[" + index + "]", depth + 1, seen);
+                }
+                index++;
+                if (index >= 16) break;
+            }
+            return;
+        }
+        if (depth < 2)
+        {
+            Debug.Log("[DPS Meter][HEAL IDENTITY REF] path=" + path + " type=" + (valueType.FullName ?? valueType.Name));
+            TraceHealingIdentityObject(value, path, depth + 1, seen);
+        }
+    }
+
     private static void TraceUnresolvedHealingSource(EventInfoHeal info, Gem resolvedGem, string resolvedName)
     {
         if (info.actor == null)
@@ -602,6 +666,7 @@ public sealed class DPSMeter : ModBehaviour
         // Trace only the EventInfoHeal reference fields now, including the
         // contents of reference-type collections such as BasicEffect lists.
         TraceHealingEventReferences(info);
+        TraceHealingIdentity(info.actor);
     }
 
     private static void TraceHealingEventReferences(EventInfoHeal info)
