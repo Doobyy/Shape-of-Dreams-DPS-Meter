@@ -492,9 +492,7 @@ public sealed class DPSMeter : ModBehaviour
         {
             Gem gem = ability.gem;
             Debug.Log("[DPS Meter][HEAL TRACE] Heal actor[" + depth + "] GEM type=" +
-                gem.GetType().FullName + " name=" + gem.name +
-                " originalName=" + gem.originalName +
-                " gemType=" + gem.gemType);
+                gem.GetType().FullName + " name=" + gem.name);
         }
     }
 
