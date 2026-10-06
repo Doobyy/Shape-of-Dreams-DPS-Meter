@@ -226,7 +226,18 @@ public sealed class DPSMeter : ModBehaviour
             return cached;
         }
 
-        DpsData.DamageScalingType scaling = FindDamageScalingType(actor);
+        // Some Memories, such as Mystic Dagger, are configured by an
+        // Essence Gem whose spawned AbilityInstance is not a DamageInstance.
+        // Use that configured Gem source before falling back to runtime damage
+        // ancestry.
+        Gem sourceGem = FindDamageSourceEssence(actor);
+        DpsData.DamageScalingType scaling = FindConfiguredGemScaling(sourceGem);
+
+        if (scaling == DpsData.DamageScalingType.None)
+        {
+            scaling = FindDamageScalingType(actor);
+        }
+
         if (scaling != DpsData.DamageScalingType.None)
         {
             _skillScalingCache[skillName] = scaling;
