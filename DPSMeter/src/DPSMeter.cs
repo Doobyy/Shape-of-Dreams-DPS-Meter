@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 using UnityEngine;
 
@@ -299,7 +301,7 @@ public sealed class DPSMeter : ModBehaviour
         HeroSkillLocation location;
         if (!hero.Skill.TryGetSkillLocation(skill, out location))
         {
-            Debug.Log("[DPS Meter][v4.4 TRACE] SkillTrigger location lookup failed skill=" + skill.GetFormattedSkillTitle());
+            Debug.Log("[DPS Meter][v4.8 TRACE] SkillTrigger location lookup failed skill=" + skill.GetFormattedSkillTitle());
             return null;
         }
 
@@ -486,7 +488,7 @@ public sealed class DPSMeter : ModBehaviour
 
         try
         {
-            UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] FindConfiguredGemScaling gem=" + gem + " type=" + gem.GetType().Name);
+            UnityEngine.Debug.Log("[DPS Meter][v4.8 TRACE] FindConfiguredGemScaling gem=" + gem + " type=" + gem.GetType().Name + " originalName=" + gem.GetOriginalName());
 
             if (gem.skill == null)
             {
@@ -559,6 +561,100 @@ public sealed class DPSMeter : ModBehaviour
         {
             UnityEngine.Debug.Log("[DPS Meter][v4.4 TRACE] FindConfiguredGemScaling exception=" + ex.GetType().Name + ": " + ex.Message);
             return DpsData.DamageScalingType.None;
+        }
+    }
+
+    private static void TraceIdentityScaling(Gem gem, AbilityInstance configured)
+    {
+        if (gem == null || configured == null)
+        {
+            return;
+        }
+
+        string gemName = gem.GetActorReadableName();
+        string originalName = gem.GetOriginalName();
+        string skillName = gem.skill != null ? gem.skill.GetFormattedSkillTitle() : "none";
+
+        Debug.Log("[DPS Meter][v4.8 IDENTITY TRACE] gem=" + gemName
+            + " originalName=" + originalName
+            + " gemType=" + gem.GetType().Name
+            + " skill=" + skillName
+            + " configIndex=" + (gem.skill != null ? gem.skill.currentConfigIndex.ToString() : "none")
+            + " configuredType=" + configured.GetType().Name);
+
+        TraceScalingFields("Gem", gem);
+        TraceScalingFields("SkillTrigger", gem.skill);
+        TraceScalingFields("TriggerConfig", gem.skill != null ? gem.skill.currentConfig : null);
+        TraceScalingFields("Configured", configured);
+    }
+
+    private static void TraceScalingFields(string label, object target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        Type type = target.GetType();
+        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field.FieldType != typeof(ScalingValue))
+            {
+                continue;
+            }
+
+            try
+            {
+                ScalingValue scaling = (ScalingValue)field.GetValue(target);
+                Debug.Log("[DPS Meter][v4.8 IDENTITY TRACE] " + label
+                    + "." + field.Name
+                    + " scaling=ad=" + scaling.adFactor
+                    + ", ap=" + scaling.apFactor
+                    + ", addedHp=" + scaling.addedHpFactor
+                    + ", base=" + scaling.baseValue
+                    + ", armor=" + scaling.armorFactor
+                    + ", crit=" + scaling.critPercentageFactor);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[DPS Meter][v4.8 IDENTITY TRACE] " + label
+                    + "." + field.Name
+                    + " read failed=" + ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property.PropertyType != typeof(ScalingValue)
+                || property.GetIndexParameters().Length != 0
+                || !property.CanRead)
+            {
+                continue;
+            }
+
+            try
+            {
+                ScalingValue scaling = (ScalingValue)property.GetValue(target, null);
+                Debug.Log("[DPS Meter][v4.8 IDENTITY TRACE] " + label
+                    + "." + property.Name + " [property]"
+                    + " scaling=ad=" + scaling.adFactor
+                    + ", ap=" + scaling.apFactor
+                    + ", addedHp=" + scaling.addedHpFactor
+                    + ", base=" + scaling.baseValue
+                    + ", armor=" + scaling.armorFactor
+                    + ", crit=" + scaling.critPercentageFactor);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[DPS Meter][v4.8 IDENTITY TRACE] " + label
+                    + "." + property.Name + " [property] read failed="
+                    + ex.GetType().Name + ": " + ex.Message);
+            }
         }
     }
 
