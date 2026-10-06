@@ -28,7 +28,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.27";
+    private const string DevelopmentVersion = "v4.28";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -40,6 +40,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Vector2 _dragOffset;
     private Vector2 _resizeStartMouse;
     private Vector2 _resizeStartSize;
+    private bool _resizeMoved;
     private bool _headerMoved;
     private bool _showHealing;
     private float _collapsedWindowHeight;
@@ -211,6 +212,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 _resizeStartSize = new Vector2(
                     _windowRect.width,
                     _collapsedWindowHeight);
+                _resizeMoved = false;
 
                 e.Use();
                 return;
@@ -236,6 +238,7 @@ public sealed class DpsOverlay : MonoBehaviour
             if (_resizing)
             {
                 Vector2 delta = e.mousePosition - _resizeStartMouse;
+                _resizeMoved = true;
                 _windowRect.width = Mathf.Clamp(
                     _resizeStartSize.x + delta.x,
                     260f,
@@ -284,7 +287,11 @@ public sealed class DpsOverlay : MonoBehaviour
             if (_resizing)
             {
                 _resizing = false;
-                _collapsedWindowHeight = _windowRect.height;
+
+                if (_resizeMoved)
+                {
+                    _collapsedWindowHeight = _windowRect.height;
+                }
 
                 Debug.Log(
                     "[DPSMeter] Overlay diagnostic size: " +
