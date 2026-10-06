@@ -11,6 +11,7 @@ Before changing existing behavior, read this file and inspect the current source
 - Inspect the current repository/file and current SHA before making a patch.
 - Do not guess about game/API members. Only use members confirmed by the current source or runtime diagnostics.
 - Patches must be compile-ready. Do not remove helpers until all references have been checked.
+- Before pushing any patch, perform at least one independent compile-safety pass over the complete changed files: verify file structure/braces, method placement, signatures, references, and obvious syntax/type errors. This pass is mandatory even for small patches; do not rely solely on the edit operation succeeding. If practical, re-fetch the committed files and inspect them before asking the user to build.
 - Prefer the smallest targeted change over refactoring unrelated code.
 - If a patch fails, clean up/revert the failed approach before trying another approach. Do not stack bandaid patches.
 - Do not spend time on unnecessary automated test benches or syntax checks unless specifically useful; manual in-game testing is the primary validation.
