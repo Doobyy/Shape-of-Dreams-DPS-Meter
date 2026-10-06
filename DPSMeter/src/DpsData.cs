@@ -6,6 +6,13 @@ namespace DPSMeter;
 
 public sealed class DpsData
 {
+    public enum DamageScalingType
+    {
+        None,
+        Ad,
+        Ap,
+        Hp
+    }
     private readonly Dictionary<string, float> _currentPersonalSkills = new Dictionary<string, float>();
     private readonly Dictionary<string, Sprite> _skillIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalSkills = new Dictionary<string, float>();
