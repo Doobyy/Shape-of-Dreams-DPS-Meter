@@ -14,6 +14,8 @@ public sealed class DPSMeter : ModBehaviour
     private DpsOverlay _overlay;
     private bool _subscribed;
     private Hero _currentHero;
+    private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
+    private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
@@ -79,6 +81,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _currentHero = hero;
+        _skillScalingCache.Clear();
+        _essenceScalingCache.Clear();
         Debug.Log("[DPS Meter] Reset current damage window for hero ability change.");
     }
 
@@ -147,7 +151,6 @@ public sealed class DPSMeter : ModBehaviour
         // case the damage event's actor chain can contain the Gem even when
         // the first AbilityInstance is not the Essence's instance.
         Gem directGem = FindDamageSourceEssence(info.actor);
-        DpsData.DamageScalingType scalingType = FindDamageScalingType(info.actor);
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
         bool isDirectEssenceDamage = directGem != null;
 
@@ -170,6 +173,27 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         ElementalType? elementalType = info.damage.elemental;
+        DpsData.DamageScalingType scalingType = DpsData.DamageScalingType.None;
+
+        // The final damage event tells us the actual elemental result. Only
+        // fall back to source scaling when no elemental result was produced.
+        // Scaling is cached per Memory/Essence so we do not repeatedly inspect
+        // the DamageInstance after the source has been identified once.
+        if (!elementalType.HasValue)
+        {
+            if (isDirectEssenceDamage)
+            {
+                scalingType = GetCachedEssenceScaling(directGem, info.actor);
+            }
+            else if (!string.IsNullOrEmpty(skillName))
+            {
+                scalingType = GetCachedSkillScaling(skillName, info.actor);
+            }
+            else
+            {
+                scalingType = FindDamageScalingType(info.actor);
+            }
+        }
 
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
 
@@ -184,6 +208,45 @@ public sealed class DPSMeter : ModBehaviour
             playerName,
             isDirectEssenceDamage,
             scalingType);
+    }
+
+    private DpsData.DamageScalingType GetCachedSkillScaling(string skillName, Actor actor)
+    {
+        DpsData.DamageScalingType cached;
+        if (_skillScalingCache.TryGetValue(skillName, out cached))
+        {
+            return cached;
+        }
+
+        DpsData.DamageScalingType scaling = FindDamageScalingType(actor);
+        if (scaling != DpsData.DamageScalingType.None)
+        {
+            _skillScalingCache[skillName] = scaling;
+        }
+
+        return scaling;
+    }
+
+    private DpsData.DamageScalingType GetCachedEssenceScaling(Gem gem, Actor actor)
+    {
+        if (gem == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        DpsData.DamageScalingType cached;
+        if (_essenceScalingCache.TryGetValue(gem, out cached))
+        {
+            return cached;
+        }
+
+        DpsData.DamageScalingType scaling = FindDamageScalingType(actor);
+        if (scaling != DpsData.DamageScalingType.None)
+        {
+            _essenceScalingCache[gem] = scaling;
+        }
+
+        return scaling;
     }
 
     private static DpsData.DamageScalingType FindDamageScalingType(Actor actor)
