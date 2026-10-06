@@ -30,7 +30,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v4.74";
+    private const string DevelopmentVersion = "v4.75";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -509,14 +509,14 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 fontSize = 8,
                 alignment = TextAnchor.LowerRight,
-                normal = { textColor = new Color(0.42f, 0.42f, 0.44f, 0.55f) }
+                normal = { textColor = new Color(0.68f, 0.68f, 0.70f, 0.78f) }
             };
 
             GUI.Label(
                 new Rect(
                     _windowRect.x + 6f,
                     _windowRect.yMax - 15f,
-                    _windowRect.width - 12f,
+                    _windowRect.width - 25f,
                     11f),
                 DevelopmentVersion,
                 versionStyle);
@@ -1217,7 +1217,13 @@ public sealed class DpsOverlay : MonoBehaviour
             14f);
 
         GUI.color = new Color(1f, 1f, 1f, 0.35f);
-        GUI.Box(grip, "...");
+        GUI.color = new Color(0.72f, 0.72f, 0.74f, 0.55f);
+        for (int i = 0; i < 3; i++)
+        {
+            float inset = 3f + (i * 4f);
+            GUI.DrawTexture(new Rect(_windowRect.xMax - 3f - inset, _windowRect.yMax - 2f, inset, 1f), _whiteTexture);
+            GUI.DrawTexture(new Rect(_windowRect.xMax - 2f, _windowRect.yMax - 3f - inset, 1f, inset), _whiteTexture);
+        }
         GUI.color = Color.white;
     }
 
