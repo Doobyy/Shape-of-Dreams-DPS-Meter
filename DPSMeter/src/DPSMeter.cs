@@ -158,7 +158,6 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         float barrier = Mathf.Max(0f, info.finalAmount);
-        TraceBarrierStatusEffect(info.statusEffect);
         if (barrier <= 0f)
         {
             return;
