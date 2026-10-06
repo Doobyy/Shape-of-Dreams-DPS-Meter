@@ -34,7 +34,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void AttachToClientEvents()
     {
-        Debug.Log("[DPS Meter][DIAGNOSTIC] v4.46 loaded");
+        Debug.Log("[DPS Meter][DIAGNOSTIC] v4.53 loaded");
         ClientEventManager currentManager = ClientEventManager.instance;
 
         if (currentManager == null)
@@ -355,6 +355,68 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
+    private static void TraceDewLocalizationGemNames(Gem gem)
+    {
+        if (gem == null)
+        {
+            return;
+        }
+
+        string originalName = gem.GetOriginalName();
+        string gemName = gem.name;
+
+        try
+        {
+            string localizedFromGem = DewLocalization.GetGemName(gem);
+            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(Gem) value=" + (localizedFromGem ?? "<null>"));
+        }
+        catch (Exception)
+        {
+            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(Gem) threw");
+        }
+
+        try
+        {
+            string localizedFromOriginal = DewLocalization.GetGemName(originalName);
+            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(originalName) value=" + (localizedFromOriginal ?? "<null>"));
+        }
+        catch (Exception)
+        {
+            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(originalName) threw");
+        }
+
+        try
+        {
+            string nameKey = DewLocalization.GetGemNameKey(gem);
+            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemNameKey(Gem) value=" + (nameKey ?? "<null>"));
+        }
+        catch (Exception)
+        {
+            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemNameKey(Gem) threw");
+        }
+
+        try
+        {
+            string gemKeyFromType = DewLocalization.GetGemKey(gem.GetType());
+            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemKey(Type) value=" + (gemKeyFromType ?? "<null>"));
+        }
+        catch (Exception)
+        {
+            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemKey(Type) threw");
+        }
+
+        try
+        {
+            string descriptionKey = DewLocalization.GetGemDescriptionKey(gem);
+            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemDescriptionKey(Gem) value=" + (descriptionKey ?? "<null>"));
+        }
+        catch (Exception)
+        {
+            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemDescriptionKey(Gem) threw");
+        }
+    }
+
+
     private void TraceEssenceGem(Gem gem)
     {
         if (gem == null)
@@ -375,6 +437,7 @@ public sealed class DPSMeter : ModBehaviour
 
         Type type = gem.GetType();
         Debug.Log("[DPS Meter][ESSENCE NAME TRACE] Gem=" + key + " type=" + type.FullName);
+        TraceDewLocalizationGemNames(gem);
 
         Type current = type;
         int depth = 0;
