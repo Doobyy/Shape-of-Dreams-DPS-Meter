@@ -6,6 +6,13 @@ namespace DPSMeter;
 
 public sealed class DpsData
 {
+    public sealed class BreakdownRow
+    {
+        public string Identity;
+        public string Name;
+        public float Amount;
+    }
+
     public enum DamageScalingType
     {
         None,
