@@ -856,10 +856,18 @@ public sealed class DPSMeter : ModBehaviour
             return cached;
         }
 
-        // Resolve Essence scaling only from configured Essence data. Do not
-        // fall back to the runtime actor chain because a socketed Essence can
-        // share the host skill's actor ancestry and inherit its scaler.
+        // First use the Essence's configured data. This keeps socketed
+        // Essences independent from the host skill's scaler.
         DpsData.DamageScalingType scaling = FindConfiguredGemScaling(gem);
+
+        // Some Essences expose their actual scaler only on the runtime
+        // AbilityInstance that owns the Essence. Resolve that runtime source
+        // by matching the same Essence identity, rather than walking into the
+        // host skill's unrelated scaler (for example Valiant Heart = AD).
+        if (scaling == DpsData.DamageScalingType.None)
+        {
+            scaling = FindRuntimeEssenceScaling(actor, gem, 0);
+        }
 
         if (scaling != DpsData.DamageScalingType.None)
         {
@@ -867,6 +875,79 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return scaling;
+    }
+
+
+    private static DpsData.DamageScalingType FindRuntimeEssenceScaling(
+        Actor actor,
+        Gem gem,
+        int depth)
+    {
+        if (actor == null || gem == null || depth > 8)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        AbilityInstance instance = actor as AbilityInstance;
+        if (instance != null && AreSameGemIdentity(instance.gem, gem))
+        {
+            DamageInstance damageInstance = instance as DamageInstance;
+            if (damageInstance != null)
+            {
+                DpsData.DamageScalingType scaling = GetScalingType(damageInstance.dmgFactor);
+                if (scaling != DpsData.DamageScalingType.None)
+                {
+                    return scaling;
+                }
+            }
+
+            DpsData.DamageScalingType fieldScaling = FindRuntimeDamageScaling(instance, "damage");
+            if (fieldScaling != DpsData.DamageScalingType.None)
+            {
+                return fieldScaling;
+            }
+
+            fieldScaling = FindRuntimeDamageScaling(instance, "normalDamage");
+            if (fieldScaling != DpsData.DamageScalingType.None)
+            {
+                return fieldScaling;
+            }
+
+            fieldScaling = FindRuntimeDamageScaling(instance, null);
+            if (fieldScaling != DpsData.DamageScalingType.None)
+            {
+                return fieldScaling;
+            }
+
+            DpsData.DamageScalingType childScaling = FindConfiguredAbilityScaling(instance, 0);
+            if (childScaling != DpsData.DamageScalingType.None)
+            {
+                return childScaling;
+            }
+        }
+
+        return FindRuntimeEssenceScaling(actor.parentActor, gem, depth + 1);
+    }
+
+
+    private static bool AreSameGemIdentity(Gem first, Gem second)
+    {
+        if (first == null || second == null)
+        {
+            return false;
+        }
+
+        if (first == second)
+        {
+            return true;
+        }
+
+        string firstIdentity = first.GetOriginalName();
+        string secondIdentity = second.GetOriginalName();
+
+        return !string.IsNullOrEmpty(firstIdentity) &&
+            !string.IsNullOrEmpty(secondIdentity) &&
+            string.Equals(firstIdentity, secondIdentity, StringComparison.OrdinalIgnoreCase);
     }
 
 
