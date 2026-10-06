@@ -797,11 +797,7 @@ public sealed class DPSMeter : ModBehaviour
             {
                 FieldInfo field = fields[i];
 
-                if (field.IsStatic || field.FieldType.IsPrimitive ||
-                    field.FieldType.IsEnum || field.FieldType == typeof(string) ||
-                    field.FieldType == typeof(decimal) ||
-                    typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType) ||
-                    typeof(Delegate).IsAssignableFrom(field.FieldType))
+                if (field.IsStatic || typeof(Delegate).IsAssignableFrom(field.FieldType))
                 {
                     continue;
                 }
@@ -809,7 +805,7 @@ public sealed class DPSMeter : ModBehaviour
                 try
                 {
                     object value = field.GetValue(target);
-                    TraceHealingReferenceValue(
+                    TraceHealingFieldValue(
                         value,
                         path + "." + field.Name,
                         field.FieldType,
@@ -825,7 +821,7 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void TraceHealingReferenceValue(
+    private static void TraceHealingFieldValue(
         object value,
         string path,
         Type declaredType,
@@ -837,13 +833,35 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        string valueType = value.GetType().FullName ?? value.GetType().Name;
+        Type valueType = value.GetType();
+
+        if (valueType.IsPrimitive || valueType.IsEnum ||
+            value is string || value is decimal)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL EVENT REF VALUE] " +
+                "path=" + path +
+                " declaredType=" + (declaredType.FullName ?? declaredType.Name) +
+                " value=" + value);
+            return;
+        }
+
+        if (typeof(UnityEngine.Object).IsAssignableFrom(valueType))
+        {
+            UnityEngine.Object unityObject = value as UnityEngine.Object;
+            Debug.Log(
+                "[DPS Meter][HEAL EVENT REF UNITY] " +
+                "path=" + path +
+                " type=" + (valueType.FullName ?? valueType.Name) +
+                " name=" + (unityObject == null ? "<null>" : unityObject.name));
+            return;
+        }
 
         Debug.Log(
             "[DPS Meter][HEAL EVENT REF DETAIL] " +
             "path=" + path +
             " declaredType=" + (declaredType.FullName ?? declaredType.Name) +
-            " valueType=" + valueType);
+            " valueType=" + (valueType.FullName ?? valueType.Name));
 
         if (depth >= 3)
         {
@@ -878,16 +896,6 @@ public sealed class DPSMeter : ModBehaviour
                 }
             }
 
-            return;
-        }
-
-        if (value.GetType().IsPrimitive ||
-            value.GetType().IsEnum ||
-            value is string ||
-            value is decimal ||
-            value is Delegate ||
-            typeof(UnityEngine.Object).IsAssignableFrom(value.GetType()))
-        {
             return;
         }
 
