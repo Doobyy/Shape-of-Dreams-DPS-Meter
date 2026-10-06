@@ -9,9 +9,9 @@ public sealed class DpsData
     private readonly Dictionary<string, float> _currentPersonalSkills = new Dictionary<string, float>();
     private readonly Dictionary<string, Sprite> _skillIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalSkills = new Dictionary<string, float>();
-    private readonly Dictionary<Gem, float> _currentPersonalEssences = new Dictionary<Gem, float>();
+    private readonly Dictionary<Gem, float> _currentPersonalEssences = new Dictionary<Gem, float>();\n    private readonly Dictionary<Gem, Dictionary<DamageScalingType, float>> _currentPersonalEssenceScaling = new Dictionary<Gem, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<Gem, float> _cumulativePersonalEssences = new Dictionary<Gem, float>();
-    private readonly Dictionary<string, float> _currentOtherPersonal = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _currentOtherPersonal = new Dictionary<string, float>();\n    private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalSkillScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();\n    private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalOtherScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<string, Dictionary<ElementalType, float>> _currentPersonalSkillElements = new Dictionary<string, Dictionary<ElementalType, float>>();
     private readonly Dictionary<string, Dictionary<ElementalType, float>> _cumulativePersonalSkillElements = new Dictionary<string, Dictionary<ElementalType, float>>();
     private readonly Dictionary<Gem, Dictionary<ElementalType, float>> _currentPersonalEssenceElements = new Dictionary<Gem, Dictionary<ElementalType, float>>();
@@ -139,12 +139,12 @@ public sealed class DpsData
         {
             Add(_currentPersonalSkills, skillName, producedDamage);
             Add(_cumulativePersonalSkills, skillName, producedDamage);
-            AddElement(_currentPersonalSkillElements, skillName, elemental, producedDamage);
+            AddElement(_currentPersonalSkillElements, skillName, elemental, producedDamage);\n            AddScaling(_currentPersonalSkillScaling, skillName, scalingType, producedDamage);
             AddElement(_cumulativePersonalSkillElements, skillName, elemental, producedDamage);
         }
         else if (!isDirectEssenceDamage)
         {
-            Add(_currentOtherPersonal, sourceName, producedDamage);
+            Add(_currentOtherPersonal, sourceName, producedDamage);\n            AddScaling(_currentPersonalOtherScaling, sourceName, scalingType, producedDamage);
             Add(_cumulativeOtherPersonal, sourceName, producedDamage);
         }
 
@@ -160,7 +160,7 @@ public sealed class DpsData
 
                 Add(_currentPersonalEssences, essence, contribution);
                 Add(_cumulativePersonalEssences, essence, contribution);
-                AddElement(_currentPersonalEssenceElements, essence, elemental, contribution);
+                AddElement(_currentPersonalEssenceElements, essence, elemental, contribution);\n                AddScaling(_currentPersonalEssenceScaling, essence, scalingType, contribution);
                 AddElement(_cumulativePersonalEssenceElements, essence, elemental, contribution);
             }
         }
@@ -185,7 +185,7 @@ public sealed class DpsData
 
         _currentPersonalSkills.Clear();
         _currentPersonalEssences.Clear();
-        _currentPersonalSkillElements.Clear();
+        _currentPersonalSkillElements.Clear();\n        _currentPersonalSkillScaling.Clear();\n        _currentPersonalOtherScaling.Clear();\n        _currentPersonalEssenceScaling.Clear();
         _currentPersonalEssenceElements.Clear();
         _currentOtherPersonal.Clear();
         _currentParty.Clear();
@@ -224,7 +224,7 @@ public sealed class DpsData
         map[key] = current + amount;
     }
 
-    public ElementalType? GetCurrentSkillElement(string skillName) => GetDominantElement(_currentPersonalSkillElements, skillName);
+    public ElementalType? GetCurrentSkillElement(string skillName) => GetDominantElement(_currentPersonalSkillElements, skillName);\n\n    public DamageScalingType GetCurrentSkillScaling(string skillName) => GetDominantScaling(_currentPersonalSkillScaling, skillName);\n\n    public DamageScalingType GetCurrentOtherScaling(string sourceName) => GetDominantScaling(_currentPersonalOtherScaling, sourceName);\n\n    public DamageScalingType GetCurrentEssenceScaling(Gem gem) => GetDominantScaling(_currentPersonalEssenceScaling, gem);
 
     public Sprite GetSkillIcon(string skillName)
     {
@@ -262,6 +262,44 @@ public sealed class DpsData
         }
 
         return found ? (ElementalType?)dominant : null;
+    }
+
+    private static DamageScalingType GetDominantScaling<T>(Dictionary<T, Dictionary<DamageScalingType, float>> map, T key) where T : class
+    {
+        Dictionary<DamageScalingType, float> scaling;
+        if (key == null || !map.TryGetValue(key, out scaling) || scaling.Count == 0)
+            return DamageScalingType.None;
+
+        DamageScalingType dominant = DamageScalingType.None;
+        float amount = 0f;
+
+        foreach (KeyValuePair<DamageScalingType, float> pair in scaling)
+        {
+            if (pair.Key != DamageScalingType.None && pair.Value > amount)
+            {
+                dominant = pair.Key;
+                amount = pair.Value;
+            }
+        }
+
+        return dominant;
+    }
+
+    private static void AddScaling<T>(Dictionary<T, Dictionary<DamageScalingType, float>> map, T key, DamageScalingType scalingType, float amount) where T : class
+    {
+        if (key == null || scalingType == DamageScalingType.None || amount <= 0f)
+            return;
+
+        Dictionary<DamageScalingType, float> scaling;
+        if (!map.TryGetValue(key, out scaling))
+        {
+            scaling = new Dictionary<DamageScalingType, float>();
+            map[key] = scaling;
+        }
+
+        float current;
+        scaling.TryGetValue(scalingType, out current);
+        scaling[scalingType] = current + amount;
     }
 
     private static void AddElement<T>(Dictionary<T, Dictionary<ElementalType, float>> map, T key, ElementalType? elemental, float amount) where T : class
