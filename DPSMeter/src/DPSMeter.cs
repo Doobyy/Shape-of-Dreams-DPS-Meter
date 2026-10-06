@@ -182,6 +182,8 @@ public sealed class DPSMeter : ModBehaviour
                 {
                     TraceHealingPlayerStarMembers(player);
                 }
+
+                TraceHealingStarDefinition("Se_Star_L_HealOnAttack");
             }
 
             current = current.parentActor;
@@ -189,6 +191,38 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         Debug.Log("[DPS Meter][HEAL TRACE] END");
+    }
+
+    private static void TraceHealingStarDefinition(string starName)
+    {
+        if (string.IsNullOrEmpty(starName)) return;
+        Debug.Log("[DPS Meter][HEAL TRACE] STAR DEFINITION SEARCH name=" + starName);
+        try
+        {
+            Type[] types = typeof(Actor).Assembly.GetTypes();
+            for (int i = 0; i < types.Length; i++)
+            {
+                Type type = types[i];
+                if (type == null) continue;
+                FieldInfo[] fields = type.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                for (int j = 0; j < fields.Length; j++)
+                {
+                    FieldInfo field = fields[j];
+                    if (field.FieldType != typeof(string)) continue;
+                    string value;
+                    try { value = field.GetValue(null) as string; }
+                    catch (Exception) { continue; }
+                    if (!string.Equals(value, starName, StringComparison.Ordinal)) continue;
+                    Debug.Log("[DPS Meter][HEAL TRACE] STAR DEFINITION MATCH type=" + (type.FullName ?? type.Name) + " field=" + field.Name);
+                    return;
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            Debug.Log("[DPS Meter][HEAL TRACE] STAR DEFINITION SEARCH ERROR " + exception.GetType().Name + ": " + exception.Message);
+        }
+        Debug.Log("[DPS Meter][HEAL TRACE] STAR DEFINITION SEARCH no static string match");
     }
 
     private static DewPlayer FindLocalDewPlayer(Hero hero)
