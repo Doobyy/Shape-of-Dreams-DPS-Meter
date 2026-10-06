@@ -184,7 +184,8 @@ public sealed class DPSMeter : ModBehaviour
 
         if (isLocalPlayer && skill != null && !string.IsNullOrEmpty(skillName))
         {
-            _data.RegisterSkillIcon(skillName, FindSkillIcon(skill));
+            Sprite icon = skill.currentConfig != null ? skill.currentConfig.triggerIcon : null;
+            _data.RegisterSkillIcon(skillName, icon);
         }
 
         ElementalType? elementalType = info.damage.elemental;
