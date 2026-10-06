@@ -208,6 +208,7 @@ public sealed class DpsData
         float producedDamage,
         float appliedDamage,
         bool isLocalPlayer,
+        string skillIdentity,
         string skillName,
         string sourceName,
         IReadOnlyDictionary<Gem, float> essenceContributions,
