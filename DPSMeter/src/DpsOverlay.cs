@@ -92,6 +92,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 DrawPersonal(
                     _data.CumulativePersonalSkills,
                     _data.CumulativePersonalOther,
+                    _data.CumulativePersonalEssences,
                     _data.CumulativePersonalDamage);
                 break;
 
