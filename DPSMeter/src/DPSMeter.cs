@@ -586,10 +586,16 @@ public sealed class DPSMeter : ModBehaviour
             rawName.IndexOf("Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase) >= 0 ||
             rawName.IndexOf("Se_LingeringAuraOfGuidance", StringComparison.OrdinalIgnoreCase) >= 0;
 
-        if (!targeted)
-        {
-            return;
-        }
+        // While the player is inside the Guidance zone, capture every heal
+        // actor briefly so the actual runtime actor can be identified even if
+        // the zone uses a different/generated name than the known status key.
+        Debug.Log(
+            "[DPS Meter][HEAL SOURCE TRACE] actor=" + info.actor.GetType().FullName +
+            " name=" + rawName +
+            " parent=" + (info.actor.parentActor == null ? "<null>" : info.actor.parentActor.name) +
+            " amount=" + info.amount +
+            " discarded=" + info.discardedAmount +
+            " targeted=" + targeted);
 
         Debug.Log(
             "[DPS Meter][HEAL TRACE] eventActor=" + info.actor.GetType().FullName +
