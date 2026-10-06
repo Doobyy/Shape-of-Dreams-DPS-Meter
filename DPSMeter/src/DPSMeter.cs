@@ -18,7 +18,6 @@ public sealed class DPSMeter : ModBehaviour
     private Hero _currentHero;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
-    private readonly HashSet<string> _essenceNameTraceCache = new HashSet<string>();
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
@@ -34,7 +33,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void AttachToClientEvents()
     {
-        Debug.Log("[DPS Meter][DIAGNOSTIC] v4.53 loaded");
+        Debug.Log("[DPS Meter][DIAGNOSTIC] v4.54 loaded");
         ClientEventManager currentManager = ClientEventManager.instance;
 
         if (currentManager == null)
@@ -137,8 +136,15 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
+        Gem healingGem = info.actor as Gem;
         string sourceName = GetHealingSourceName(info.actor);
         string sourceIdentity = GetSkillSlotIdentity(info.actor);
+
+        if (healingGem != null)
+        {
+            sourceIdentity = GetEssenceIdentity(healingGem);
+            sourceName = GetLocalizedEssenceName(healingGem) ?? sourceName;
+        }
         Sprite healingIcon = FindHealingIcon(info.actor);
         _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
 
@@ -251,7 +257,7 @@ public sealed class DPSMeter : ModBehaviour
                     : directGem.name;
             }
 
-            sourceName = sourceIdentity;
+            sourceName = GetLocalizedEssenceName(directGem) ?? sourceIdentity;
             icon = FindSpriteMember(directGem);
             return;
         }
@@ -273,7 +279,7 @@ public sealed class DPSMeter : ModBehaviour
                         : directGem.name;
                 }
 
-                sourceName = sourceIdentity;
+                sourceName = GetLocalizedEssenceName(directGem) ?? sourceIdentity;
                 icon = FindSpriteMember(directGem);
                 return;
             }
@@ -417,140 +423,6 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
-    private void TraceEssenceGem(Gem gem)
-    {
-        if (gem == null)
-        {
-            return;
-        }
-
-        string key = gem.GetOriginalName();
-        if (string.IsNullOrEmpty(key))
-        {
-            key = gem.name;
-        }
-
-        if (string.IsNullOrEmpty(key) || !_essenceNameTraceCache.Add(key) || _essenceNameTraceCache.Count > 12)
-        {
-            return;
-        }
-
-        Type type = gem.GetType();
-        Debug.Log("[DPS Meter][ESSENCE NAME TRACE] Gem=" + key + " type=" + type.FullName);
-        TraceDewLocalizationGemNames(gem);
-
-        Type current = type;
-        int depth = 0;
-        while (current != null && depth < 6)
-        {
-            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] Type=" + current.FullName);
-
-            PropertyInfo[] properties = current.GetProperties(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-            for (int i = 0; i < properties.Length; i++)
-            {
-                PropertyInfo property = properties[i];
-                string memberName = property.Name;
-                string lowerName = memberName.ToLowerInvariant();
-
-                if (lowerName.IndexOf("name") < 0 &&
-                    lowerName.IndexOf("title") < 0 &&
-                    lowerName.IndexOf("display") < 0 &&
-                    lowerName.IndexOf("local") < 0 &&
-                    lowerName.IndexOf("text") < 0)
-                {
-                    continue;
-                }
-
-                string value = "<unread>";
-                if (property.GetIndexParameters().Length == 0 && property.GetMethod != null)
-                {
-                    try
-                    {
-                        object result = property.GetValue(gem, null);
-                        value = result == null ? "<null>" : result.ToString();
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-
-                Debug.Log("[DPS Meter][ESSENCE NAME TRACE] Property " + memberName + " type=" + property.PropertyType.FullName + " value=" + value);
-            }
-
-            FieldInfo[] fields = current.GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-            for (int i = 0; i < fields.Length; i++)
-            {
-                FieldInfo field = fields[i];
-                string memberName = field.Name;
-                string lowerName = memberName.ToLowerInvariant();
-
-                if (lowerName.IndexOf("name") < 0 &&
-                    lowerName.IndexOf("title") < 0 &&
-                    lowerName.IndexOf("display") < 0 &&
-                    lowerName.IndexOf("local") < 0 &&
-                    lowerName.IndexOf("text") < 0)
-                {
-                    continue;
-                }
-
-                string value = "<unread>";
-                try
-                {
-                    object result = field.GetValue(gem);
-                    value = result == null ? "<null>" : result.ToString();
-                }
-                catch (Exception)
-                {
-                }
-
-                Debug.Log("[DPS Meter][ESSENCE NAME TRACE] Field " + memberName + " type=" + field.FieldType.FullName + " value=" + value);
-            }
-
-            MethodInfo[] methods = current.GetMethods(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-            for (int i = 0; i < methods.Length; i++)
-            {
-                MethodInfo method = methods[i];
-                string lowerName = method.Name.ToLowerInvariant();
-
-                if (method.GetParameters().Length != 0 ||
-                    (lowerName.IndexOf("name") < 0 &&
-                     lowerName.IndexOf("title") < 0 &&
-                     lowerName.IndexOf("display") < 0 &&
-                     lowerName.IndexOf("local") < 0 &&
-                     lowerName.IndexOf("text") < 0))
-                {
-                    continue;
-                }
-
-                string methodValue = "<not-called>";
-                if (method.Name == "GetActorReadableName")
-                {
-                    try
-                    {
-                        object result = method.Invoke(gem, null);
-                        methodValue = result == null ? "<null>" : result.ToString();
-                    }
-                    catch (Exception)
-                    {
-                        methodValue = "<invoke failed>";
-                    }
-                }
-
-                Debug.Log("[DPS Meter][ESSENCE NAME TRACE] Method " + method.Name + " returns=" + method.ReturnType.FullName + " value=" + methodValue);
-            }
-
-            current = current.BaseType;
-            depth++;
-        }
-    }
-
-
     private static string TryGetStarDisplayName(Actor source)
     {
         if (source == null)
@@ -638,6 +510,40 @@ public sealed class DPSMeter : ModBehaviour
         return source.GetType().Name;
     }
 
+    private static string GetEssenceIdentity(Gem gem)
+    {
+        if (gem == null)
+        {
+            return null;
+        }
+
+        string key = gem.GetOriginalName();
+        if (string.IsNullOrEmpty(key))
+        {
+            key = gem.name;
+        }
+
+        return string.IsNullOrEmpty(key) ? gem.GetType().Name : key;
+    }
+
+    private static string GetLocalizedEssenceName(Gem gem)
+    {
+        if (gem == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            string name = DewLocalization.GetGemName(gem);
+            return string.IsNullOrEmpty(name) ? null : name;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     private static Sprite FindHealingIcon(Actor source)
     {
         if (source == null)
@@ -714,11 +620,6 @@ public sealed class DPSMeter : ModBehaviour
         Gem directGem = FindDamageSourceEssence(info.actor);
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
         bool isDirectEssenceDamage = directGem != null;
-
-        if (isLocalPlayer && directGem != null)
-        {
-            TraceEssenceGem(directGem);
-        }
 
         if (isDirectEssenceDamage)
         {
