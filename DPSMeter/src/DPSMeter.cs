@@ -378,12 +378,20 @@ public sealed class DPSMeter : ModBehaviour
                 continue;
             }
 
-            if (pending.Source != source || pending.Victim != victim)
+            if (!AreActorsRelated(pending.Source, source) || pending.Victim != victim)
             {
                 continue;
             }
 
-            if (Mathf.Abs(pending.Amount - producedDamage) > 0.01f)
+            // A processor contribution is only the amount this Essence added
+            // to the damage. It will normally be smaller than the final hit,
+            // so matching the contribution against producedDamage would reject
+            // the exact modifier contribution we are trying to track.
+            //
+            // Actor ancestry is the correlation key here: the API guarantees
+            // that an actor's damage is processed by that actor and every
+            // ancestor's dealtDamageProcessor.
+            if (pending.Amount <= 0.0001f)
             {
                 continue;
             }
@@ -401,6 +409,21 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return result;
+    }
+
+    private static bool AreActorsRelated(Actor a, Actor b)
+    {
+        if (a == null || b == null)
+        {
+            return false;
+        }
+
+        if (a == b)
+        {
+            return true;
+        }
+
+        return a.IsDescendantOf(b) || b.IsDescendantOf(a);
     }
 
     private void DetachEssenceProcessors()
