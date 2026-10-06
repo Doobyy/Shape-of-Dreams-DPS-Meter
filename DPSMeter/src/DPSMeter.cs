@@ -619,7 +619,8 @@ public sealed class DPSMeter : ModBehaviour
                 Debug.Log("[DPS Meter][HEAL NAME SKILL] label=" + label +
                     " skillType=" + skill.GetType().FullName +
                     " formattedTitle=" + (skill.GetFormattedSkillTitle() ?? "<null>") +
-                    " currentConfigType=" + (skill.currentConfig == null ? "<null>" : skill.currentConfig.GetType().FullName) +\n                    " currentConfigValue=" + (skill.currentConfig == null ? "<null>" : skill.currentConfig.ToString()));
+                    " currentConfigType=" + (skill.currentConfig == null ? "<null>" : skill.currentConfig.GetType().FullName) +
+                    " currentConfigValue=" + (skill.currentConfig == null ? "<null>" : skill.currentConfig.ToString()));
             }
             catch (Exception)
             {
