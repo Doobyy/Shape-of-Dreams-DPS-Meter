@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 
 using UnityEngine;
@@ -19,6 +20,25 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private readonly HashSet<string> _healingSourceTraceTypes = new HashSet<string>(StringComparer.Ordinal);
+    private static readonly object _debugLogLock = new object();
+    private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
+
+    private static void WriteDebugLog(string message)
+    {
+        try
+        {
+            lock (_debugLogLock)
+            {
+                File.AppendAllText(
+                    _debugLogPath,
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " " + message + Environment.NewLine);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.Log("[DPS Meter] Failed to write debug log: " + ex.GetType().Name);
+        }
+    }
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
@@ -439,51 +459,51 @@ public sealed class DPSMeter : ModBehaviour
         try
         {
             string localizedFromGem = DewLocalization.GetGemName(gem);
-            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(Gem) value=" + (localizedFromGem ?? "<null>"));
+            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(Gem) value=" + (localizedFromGem ?? "<null>"));
         }
         catch (Exception)
         {
-            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(Gem) threw");
+            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(Gem) threw");
         }
 
         try
         {
             string localizedFromOriginal = DewLocalization.GetGemName(originalName);
-            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(originalName) value=" + (localizedFromOriginal ?? "<null>"));
+            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(originalName) value=" + (localizedFromOriginal ?? "<null>"));
         }
         catch (Exception)
         {
-            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(originalName) threw");
+            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(originalName) threw");
         }
 
         try
         {
             string nameKey = DewLocalization.GetGemNameKey(gem);
-            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemNameKey(Gem) value=" + (nameKey ?? "<null>"));
+            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemNameKey(Gem) value=" + (nameKey ?? "<null>"));
         }
         catch (Exception)
         {
-            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemNameKey(Gem) threw");
+            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemNameKey(Gem) threw");
         }
 
         try
         {
             string gemKeyFromType = DewLocalization.GetGemKey(gem.GetType());
-            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemKey(Type) value=" + (gemKeyFromType ?? "<null>"));
+            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemKey(Type) value=" + (gemKeyFromType ?? "<null>"));
         }
         catch (Exception)
         {
-            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemKey(Type) threw");
+            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemKey(Type) threw");
         }
 
         try
         {
             string descriptionKey = DewLocalization.GetGemDescriptionKey(gem);
-            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemDescriptionKey(Gem) value=" + (descriptionKey ?? "<null>"));
+            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemDescriptionKey(Gem) value=" + (descriptionKey ?? "<null>"));
         }
         catch (Exception)
         {
-            Debug.Log("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemDescriptionKey(Gem) threw");
+            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemDescriptionKey(Gem) threw");
         }
     }
 
@@ -595,7 +615,7 @@ public sealed class DPSMeter : ModBehaviour
 
             if (trace)
             {
-                Debug.Log(
+                WriteDebugLog(
                     "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
                     " actorName=" + (source.name ?? "<null>") +
                     " uiKey=" + uiKey +
@@ -612,7 +632,7 @@ public sealed class DPSMeter : ModBehaviour
         {
             if (trace)
             {
-                Debug.Log(
+                WriteDebugLog(
                     "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
                     " uiKey=" + uiKey +
                     " uiLookupException=" + ex.GetType().Name);
@@ -633,7 +653,7 @@ public sealed class DPSMeter : ModBehaviour
 
             if (trace)
             {
-                Debug.Log(
+                WriteDebugLog(
                     "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
                     " skillKey=" + (skillKey ?? "<null>") +
                     " skillValue=" + (displayName ?? "<null>"));
@@ -649,7 +669,7 @@ public sealed class DPSMeter : ModBehaviour
 
                     if (trace)
                     {
-                        Debug.Log(
+                        WriteDebugLog(
                             "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
                             " triggerType=" + skillTrigger.GetType().Name +
                             " triggerNameKey=" + (skillNameKey ?? "<null>") +
@@ -666,7 +686,7 @@ public sealed class DPSMeter : ModBehaviour
                 {
                     if (trace)
                     {
-                        Debug.Log(
+                        WriteDebugLog(
                             "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
                             " triggerLookupException=" + ex.GetType().Name);
                     }
@@ -683,7 +703,7 @@ public sealed class DPSMeter : ModBehaviour
         {
             if (trace)
             {
-                Debug.Log(
+                WriteDebugLog(
                     "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
                     " skillLookupException=" + ex.GetType().Name);
             }
@@ -691,7 +711,7 @@ public sealed class DPSMeter : ModBehaviour
 
         if (trace)
         {
-            Debug.Log(
+            WriteDebugLog(
                 "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
                 " result=<unresolved>");
         }
