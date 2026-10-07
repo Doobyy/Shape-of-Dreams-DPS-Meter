@@ -994,6 +994,99 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static void TraceRegenOrbTypeMetadata(object instance, string label)
+    {
+        if (instance == null)
+        {
+            return;
+        }
+
+        Type currentType = instance.GetType();
+        int depth = 0;
+        while (currentType != null && depth < 5)
+        {
+            WriteDebugLog("[v5.42] " + label + " type[" + depth + "]=" + currentType.FullName);
+
+            PropertyInfo[] properties = currentType.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            int propertyCount = 0;
+            for (int i = 0; i < properties.Length && propertyCount < 20; i++)
+            {
+                PropertyInfo property = properties[i];
+                if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+                {
+                    continue;
+                }
+
+                string name = property.Name.ToLowerInvariant();
+                if (name.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("display", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("text", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("title", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("description", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("id", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("type", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("icon", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("sprite", StringComparison.Ordinal) < 0)
+                {
+                    continue;
+                }
+
+                WriteDebugLog("[v5.42]   property=" + property.Name + " type=" + property.PropertyType.Name);
+                propertyCount++;
+            }
+
+            MethodInfo[] methods = currentType.GetMethods(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            int methodCount = 0;
+            for (int i = 0; i < methods.Length && methodCount < 30; i++)
+            {
+                MethodInfo method = methods[i];
+                if (method.IsSpecialName)
+                {
+                    continue;
+                }
+
+                string name = method.Name.ToLowerInvariant();
+                if (name.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("display", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("text", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("title", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("description", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("id", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("type", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("icon", StringComparison.Ordinal) < 0 &&
+                    name.IndexOf("sprite", StringComparison.Ordinal) < 0)
+                {
+                    continue;
+                }
+
+                ParameterInfo[] parameters = method.GetParameters();
+                string signature = method.Name + "(";
+                for (int p = 0; p < parameters.Length; p++)
+                {
+                    if (p > 0)
+                    {
+                        signature += ",";
+                    }
+                    signature += parameters[p].ParameterType.Name;
+                }
+                signature += ")->" + method.ReturnType.Name;
+                WriteDebugLog("[v5.42]   method=" + signature);
+                methodCount++;
+            }
+
+            currentType = currentType.BaseType;
+            depth++;
+        }
+    }
+
     private static void TraceGenericHealOverTimeSource(Actor source)
     {
         if (source == null || _genericHealOverTimeTraceCount >= 3)
@@ -1099,6 +1192,8 @@ public sealed class DPSMeter : ModBehaviour
                 {
                     WriteDebugLog("[v5.41] pickupBase=" + baseType.Name);
                 }
+
+                TraceRegenOrbTypeMetadata(current, "pickup");
 
                 string[] pickupKeys = new string[]
                 {
