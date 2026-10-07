@@ -831,22 +831,22 @@ public sealed class DPSMeter : ModBehaviour
                     }
                 }
 
-                Dictionary<string, object> persistentData = null;
-                Dictionary<string, object> persistentSyncedData = null;
+                System.Collections.IDictionary persistentData = null;
+                System.Collections.IDictionary persistentSyncedData = null;
                 try
                 {
                     FieldInfo persistentDataField = type.GetField("persistentData",
                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                     if (persistentDataField != null)
                     {
-                        persistentData = persistentDataField.GetValue(current) as Dictionary<string, object>;
+                        persistentData = persistentDataField.GetValue(current) as System.Collections.IDictionary;
                     }
 
                     FieldInfo persistentSyncedDataField = type.GetField("persistentSyncedData",
                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                     if (persistentSyncedDataField != null)
                     {
-                        persistentSyncedData = persistentSyncedDataField.GetValue(current) as Dictionary<string, object>;
+                        persistentSyncedData = persistentSyncedDataField.GetValue(current) as System.Collections.IDictionary;
                     }
                 }
                 catch (Exception)
@@ -856,7 +856,7 @@ public sealed class DPSMeter : ModBehaviour
                 if (persistentData != null)
                 {
                     WriteDebugLog("[v5.36] persistentData count=" + persistentData.Count);
-                    foreach (KeyValuePair<string, object> entry in persistentData)
+                    foreach (System.Collections.DictionaryEntry entry in persistentData)
                     {
                         string valueText = entry.Value == null ? "null" : entry.Value.GetType().Name;
                         if (entry.Value is UnityEngine.Object unityObject)
@@ -870,7 +870,7 @@ public sealed class DPSMeter : ModBehaviour
                 if (persistentSyncedData != null)
                 {
                     WriteDebugLog("[v5.36] persistentSyncedData count=" + persistentSyncedData.Count);
-                    foreach (KeyValuePair<string, object> entry in persistentSyncedData)
+                    foreach (System.Collections.DictionaryEntry entry in persistentSyncedData)
                     {
                         string valueText = entry.Value == null ? "null" : entry.Value.GetType().Name;
                         if (entry.Value is UnityEngine.Object unityObject)
