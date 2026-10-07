@@ -31,7 +31,7 @@ public sealed class DPSMeter : ModBehaviour
             {
                 File.AppendAllText(
                     _debugLogPath,
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " " + message + Environment.NewLine);
+                    "[v4.94]" + message + Environment.NewLine);
             }
         }
         catch (Exception ex)
