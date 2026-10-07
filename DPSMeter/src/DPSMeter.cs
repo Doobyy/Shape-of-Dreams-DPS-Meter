@@ -723,14 +723,14 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _genericHealOverTimeTraceCount++;
-        WriteDebugLog("[v5.34] GenericHealOverTime trace " + _genericHealOverTimeTraceCount);
+        WriteDebugLog("[v5.35] GenericHealOverTime trace " + _genericHealOverTimeTraceCount);
 
         Actor current = source;
         int depth = 0;
         while (current != null && depth < 8)
         {
             Type type = current.GetType();
-            WriteDebugLog("[v5.34] actor[" + depth + "] type=" + type.Name + " name=" + current.name);
+            WriteDebugLog("[v5.35] actor[" + depth + "] type=" + type.Name + " name=" + current.name);
 
             string localized = null;
             try
@@ -738,7 +738,7 @@ public sealed class DPSMeter : ModBehaviour
                 if (DewLocalization.TryGetUIValue(type.Name + "_Name", out localized) &&
                     !string.IsNullOrEmpty(localized))
                 {
-                    WriteDebugLog("[v5.34]   uiName=" + localized);
+                    WriteDebugLog("[v5.35]   uiName=" + localized);
                 }
             }
             catch (Exception)
@@ -748,7 +748,7 @@ public sealed class DPSMeter : ModBehaviour
             SkillTrigger skill = current.firstTrigger as SkillTrigger;
             if (skill != null)
             {
-                WriteDebugLog("[v5.34]   firstTrigger=" + skill.GetType().Name);
+                WriteDebugLog("[v5.35]   firstTrigger=" + skill.GetType().Name);
             }
 
             FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -785,7 +785,7 @@ public sealed class DPSMeter : ModBehaviour
                             : (gemValue != null
                                 ? "Gem(" + gemValue.name + ")"
                                 : value.GetType().Name));
-                    WriteDebugLog("[v5.34]   field=" + field.Name + " value=" + valueText);
+                    WriteDebugLog("[v5.35]   field=" + field.Name + " value=" + valueText);
                 }
                 catch (Exception)
                 {
@@ -797,7 +797,7 @@ public sealed class DPSMeter : ModBehaviour
                 Type baseType = type.BaseType;
                 if (baseType != null)
                 {
-                    WriteDebugLog("[v5.34] pickupBase=" + baseType.Name);
+                    WriteDebugLog("[v5.35] pickupBase=" + baseType.Name);
                 }
 
                 string[] pickupKeys = new string[]
@@ -823,7 +823,142 @@ public sealed class DPSMeter : ModBehaviour
                         if (DewLocalization.TryGetUIValue(pickupKeys[k], out pickupLocalized) &&
                             !string.IsNullOrEmpty(pickupLocalized))
                         {
-                            WriteDebugLog("[v5.34] uiKey=" + pickupKeys[k] + " value=" + pickupLocalized);
+                            WriteDebugLog("[v5.35] uiKey=" + pickupKeys[k] + " value=" + pickupLocalized);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                // The pickup itself has no useful localization. Inspect its
+                // likely identity/display fields and the referenced effect
+                // GameObjects to see whether the game stores the pickup's
+                // player-facing identity on a component or data object.
+                Type inspectType = type;
+                int inspectDepth = 0;
+                while (inspectType != null && inspectDepth < 2)
+                {
+                    FieldInfo[] pickupFields = inspectType.GetFields(
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    for (int i = 0; i < pickupFields.Length; i++)
+                    {
+                        FieldInfo field = pickupFields[i];
+                        string fieldName = field.Name.ToLowerInvariant();
+                        if (fieldName.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("id", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("display", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("text", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("title", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("description", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("data", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("config", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("definition", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("pickup", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("sprite", StringComparison.Ordinal) < 0 &&
+                            fieldName.IndexOf("icon", StringComparison.Ordinal) < 0)
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            object value = field.GetValue(current);
+                            string valueText = value == null ? "null" : value.GetType().Name;
+                            if (value is UnityEngine.Object unityObject)
+                            {
+                                valueText += "(" + unityObject.name + ")";
+                            }
+                            WriteDebugLog("[v5.35]   field=" + field.Name + " type=" + field.FieldType.Name + " value=" + valueText);
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+
+                    inspectType = inspectType.BaseType;
+                    inspectDepth++;
+                }
+
+                FieldInfo[] effectFields = type.GetFields(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                for (int i = 0; i < effectFields.Length; i++)
+                {
+                    FieldInfo field = effectFields[i];
+                    if (field.FieldType != typeof(GameObject))
+                    {
+                        continue;
+                    }
+
+                    if (field.Name.IndexOf("effect", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        GameObject effectObject = field.GetValue(current) as GameObject;
+                        if (effectObject == null)
+                        {
+                            WriteDebugLog("[v5.35] effect=" + field.Name + " null");
+                            continue;
+                        }
+
+                        Component[] components = effectObject.GetComponents<Component>();
+                        WriteDebugLog("[v5.35] effect=" + field.Name + " object=" + effectObject.name + " components=" + components.Length);
+
+                        for (int i = 0; i < components.Length; i++)
+                        {
+                            Component component = components[i];
+                            if (component == null)
+                            {
+                                continue;
+                            }
+
+                            WriteDebugLog("[v5.35]   component=" + component.GetType().Name);
+
+                            Type componentType = component.GetType();
+                            FieldInfo[] componentFields = componentType.GetFields(
+                                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                            for (int j = 0; j < componentFields.Length; j++)
+                            {
+                                FieldInfo componentField = componentFields[j];
+                                string componentFieldName = componentField.Name.ToLowerInvariant();
+                                if (componentFieldName.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("id", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("display", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("text", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("title", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("description", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("data", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("config", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("definition", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("sprite", StringComparison.Ordinal) < 0 &&
+                                    componentFieldName.IndexOf("icon", StringComparison.Ordinal) < 0)
+                                {
+                                    continue;
+                                }
+
+                                try
+                                {
+                                    object value = componentField.GetValue(component);
+                                    string valueText = value == null ? "null" : value.GetType().Name;
+                                    if (value is UnityEngine.Object unityObject)
+                                    {
+                                        valueText += "(" + unityObject.name + ")";
+                                    }
+                                    WriteDebugLog("[v5.35]     field=" + componentField.Name + " type=" + componentField.FieldType.Name + " value=" + valueText);
+                                }
+                                catch (Exception)
+                                {
+                                }
+                            }
                         }
                     }
                     catch (Exception)
@@ -836,7 +971,7 @@ public sealed class DPSMeter : ModBehaviour
             depth++;
         }
 
-        WriteDebugLog("[v5.34] GenericHealOverTime pickup trace end");
+        WriteDebugLog("[v5.35] GenericHealOverTime pickup trace end");
     }
 
 
