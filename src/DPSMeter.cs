@@ -778,19 +778,16 @@ public sealed class DPSMeter : ModBehaviour
         FinalDamageData damage = info.damage;
 
         WriteDebugLog("[v5.52] Bismuth Book damage trace " + _bismuthBookDamageTraceCount);
-        WriteDebugLog("[v5.52] book   amount=" + damage.currentAmount
-            + " original=" + damage.originalAmount
-            + " source=" + damage.source
+        WriteDebugLog("[v5.52] book   amount=" + damage.amount
+            + " discarded=" + damage.discardedAmount
+            + " source=" + damage.type
             + " elemental=" + damage.elemental
             + " attributes=" + damage.attributes
             + " attackEffectType=" + damage.attackEffectType
             + " attackEffectStrength=" + damage.attackEffectStrength);
 
-        if (damage.actor != null)
-        {
-            WriteDebugLog("[v5.52] book   damageActor type=" + damage.actor.GetType().Name
-                + " name=" + damage.actor.name);
-        }
+        WriteDebugLog("[v5.52] book   eventActor type=" + info.actor.GetType().Name
+            + " name=" + info.actor.name);
 
         TraceSourceChain(info.actor, "[v5.52] book");
     }
