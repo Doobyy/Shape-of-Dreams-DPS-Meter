@@ -775,7 +775,7 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _bismuthBookDamageTraceCount++;
-        DamageData damage = info.damage;
+        FinalDamageData damage = info.damage;
 
         WriteDebugLog("[v5.52] Bismuth Book damage trace " + _bismuthBookDamageTraceCount);
         WriteDebugLog("[v5.52] book   amount=" + damage.currentAmount
