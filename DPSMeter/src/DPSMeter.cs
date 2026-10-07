@@ -663,6 +663,11 @@ public sealed class DPSMeter : ModBehaviour
             }
         }
 
+        if (trace)
+        {
+            TraceHealingBasicEffects(source);
+        }
+
         // Keep the existing skill-localization fallback for actors that really
         // are represented by a skill localization entry.
         try
@@ -752,6 +757,133 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return null;
+    }
+
+
+    private static void TraceHealingBasicEffects(Actor source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        try
+        {
+            Type actorType = source.GetType();
+            FieldInfo basicEffectsField = actorType.GetField(
+                "_basicEffects",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (basicEffectsField == null)
+            {
+                WriteDebugLog(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffects field=<missing> actorType=" +
+                    actorType.Name);
+                return;
+            }
+
+            object basicEffectsValue = basicEffectsField.GetValue(source);
+            System.Collections.IEnumerable basicEffects = basicEffectsValue as System.Collections.IEnumerable;
+
+            if (basicEffects == null)
+            {
+                WriteDebugLog(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffects value=<null-or-not-enumerable> actorType=" +
+                    actorType.Name);
+                return;
+            }
+
+            int index = 0;
+            foreach (object effect in basicEffects)
+            {
+                if (effect == null)
+                {
+                    WriteDebugLog(
+                        "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffect[" + index + "]=<null>");
+                    index++;
+                    if (index >= 8)
+                    {
+                        break;
+                    }
+                    continue;
+                }
+
+                Type effectType = effect.GetType();
+                WriteDebugLog(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffect[" + index + "] type=" +
+                    (effectType.FullName ?? effectType.Name));
+
+                FieldInfo[] fields = effectType.GetFields(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                int fieldCount = 0;
+                for (int i = 0; i < fields.Length && fieldCount < 24; i++)
+                {
+                    FieldInfo field = fields[i];
+                    if (field.IsStatic)
+                    {
+                        continue;
+                    }
+
+                    object value;
+                    try
+                    {
+                        value = field.GetValue(effect);
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteDebugLog(
+                            "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffect[" + index + "] field=" +
+                            field.Name + " readException=" + ex.GetType().Name);
+                        fieldCount++;
+                        continue;
+                    }
+
+                    string rendered;
+                    if (value == null)
+                    {
+                        rendered = "<null>";
+                    }
+                    else if (value is string)
+                    {
+                        rendered = (string)value;
+                    }
+                    else if (field.FieldType.IsPrimitive || field.FieldType.IsEnum ||
+                             field.FieldType == typeof(decimal))
+                    {
+                        rendered = value.ToString();
+                    }
+                    else
+                    {
+                        rendered = value.GetType().FullName ?? value.GetType().Name;
+                    }
+
+                    WriteDebugLog(
+                        "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffect[" + index + "] field=" +
+                        field.Name + " type=" + field.FieldType.FullName + " value=" + rendered);
+                    fieldCount++;
+                }
+
+                index++;
+                if (index >= 8)
+                {
+                    break;
+                }
+            }
+
+            if (index == 0)
+            {
+                WriteDebugLog(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffects count=0 actorType=" +
+                    actorType.Name);
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog(
+                "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffects traceException=" +
+                ex.GetType().Name);
+        }
     }
 
 
