@@ -18,6 +18,7 @@ public sealed class DPSMeter : ModBehaviour
     private Hero _currentHero;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
+    private readonly HashSet<string> _healingSourceTraceTypes = new HashSet<string>(StringComparer.Ordinal);
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
@@ -134,6 +135,8 @@ public sealed class DPSMeter : ModBehaviour
         {
             return;
         }
+
+        TraceHealingSourceIdentity(info.actor);
 
         // Healing Essences can report their heal through an AbilityInstance
         // whose first trigger belongs to the host Memory. Resolve the Gem from
@@ -614,6 +617,84 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return null;
+    }
+
+
+    private void TraceHealingSourceIdentity(Actor source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        string typeName = source.GetType().FullName;
+        if (string.IsNullOrEmpty(typeName) || !_healingSourceTraceTypes.Add(typeName))
+        {
+            return;
+        }
+
+        string skillKey = null;
+        string displayName = null;
+
+        try
+        {
+            skillKey = DewLocalization.GetSkillKey(source.GetType());
+        }
+        catch (Exception)
+        {
+        }
+
+        if (!string.IsNullOrEmpty(skillKey))
+        {
+            try
+            {
+                displayName = DewLocalization.GetSkillName(skillKey, 0);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        Debug.Log("[DPS Meter][HEAL SOURCE IDENTITY] actorType=" + typeName +
+            " actorName=" + (source.name ?? "<null>") +
+            " skillKey=" + (skillKey ?? "<null>") +
+            " skillName=" + (displayName ?? "<null>"));
+
+        Actor current = source.parentActor;
+        int depth = 1;
+        while (current != null && depth <= 4)
+        {
+            string parentSkillKey = null;
+            string parentDisplayName = null;
+
+            try
+            {
+                parentSkillKey = DewLocalization.GetSkillKey(current.GetType());
+            }
+            catch (Exception)
+            {
+            }
+
+            if (!string.IsNullOrEmpty(parentSkillKey))
+            {
+                try
+                {
+                    parentDisplayName = DewLocalization.GetSkillName(parentSkillKey, 0);
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            Debug.Log("[DPS Meter][HEAL SOURCE PARENT] depth=" + depth +
+                " actorType=" + current.GetType().FullName +
+                " actorName=" + (current.name ?? "<null>") +
+                " skillKey=" + (parentSkillKey ?? "<null>") +
+                " skillName=" + (parentDisplayName ?? "<null>"));
+
+            current = current.parentActor;
+            depth++;
+        }
     }
 
 
