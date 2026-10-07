@@ -136,8 +136,6 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        TraceHealingLocalizationMethods(info.actor);
-
         // Healing Essences can report their heal through an AbilityInstance
         // whose first trigger belongs to the host Memory. Resolve the Gem from
         // the actor chain first so an Essence heal is attributed to the Essence
@@ -620,49 +618,70 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
-    private static bool _healingLocalizationMethodsTraced;
+    private static bool _healingLocalizationMembersTraced;
 
-    private static void TraceHealingLocalizationMethods(Actor source)
+    private static void TraceHealingLocalizationMembers(Actor source)
     {
-        if (_healingLocalizationMethodsTraced || source == null)
+        if (_healingLocalizationMembersTraced || source == null)
         {
             return;
         }
 
-        _healingLocalizationMethodsTraced = true;
+        _healingLocalizationMembersTraced = true;
+        Type type = typeof(DewLocalization);
 
-        MethodInfo[] methods = typeof(DewLocalization).GetMethods(
+        FieldInfo[] fields = type.GetFields(
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
 
-        for (int i = 0; i < methods.Length; i++)
+        for (int i = 0; i < fields.Length; i++)
         {
-            MethodInfo method = methods[i];
-            string name = method.Name;
+            FieldInfo field = fields[i];
+            object value = null;
 
-            if (name.IndexOf("text", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("translate", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("string", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("format", StringComparison.OrdinalIgnoreCase) < 0)
+            try
+            {
+                value = field.GetValue(null);
+            }
+            catch (Exception)
+            {
+            }
+
+            string valueText = value == null ? "<null>" : value.GetType().FullName;
+            if (value is string || field.FieldType.IsPrimitive || field.FieldType.IsEnum)
+            {
+                valueText = value == null ? "<null>" : value.ToString();
+            }
+
+            Debug.Log("[DPS Meter][HEAL LOCALIZATION FIELD] " + field.Name + " type=" + field.FieldType.FullName + " value=" + valueText);
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
             {
                 continue;
             }
 
-            ParameterInfo[] parameters = method.GetParameters();
-            string signature = name + "(";
-
-            for (int p = 0; p < parameters.Length; p++)
+            object value = null;
+            try
             {
-                if (p > 0)
-                {
-                    signature += ", ";
-                }
-
-                signature += parameters[p].ParameterType.FullName;
+                value = property.GetValue(null, null);
+            }
+            catch (Exception)
+            {
             }
 
-            signature += ") -> " + method.ReturnType.FullName;
-            Debug.Log("[DPS Meter][HEAL LOCALIZATION METHOD] " + signature);
+            string valueText = value == null ? "<null>" : value.GetType().FullName;
+            if (value is string || property.PropertyType.IsPrimitive || property.PropertyType.IsEnum)
+            {
+                valueText = value == null ? "<null>" : value.ToString();
+            }
+
+            Debug.Log("[DPS Meter][HEAL LOCALIZATION PROPERTY] " + property.Name + " type=" + property.PropertyType.FullName + " value=" + valueText);
         }
     }
 
