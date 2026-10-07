@@ -944,8 +944,7 @@ public sealed class DPSMeter : ModBehaviour
             for (int i = 0; i < fields.Length && logged < 16; i++)
             {
                 FieldInfo field = fields[i];
-                if (field.FieldType != typeof(string) &&
-                    !field.Name.IndexOf("name", StringComparison.OrdinalIgnoreCase).Equals(0))
+                if (field.FieldType != typeof(string))
                 {
                     continue;
                 }
