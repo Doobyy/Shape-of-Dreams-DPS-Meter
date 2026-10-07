@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 
 using UnityEngine;
@@ -19,45 +18,8 @@ public sealed class DPSMeter : ModBehaviour
     private Hero _currentHero;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
-    private readonly HashSet<string> _healingSourceTraceTypes = new HashSet<string>(StringComparer.Ordinal);
-    private static readonly object _debugLogLock = new object();
-    private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
-
-    private static void WriteDebugLog(string message)
-    {
-        try
-        {
-            lock (_debugLogLock)
-            {
-                File.AppendAllText(
-                    _debugLogPath,
-                    "[v4.98]" + message + Environment.NewLine);
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.Log("[DPS Meter] Failed to write debug log: " + ex.GetType().Name);
-        }
-    }
-    private static void ClearDebugLog()
-    {
-        try
-        {
-            lock (_debugLogLock)
-            {
-                File.WriteAllText(_debugLogPath, string.Empty);
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.Log("[DPS Meter] Failed to clear debug log: " + ex.GetType().Name);
-        }
-    }
-
-    private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
-        ClearDebugLog();
         Instance = this;
         _data = new DpsData();
         _overlay = gameObject.AddComponent<DpsOverlay>();
@@ -556,31 +518,31 @@ public sealed class DPSMeter : ModBehaviour
             return null;
         }
 
-        string actorType = source.GetType().Name;
-        bool trace = _healingSourceTraceTypes.Add(actorType);
+        // Generated healing actors can inherit their player-facing name from
+        // a parent actor. Resolve the actor first, then walk the confirmed
+        // parent chain using the game's normal UI localization path.
+        Actor current = source;
+        int depth = 0;
 
-        // Match the game's own Actor/StatusEffect display-name resolution:
-        // first try the localized "<TypeName>_Name" UI key for the active language.
-        string uiKey = actorType + "_Name";
-        try
+        while (current != null && depth < 8)
         {
-            string localizedName;
-            bool resolved = DewLocalization.TryGetUIValue(uiKey, out localizedName);
-            if (resolved && !string.IsNullOrEmpty(localizedName))
+            string uiKey = current.GetType().Name + "_Name";
+
+            try
             {
-                return localizedName;
+                string localizedName;
+                bool resolved = DewLocalization.TryGetUIValue(uiKey, out localizedName);
+                if (resolved && !string.IsNullOrEmpty(localizedName))
+                {
+                    return localizedName;
+                }
             }
-        }
-        catch (Exception)
-        {
-        }
+            catch (Exception)
+            {
+            }
 
-        // The confirmed next reverse-engineering target for this actor is its
-        // parent actor. Keep this diagnostic focused on that object only.
-        if (trace)
-        {
-            TraceHealingParentMetadata(source);
-            TraceHealingLocalizationCollections();
+            current = current.parentActor;
+            depth++;
         }
 
         // Keep the existing skill-localization fallback for actors that really
@@ -624,194 +586,6 @@ public sealed class DPSMeter : ModBehaviour
 
         return null;
     }
-
-    private static void TraceHealingParentMetadata(Actor source)
-    {
-        if (source == null || source.parentActor == null)
-        {
-            return;
-        }
-
-        Actor parent = source.parentActor;
-
-        try
-        {
-            Type currentType = parent.GetType();
-            int depth = 0;
-            int logged = 0;
-
-            WriteDebugLog(
-                "[DPS Meter][HEAL LOCALIZATION TRACE] parentMetadata type=" +
-                (currentType.FullName ?? currentType.Name) +
-                " name=" + (parent.name ?? "<null>"));
-
-            while (currentType != null && currentType != typeof(object) && logged < 48)
-            {
-                FieldInfo[] fields = currentType.GetFields(
-                    BindingFlags.Instance |
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-
-                for (int i = 0; i < fields.Length && logged < 48; i++)
-                {
-                    FieldInfo field = fields[i];
-                    if (field.IsStatic)
-                    {
-                        continue;
-                    }
-
-                    object value;
-                    try
-                    {
-                        value = field.GetValue(parent);
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteDebugLog(
-                            "[DPS Meter][HEAL LOCALIZATION TRACE] parentField depth=" +
-                            depth +
-                            " field=" + field.Name +
-                            " readException=" + ex.GetType().Name);
-                        logged++;
-                        continue;
-                    }
-
-                    string rendered = value == null
-                        ? "<null>"
-                        : value is string ||
-                          field.FieldType.IsPrimitive ||
-                          field.FieldType.IsEnum ||
-                          field.FieldType == typeof(decimal)
-                            ? value.ToString()
-                            : (value.GetType().FullName ?? value.GetType().Name);
-
-                    WriteDebugLog(
-                        "[DPS Meter][HEAL LOCALIZATION TRACE] parentField depth=" +
-                        depth +
-                        " field=" + field.Name +
-                        " type=" + (field.FieldType.FullName ?? field.FieldType.Name) +
-                        " value=" + rendered);
-                    logged++;
-                }
-
-                currentType = currentType.BaseType;
-                depth++;
-            }
-
-            if (logged == 0)
-            {
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] parentMetadata noFields");
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog(
-                "[DPS Meter][HEAL LOCALIZATION TRACE] parentMetadata traceException=" +
-                ex.GetType().Name);
-        }
-    }
-
-    private static void TraceHealingLocalizationCollections()
-    {
-        try
-        {
-            Type localizationType = typeof(DewLocalization);
-            object data = null;
-
-            FieldInfo dataField = localizationType.GetField(
-                "data",
-                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-
-            if (dataField != null)
-            {
-                data = dataField.GetValue(null);
-            }
-
-            if (data == null)
-            {
-                PropertyInfo dataProperty = localizationType.GetProperty(
-                    "data",
-                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-
-                if (dataProperty != null && dataProperty.GetMethod != null)
-                {
-                    data = dataProperty.GetValue(null, null);
-                }
-            }
-
-            if (data == null)
-            {
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] localizationCollections dataUnavailable");
-                return;
-            }
-
-            Type dataType = data.GetType();
-            FieldInfo[] fields = dataType.GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            int matches = 0;
-
-            for (int i = 0; i < fields.Length && matches < 24; i++)
-            {
-                FieldInfo field = fields[i];
-                object collection;
-
-                try
-                {
-                    collection = field.GetValue(data);
-                }
-                catch (Exception)
-                {
-                    continue;
-                }
-
-                System.Collections.IEnumerable enumerable =
-                    collection as System.Collections.IEnumerable;
-                if (enumerable == null)
-                {
-                    continue;
-                }
-
-                foreach (object entry in enumerable)
-                {
-                    if (entry == null)
-                    {
-                        continue;
-                    }
-
-                    string entryText = entry.ToString();
-                    if (entryText.IndexOf(
-                            "LingeringAuraOfGuidance",
-                            StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        continue;
-                    }
-
-                    WriteDebugLog(
-                        "[DPS Meter][HEAL LOCALIZATION TRACE] localizationMatch collection=" +
-                        field.Name +
-                        " entry=" + entryText);
-                    matches++;
-                }
-            }
-
-            if (matches == 0)
-            {
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] localizationCollections noIdentifierMatch");
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog(
-                "[DPS Meter][HEAL LOCALIZATION TRACE] localizationCollections traceException=" +
-                ex.GetType().Name);
-        }
-    }
-
 
     private static string GetEssenceIdentity(Gem gem)
     {
