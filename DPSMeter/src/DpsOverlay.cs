@@ -30,7 +30,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v5.1";
+    private const string DevelopmentVersion = "v5.2";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -813,14 +813,20 @@ public sealed class DpsOverlay : MonoBehaviour
             new Rect(barRect.x, barRect.y, barRect.width * ratio, barRect.height),
             _whiteTexture);
 
+        string valueText = FormatNumber(amount) + "  " + percent.ToString("0.0") + "%";
+        float valueWidth = _rowRight.CalcSize(new GUIContent(valueText)).x;
+        float valueRight = rowRect.xMax - 7f;
+        float valueLeft = Mathf.Max(barRect.x + 7f, valueRight - valueWidth);
+        float nameWidth = Mathf.Max(0f, valueLeft - (barRect.x + 7f) - 7f);
+
         GUI.color = SourceNameColor;
         GUI.Label(
-            new Rect(barRect.x + 7f, rowRect.y, Mathf.Max(0f, barRect.width - 14f), rowRect.height),
-            StripRichTextTags(name),
+            new Rect(barRect.x + 7f, rowRect.y, nameWidth, rowRect.height),
+            TruncateTextToWidth(StripRichTextTags(name), nameWidth, _row),
             _row);
         GUI.Label(
-            new Rect(rowRect.x + 7f, rowRect.y, rowRect.width - 14f, rowRect.height),
-            FormatNumber(amount) + "  " + percent.ToString("0.0") + "%",
+            new Rect(valueLeft, rowRect.y, Mathf.Max(0f, valueRight - valueLeft), rowRect.height),
+            valueText,
             _rowRight);
 
         GUI.color = Color.white;
@@ -902,6 +908,43 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.Label(valueRect, FormatNumber(amount) + "  " + percent.ToString("0.0") + "%", _rowRight);
 
         GUI.color = Color.white;
+    }
+
+    private static string TruncateTextToWidth(string text, float width, GUIStyle style)
+    {
+        if (string.IsNullOrEmpty(text) || width <= 0f || style == null)
+        {
+            return string.Empty;
+        }
+
+        if (style.CalcSize(new GUIContent(text)).x <= width)
+        {
+            return text;
+        }
+
+        const string ellipsis = "...";
+        if (style.CalcSize(new GUIContent(ellipsis)).x > width)
+        {
+            return string.Empty;
+        }
+
+        int low = 0;
+        int high = text.Length;
+        while (low < high)
+        {
+            int mid = (low + high + 1) / 2;
+            string candidate = text.Substring(0, mid).TrimEnd() + ellipsis;
+            if (style.CalcSize(new GUIContent(candidate)).x <= width)
+            {
+                low = mid;
+            }
+            else
+            {
+                high = mid - 1;
+            }
+        }
+
+        return text.Substring(0, low).TrimEnd() + ellipsis;
     }
 
     private static string StripRichTextTags(string text)
