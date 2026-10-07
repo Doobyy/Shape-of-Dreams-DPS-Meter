@@ -19,6 +19,7 @@ public sealed class DPSMeter : ModBehaviour
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
+    private static bool _lingeringAuraIconTraceLogged;
     private void Awake()
     {
         Instance = this;
@@ -168,6 +169,7 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
+        TraceLingeringAuraIconSource(info.actor, healingIcon);
         _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
 
     }
@@ -620,6 +622,135 @@ public sealed class DPSMeter : ModBehaviour
         {
             return null;
         }
+    }
+
+    private static void TraceLingeringAuraIconSource(Actor source, Sprite resolvedIcon)
+    {
+        if (_lingeringAuraIconTraceLogged || source == null)
+        {
+            return;
+        }
+
+        Actor current = source;
+        bool relevant = false;
+        int relevantDepth = 0;
+        while (current != null && relevantDepth < 8)
+        {
+            string typeName = current.GetType().Name;
+            if (typeName.IndexOf("LingeringAuraOfGuidance", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                relevant = true;
+                break;
+            }
+
+            current = current.parentActor;
+            relevantDepth++;
+        }
+
+        if (!relevant)
+        {
+            return;
+        }
+
+        _lingeringAuraIconTraceLogged = true;
+        Debug.Log("[v5.01] Lingering Aura icon trace start");
+
+        current = source;
+        int depth = 0;
+        while (current != null && depth < 8)
+        {
+            Type type = current.GetType();
+            Debug.Log("[v5.01] actor[" + depth + "] type=" + type.Name + " name=" + current.name);
+
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                bool nameMatch = field.Name.IndexOf("icon", StringComparison.OrdinalIgnoreCase) >= 0
+                    || field.Name.IndexOf("sprite", StringComparison.OrdinalIgnoreCase) >= 0;
+                bool spriteType = typeof(Sprite).IsAssignableFrom(field.FieldType);
+                if (!nameMatch && !spriteType)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(current);
+                    Sprite sprite = value as Sprite;
+                    string valueText = sprite != null
+                        ? "Sprite(" + sprite.name + ")"
+                        : (value == null ? "null" : value.ToString());
+                    Debug.Log("[v5.01]   field=" + field.Name + " type=" + field.FieldType.Name + " value=" + valueText);
+                }
+                catch (Exception)
+                {
+                    Debug.Log("[v5.01]   field=" + field.Name + " type=" + field.FieldType.Name + " value=<error>");
+                }
+            }
+
+            PropertyInfo[] properties = type.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < properties.Length; i++)
+            {
+                PropertyInfo property = properties[i];
+                bool nameMatch = property.Name.IndexOf("icon", StringComparison.OrdinalIgnoreCase) >= 0
+                    || property.Name.IndexOf("sprite", StringComparison.OrdinalIgnoreCase) >= 0;
+                bool spriteType = typeof(Sprite).IsAssignableFrom(property.PropertyType);
+                if (!nameMatch && !spriteType)
+                {
+                    continue;
+                }
+
+                if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = property.GetValue(current, null);
+                    Sprite sprite = value as Sprite;
+                    string valueText = sprite != null
+                        ? "Sprite(" + sprite.name + ")"
+                        : (value == null ? "null" : value.ToString());
+                    Debug.Log("[v5.01]   property=" + property.Name + " type=" + property.PropertyType.Name + " value=" + valueText);
+                }
+                catch (Exception)
+                {
+                    Debug.Log("[v5.01]   property=" + property.Name + " type=" + property.PropertyType.Name + " value=<error>");
+                }
+            }
+
+            AbilityInstance instance = current as AbilityInstance;
+            if (instance != null && instance.gem != null)
+            {
+                Sprite gemIcon = FindSpriteMember(instance.gem);
+                Debug.Log("[v5.01]   gem=" + instance.gem.GetType().Name + " icon=" +
+                    (gemIcon == null ? "null" : gemIcon.name));
+
+                if (instance.gem.skill != null)
+                {
+                    Sprite skillIcon = FindSpriteMember(instance.gem.skill);
+                    Debug.Log("[v5.01]   gem.skill=" + instance.gem.skill.GetType().Name + " icon=" +
+                        (skillIcon == null ? "null" : skillIcon.name));
+
+                    if (instance.gem.skill.currentConfig != null)
+                    {
+                        Sprite configIcon = FindSpriteMember(instance.gem.skill.currentConfig);
+                        Debug.Log("[v5.01]   gem.skill.currentConfig=" + instance.gem.skill.currentConfig.GetType().Name + " icon=" +
+                            (configIcon == null ? "null" : configIcon.name));
+                    }
+                }
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        Debug.Log("[v5.01] resolvedIcon=" + (resolvedIcon == null ? "null" : resolvedIcon.name));
+        Debug.Log("[v5.01] Lingering Aura icon trace end");
     }
 
     private static Sprite FindHealingIcon(Actor source)
