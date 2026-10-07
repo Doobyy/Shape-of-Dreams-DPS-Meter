@@ -136,7 +136,7 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        TraceHealingSourceIdentity(info.actor);
+        TraceHealingLocalizationMethods(info.actor);
 
         // Healing Essences can report their heal through an AbilityInstance
         // whose first trigger belongs to the host Memory. Resolve the Gem from
@@ -620,125 +620,52 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
-    private void TraceHealingSourceIdentity(Actor source)
+    private static bool _healingLocalizationMethodsTraced;
+
+    private static void TraceHealingLocalizationMethods(Actor source)
     {
-        if (source == null)
+        if (_healingLocalizationMethodsTraced || source == null)
         {
             return;
         }
 
-        string typeName = source.GetType().FullName;
-        if (string.IsNullOrEmpty(typeName) || !_healingSourceTraceTypes.Add(typeName))
-        {
-            return;
-        }
+        _healingLocalizationMethodsTraced = true;
 
-        string skillKey = null;
-        string displayName = null;
+        MethodInfo[] methods = typeof(DewLocalization).GetMethods(
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
 
-        try
+        for (int i = 0; i < methods.Length; i++)
         {
-            skillKey = DewLocalization.GetSkillKey(source.GetType());
-        }
-        catch (Exception)
-        {
-        }
+            MethodInfo method = methods[i];
+            string name = method.Name;
 
-        if (!string.IsNullOrEmpty(skillKey))
-        {
-            try
+            if (name.IndexOf("text", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("translate", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("string", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("format", StringComparison.OrdinalIgnoreCase) < 0)
             {
-                displayName = DewLocalization.GetSkillName(skillKey, 0);
-            }
-            catch (Exception)
-            {
-            }
-        }
-
-        Debug.Log("[DPS Meter][HEAL SOURCE IDENTITY] actorType=" + typeName +
-            " actorName=" + (source.name ?? "<null>") +
-            " skillKey=" + (skillKey ?? "<null>") +
-            " skillName=" + (displayName ?? "<null>"));
-
-        Actor current = source.parentActor;
-        int depth = 1;
-        while (current != null && depth <= 4)
-        {
-            string parentSkillKey = null;
-            string parentDisplayName = null;
-
-            try
-            {
-                parentSkillKey = DewLocalization.GetSkillKey(current.GetType());
-            }
-            catch (Exception)
-            {
+                continue;
             }
 
-            if (!string.IsNullOrEmpty(parentSkillKey))
+            ParameterInfo[] parameters = method.GetParameters();
+            string signature = name + "(";
+
+            for (int p = 0; p < parameters.Length; p++)
             {
-                try
+                if (p > 0)
                 {
-                    parentDisplayName = DewLocalization.GetSkillName(parentSkillKey, 0);
+                    signature += ", ";
                 }
-                catch (Exception)
-                {
-                }
+
+                signature += parameters[p].ParameterType.FullName;
             }
 
-            Debug.Log("[DPS Meter][HEAL SOURCE PARENT] depth=" + depth +
-                " actorType=" + current.GetType().FullName +
-                " actorName=" + (current.name ?? "<null>") +
-                " skillKey=" + (parentSkillKey ?? "<null>") +
-                " skillName=" + (parentDisplayName ?? "<null>"));
-
-            current = current.parentActor;
-            depth++;
+            signature += ") -> " + method.ReturnType.FullName;
+            Debug.Log("[DPS Meter][HEAL LOCALIZATION METHOD] " + signature);
         }
     }
 
-
-    private static void TraceHealingNameMethods(object target, string label)
-    {
-        if (target == null)
-            return;
-
-        Type type = target.GetType();
-        for (Type currentType = type; currentType != null && currentType != typeof(object); currentType = currentType.BaseType)
-        {
-            MethodInfo[] methods = currentType.GetMethods(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-            for (int i = 0; i < methods.Length; i++)
-            {
-                MethodInfo method = methods[i];
-                if (method.IsStatic || method.GetParameters().Length != 0 || !IsHealingNameMethod(method.Name))
-                    continue;
-
-                Type returnType = method.ReturnType;
-                if (returnType != typeof(string) && !typeof(UnityEngine.Object).IsAssignableFrom(returnType))
-                    continue;
-
-                try
-                {
-                    object value = method.Invoke(target, null);
-                    UnityEngine.Object unityObject = value as UnityEngine.Object;
-                    string rendered = value == null
-                        ? "<null>"
-                        : (unityObject != null ? unityObject.name : value.ToString());
-                    Debug.Log("[DPS Meter][HEAL NAME METHOD] label=" + label +
-                        " method=" + method.Name +
-                        " returnType=" + returnType.FullName +
-                        " value=" + rendered);
-                }
-                catch (Exception)
-                {
-                    Debug.Log("[DPS Meter][HEAL NAME METHOD] label=" + label +
-                        " method=" + method.Name + " invocation=threw");
-                }
-            }
-        }
-    }
 
     private static bool IsHealingNameMethod(string methodName)
     {
