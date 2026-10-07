@@ -131,8 +131,6 @@ public sealed class DPSMeter : ModBehaviour
 
         float healing = Mathf.Max(0f, info.amount) + Mathf.Max(0f, info.discardedAmount);
 
-        TraceHealingLocalizationMembers(info.actor);
-
         if (healing <= 0f)
         {
             return;
@@ -584,32 +582,34 @@ public sealed class DPSMeter : ModBehaviour
             return null;
         }
 
-        string skillKey;
+        // Match the game's own Actor/StatusEffect display-name resolution:
+        // first try the localized "<TypeName>_Name" UI key for the active language.
         try
         {
-            skillKey = DewLocalization.GetSkillKey(source.GetType());
+            string localizedName;
+            if (DewLocalization.TryGetUIValue(source.GetType().Name + "_Name", out localizedName) &&
+                !string.IsNullOrEmpty(localizedName))
+            {
+                return localizedName;
+            }
         }
         catch (Exception)
         {
-            return null;
         }
 
-        if (string.IsNullOrEmpty(skillKey))
-        {
-            return null;
-        }
-
-        // Healing status-effect actors are not SkillTrigger instances, but
-        // DewLocalization exposes the same skill-name lookup by localization
-        // key. Use the key produced by GetSkillKey(Type), not GetSkillKey(string),
-        // because the latter treats its input as a raw actor name.
+        // Keep the existing skill-localization fallback for actors that really
+        // are represented by a skill localization entry.
         try
         {
-            string displayName = DewLocalization.GetSkillName(skillKey, 0);
-            if (!string.IsNullOrEmpty(displayName) &&
-                !displayName.StartsWith("!", StringComparison.Ordinal))
+            string skillKey = DewLocalization.GetSkillKey(source.GetType());
+            if (!string.IsNullOrEmpty(skillKey))
             {
-                return displayName;
+                string displayName = DewLocalization.GetSkillName(skillKey, 0);
+                if (!string.IsNullOrEmpty(displayName) &&
+                    !displayName.StartsWith("skills.!", StringComparison.Ordinal))
+                {
+                    return displayName;
+                }
             }
         }
         catch (Exception)
@@ -617,222 +617,6 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return null;
-    }
-
-
-    private static bool _healingLocalizationMembersTraced;
-
-    private static void TraceHealingLocalizationMembers(Actor source)
-    {
-        if (_healingLocalizationMembersTraced || source == null)
-        {
-            return;
-        }
-
-        _healingLocalizationMembersTraced = true;
-        Type type = typeof(DewLocalization);
-
-        FieldInfo[] fields = type.GetFields(
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-            object value = null;
-
-            try
-            {
-                value = field.GetValue(null);
-            }
-            catch (Exception)
-            {
-            }
-
-            string valueText = value == null ? "<null>" : value.GetType().FullName;
-            if (value is string || field.FieldType.IsPrimitive || field.FieldType.IsEnum)
-            {
-                valueText = value == null ? "<null>" : value.ToString();
-            }
-
-            Debug.Log("[DPS Meter][HEAL LOCALIZATION FIELD] " + field.Name + " type=" + field.FieldType.FullName + " value=" + valueText);
-        }
-
-        PropertyInfo dataProperty = type.GetProperty(
-            "data",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-
-        if (dataProperty != null && dataProperty.GetMethod != null)
-        {
-            object data = null;
-            try
-            {
-                data = dataProperty.GetValue(null, null);
-            }
-            catch (Exception)
-            {
-            }
-
-            TraceHealingLocalizationObject("data", data);
-
-        if (data != null)
-        {
-            TraceHealingLocalizationSkillEntry(data, source);
-        }
-        }
-
-        FieldInfo buildDataField = type.GetField(
-            "_buildData",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-
-        if (buildDataField != null)
-        {
-            object buildData = null;
-            try
-            {
-                buildData = buildDataField.GetValue(null);
-            }
-            catch (Exception)
-            {
-            }
-
-            TraceHealingLocalizationObject("_buildData", buildData);
-        }
-
-        PropertyInfo[] properties = type.GetProperties(
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-
-        for (int i = 0; i < properties.Length; i++)
-        {
-            PropertyInfo property = properties[i];
-            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
-            {
-                continue;
-            }
-
-            object value = null;
-            try
-            {
-                value = property.GetValue(null, null);
-            }
-            catch (Exception)
-            {
-            }
-
-            string valueText = value == null ? "<null>" : value.GetType().FullName;
-            if (value is string || property.PropertyType.IsPrimitive || property.PropertyType.IsEnum)
-            {
-                valueText = value == null ? "<null>" : value.ToString();
-            }
-
-            Debug.Log("[DPS Meter][HEAL LOCALIZATION PROPERTY] " + property.Name + " type=" + property.PropertyType.FullName + " value=" + valueText);
-        }
-    }
-
-
-    private static void TraceHealingLocalizationSkillEntry(object data, Actor source)
-    {
-        if (source == null)
-        {
-            return;
-        }
-
-        string key = null;
-        try
-        {
-            key = DewLocalization.GetSkillKey(source.GetType());
-        }
-        catch (Exception)
-        {
-        }
-
-        if (string.IsNullOrEmpty(key))
-        {
-            return;
-        }
-
-        FieldInfo skillsField = data.GetType().GetField(
-            "skills",
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        if (skillsField == null)
-        {
-            return;
-        }
-
-        object skillsObject = null;
-        try
-        {
-            skillsObject = skillsField.GetValue(data);
-        }
-        catch (Exception)
-        {
-        }
-
-        System.Collections.IDictionary skills = skillsObject as System.Collections.IDictionary;
-        if (skills == null || !skills.Contains(key))
-        {
-            Debug.Log("[DPS Meter][HEAL LOCALIZATION SKILL] key=" + key + " entry=<missing>");
-            return;
-        }
-
-        object skillData = skills[key];
-        Debug.Log("[DPS Meter][HEAL LOCALIZATION SKILL] key=" + key +
-            " entryType=" + (skillData == null ? "<null>" : skillData.GetType().FullName));
-        TraceHealingLocalizationObject("skill:" + key, skillData);
-    }
-
-
-    private static void TraceHealingLocalizationObject(string label, object value)
-    {
-        if (value == null)
-        {
-            Debug.Log("[DPS Meter][HEAL LOCALIZATION OBJECT] " + label + " <null>");
-            return;
-        }
-
-        Type type = value.GetType();
-        Debug.Log("[DPS Meter][HEAL LOCALIZATION OBJECT] " + label + " type=" + type.FullName);
-
-        FieldInfo[] fields = type.GetFields(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-
-            if (field.IsStatic)
-            {
-                continue;
-            }
-
-            object fieldValue = null;
-            try
-            {
-                fieldValue = field.GetValue(value);
-            }
-            catch (Exception)
-            {
-            }
-
-            string valueText = fieldValue == null ? "<null>" : fieldValue.GetType().FullName;
-            if (fieldValue is string || field.FieldType.IsPrimitive || field.FieldType.IsEnum)
-            {
-                valueText = fieldValue == null ? "<null>" : fieldValue.ToString();
-            }
-
-            Debug.Log("[DPS Meter][HEAL LOCALIZATION OBJECT FIELD] " + label + "." + field.Name +
-                " type=" + field.FieldType.FullName + " value=" + valueText);
-        }
-    }
-
-
-    private static bool IsHealingNameMethod(string methodName)
-    {
-        return methodName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            methodName.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            methodName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            methodName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            methodName.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
 
