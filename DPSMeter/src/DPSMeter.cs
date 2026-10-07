@@ -173,10 +173,33 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         string sourceName = GetHealingSourceName(info.actor);
-        string localizedActorName = TryGetLocalizedHealingActorName(info.actor);
-        if (!string.IsNullOrEmpty(localizedActorName))
+
+        // Passive Stars already have a dedicated resolver. Keep that path
+        // authoritative so a generated actor cannot be renamed by an
+        // unrelated localized parent.
+        string starName = TryGetStarDisplayName(info.actor);
+        if (!string.IsNullOrEmpty(starName))
         {
-            sourceName = localizedActorName;
+            sourceName = starName;
+        }
+        else
+        {
+            // Room Mods are a separate category: walk parents only far enough
+            // to find a confirmed RoomMod_* actor, then resolve that category's
+            // own UI name. Do not apply this parent walk to every healing actor.
+            string roomModName = TryGetLocalizedRoomModName(info.actor);
+            if (!string.IsNullOrEmpty(roomModName))
+            {
+                sourceName = roomModName;
+            }
+            else
+            {
+                string localizedActorName = TryGetLocalizedHealingActorName(info.actor);
+                if (!string.IsNullOrEmpty(localizedActorName))
+                {
+                    sourceName = localizedActorName;
+                }
+            }
         }
 
         string sourceIdentity = GetSkillSlotIdentity(info.actor);
@@ -533,42 +556,67 @@ public sealed class DPSMeter : ModBehaviour
         return source.GetType().Name;
     }
 
-    private string TryGetLocalizedHealingActorName(Actor source)
+    private static string TryGetLocalizedRoomModName(Actor source)
     {
         if (source == null)
         {
             return null;
         }
 
-        // Generated healing actors can inherit their player-facing name from
-        // a parent actor. Resolve the actor first, then walk the confirmed
-        // parent chain using the game's normal UI localization path.
         Actor current = source;
         int depth = 0;
 
         while (current != null && depth < 8)
         {
-            string uiKey = current.GetType().Name + "_Name";
-
-            try
+            string typeName = current.GetType().Name;
+            if (typeName.StartsWith("RoomMod_", StringComparison.OrdinalIgnoreCase))
             {
-                string localizedName;
-                bool resolved = DewLocalization.TryGetUIValue(uiKey, out localizedName);
-                if (resolved && !string.IsNullOrEmpty(localizedName))
+                try
                 {
-                    return localizedName;
+                    string localizedName;
+                    if (DewLocalization.TryGetUIValue(typeName + "_Name", out localizedName) &&
+                        !string.IsNullOrEmpty(localizedName))
+                    {
+                        return localizedName;
+                    }
                 }
-            }
-            catch (Exception)
-            {
+                catch (Exception)
+                {
+                }
+
+                return null;
             }
 
             current = current.parentActor;
             depth++;
         }
 
-        // Keep the existing skill-localization fallback for actors that really
-        // are represented by a skill localization entry.
+        return null;
+    }
+
+    private static string TryGetLocalizedHealingActorName(Actor source)
+    {
+        if (source == null)
+        {
+            return null;
+        }
+
+        // Preserve the pre-Lingering-Aura behavior for actors that are actually
+        // represented by their own UI/skill localization. Parent localization
+        // belongs to the dedicated RoomMod resolver above.
+        try
+        {
+            string localizedName;
+            if (DewLocalization.TryGetUIValue(source.GetType().Name + "_Name", out localizedName) &&
+                !string.IsNullOrEmpty(localizedName))
+            {
+                return localizedName;
+            }
+        }
+        catch (Exception)
+        {
+        }
+
         try
         {
             string skillKey = DewLocalization.GetSkillKey(source.GetType());
