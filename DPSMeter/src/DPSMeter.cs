@@ -666,6 +666,7 @@ public sealed class DPSMeter : ModBehaviour
         if (trace)
         {
             TraceHealingBasicEffects(source);
+            TraceHealingParentMetadata(source);
         }
 
         // Keep the existing skill-localization fallback for actors that really
@@ -882,6 +883,91 @@ public sealed class DPSMeter : ModBehaviour
         {
             WriteDebugLog(
                 "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffects traceException=" +
+                ex.GetType().Name);
+        }
+    }
+
+
+    private static void TraceHealingParentMetadata(Actor source)
+    {
+        if (source == null || source.parentActor == null)
+        {
+            return;
+        }
+
+        Actor parent = source.parentActor;
+        Type type = parent.GetType();
+
+        try
+        {
+            WriteDebugLog(
+                "[DPS Meter][HEAL LOCALIZATION TRACE] parentMetadata type=" +
+                (type.FullName ?? type.Name) +
+                " name=" + (parent.name ?? "<null>"));
+
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            int logged = 0;
+            for (int i = 0; i < fields.Length && logged < 32; i++)
+            {
+                FieldInfo field = fields[i];
+                if (field.IsStatic)
+                {
+                    continue;
+                }
+
+                string fieldName = field.Name;
+                string lowerName = fieldName.ToLowerInvariant();
+                if (lowerName.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                    lowerName.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                    lowerName.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                    lowerName.IndexOf("skill", StringComparison.Ordinal) < 0 &&
+                    lowerName.IndexOf("room", StringComparison.Ordinal) < 0 &&
+                    lowerName.IndexOf("display", StringComparison.Ordinal) < 0 &&
+                    lowerName.IndexOf("title", StringComparison.Ordinal) < 0 &&
+                    lowerName.IndexOf("description", StringComparison.Ordinal) < 0)
+                {
+                    continue;
+                }
+
+                object value;
+                try
+                {
+                    value = field.GetValue(parent);
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog(
+                        "[DPS Meter][HEAL LOCALIZATION TRACE] parentField=" + fieldName +
+                        " readException=" + ex.GetType().Name);
+                    logged++;
+                    continue;
+                }
+
+                string rendered = value == null
+                    ? "<null>"
+                    : value is string || field.FieldType.IsPrimitive || field.FieldType.IsEnum || field.FieldType == typeof(decimal)
+                        ? value.ToString()
+                        : (value.GetType().FullName ?? value.GetType().Name);
+
+                WriteDebugLog(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] parentField=" + fieldName +
+                    " type=" + (field.FieldType.FullName ?? field.FieldType.Name) +
+                    " value=" + rendered);
+                logged++;
+            }
+
+            if (logged == 0)
+            {
+                WriteDebugLog(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] parentMetadata noRelevantFields");
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog(
+                "[DPS Meter][HEAL LOCALIZATION TRACE] parentMetadata traceException=" +
                 ex.GetType().Name);
         }
     }
