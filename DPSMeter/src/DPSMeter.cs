@@ -632,72 +632,76 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         Actor parent = source.parentActor;
-        Type type = parent.GetType();
 
         try
         {
+            Type currentType = parent.GetType();
+            int depth = 0;
+            int logged = 0;
+
             WriteDebugLog(
                 "[DPS Meter][HEAL LOCALIZATION TRACE] parentMetadata type=" +
-                (type.FullName ?? type.Name) +
+                (currentType.FullName ?? currentType.Name) +
                 " name=" + (parent.name ?? "<null>"));
 
-            FieldInfo[] fields = type.GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            int logged = 0;
-            for (int i = 0; i < fields.Length && logged < 32; i++)
+            while (currentType != null && currentType != typeof(object) && logged < 48)
             {
-                FieldInfo field = fields[i];
-                if (field.IsStatic)
-                {
-                    continue;
-                }
+                FieldInfo[] fields = currentType.GetFields(
+                    BindingFlags.Instance |
+                    BindingFlags.Public |
+                    BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
 
-                string fieldName = field.Name;
-                string lowerName = fieldName.ToLowerInvariant();
-                if (lowerName.IndexOf("name", StringComparison.Ordinal) < 0 &&
-                    lowerName.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                    lowerName.IndexOf("key", StringComparison.Ordinal) < 0 &&
-                    lowerName.IndexOf("skill", StringComparison.Ordinal) < 0 &&
-                    lowerName.IndexOf("room", StringComparison.Ordinal) < 0 &&
-                    lowerName.IndexOf("display", StringComparison.Ordinal) < 0 &&
-                    lowerName.IndexOf("title", StringComparison.Ordinal) < 0 &&
-                    lowerName.IndexOf("description", StringComparison.Ordinal) < 0)
+                for (int i = 0; i < fields.Length && logged < 48; i++)
                 {
-                    continue;
-                }
+                    FieldInfo field = fields[i];
+                    if (field.IsStatic)
+                    {
+                        continue;
+                    }
 
-                object value;
-                try
-                {
-                    value = field.GetValue(parent);
-                }
-                catch (Exception ex)
-                {
+                    object value;
+                    try
+                    {
+                        value = field.GetValue(parent);
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteDebugLog(
+                            "[DPS Meter][HEAL LOCALIZATION TRACE] parentField depth=" +
+                            depth +
+                            " field=" + field.Name +
+                            " readException=" + ex.GetType().Name);
+                        logged++;
+                        continue;
+                    }
+
+                    string rendered = value == null
+                        ? "<null>"
+                        : value is string ||
+                          field.FieldType.IsPrimitive ||
+                          field.FieldType.IsEnum ||
+                          field.FieldType == typeof(decimal)
+                            ? value.ToString()
+                            : (value.GetType().FullName ?? value.GetType().Name);
+
                     WriteDebugLog(
-                        "[DPS Meter][HEAL LOCALIZATION TRACE] parentField=" + fieldName +
-                        " readException=" + ex.GetType().Name);
+                        "[DPS Meter][HEAL LOCALIZATION TRACE] parentField depth=" +
+                        depth +
+                        " field=" + field.Name +
+                        " type=" + (field.FieldType.FullName ?? field.FieldType.Name) +
+                        " value=" + rendered);
                     logged++;
-                    continue;
                 }
 
-                string rendered = value == null
-                    ? "<null>"
-                    : value is string || field.FieldType.IsPrimitive || field.FieldType.IsEnum || field.FieldType == typeof(decimal)
-                        ? value.ToString()
-                        : (value.GetType().FullName ?? value.GetType().Name);
-
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] parentField=" + fieldName +
-                    " type=" + (field.FieldType.FullName ?? field.FieldType.Name) +
-                    " value=" + rendered);
-                logged++;
+                currentType = currentType.BaseType;
+                depth++;
             }
 
             if (logged == 0)
             {
                 WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] parentMetadata noRelevantFields");
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] parentMetadata noFields");
             }
         }
         catch (Exception ex)
@@ -707,7 +711,6 @@ public sealed class DPSMeter : ModBehaviour
                 ex.GetType().Name);
         }
     }
-
 
     private static string GetEssenceIdentity(Gem gem)
     {
