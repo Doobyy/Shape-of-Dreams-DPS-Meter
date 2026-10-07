@@ -657,6 +657,42 @@ public sealed class DPSMeter : ModBehaviour
             Debug.Log("[DPS Meter][HEAL LOCALIZATION FIELD] " + field.Name + " type=" + field.FieldType.FullName + " value=" + valueText);
         }
 
+        PropertyInfo dataProperty = type.GetProperty(
+            "data",
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+
+        if (dataProperty != null && dataProperty.GetMethod != null)
+        {
+            object data = null;
+            try
+            {
+                data = dataProperty.GetValue(null, null);
+            }
+            catch (Exception)
+            {
+            }
+
+            TraceHealingLocalizationObject("data", data);
+        }
+
+        FieldInfo buildDataField = type.GetField(
+            "_buildData",
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+
+        if (buildDataField != null)
+        {
+            object buildData = null;
+            try
+            {
+                buildData = buildDataField.GetValue(null);
+            }
+            catch (Exception)
+            {
+            }
+
+            TraceHealingLocalizationObject("_buildData", buildData);
+        }
+
         PropertyInfo[] properties = type.GetProperties(
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -684,6 +720,50 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             Debug.Log("[DPS Meter][HEAL LOCALIZATION PROPERTY] " + property.Name + " type=" + property.PropertyType.FullName + " value=" + valueText);
+        }
+    }
+
+
+    private static void TraceHealingLocalizationObject(string label, object value)
+    {
+        if (value == null)
+        {
+            Debug.Log("[DPS Meter][HEAL LOCALIZATION OBJECT] " + label + " <null>");
+            return;
+        }
+
+        Type type = value.GetType();
+        Debug.Log("[DPS Meter][HEAL LOCALIZATION OBJECT] " + label + " type=" + type.FullName);
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+
+            if (field.IsStatic)
+            {
+                continue;
+            }
+
+            object fieldValue = null;
+            try
+            {
+                fieldValue = field.GetValue(value);
+            }
+            catch (Exception)
+            {
+            }
+
+            string valueText = fieldValue == null ? "<null>" : fieldValue.GetType().FullName;
+            if (fieldValue is string || field.FieldType.IsPrimitive || field.FieldType.IsEnum)
+            {
+                valueText = fieldValue == null ? "<null>" : fieldValue.ToString();
+            }
+
+            Debug.Log("[DPS Meter][HEAL LOCALIZATION OBJECT FIELD] " + label + "." + field.Name +
+                " type=" + field.FieldType.FullName + " value=" + valueText);
         }
     }
 
