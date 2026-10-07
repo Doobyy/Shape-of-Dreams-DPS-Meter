@@ -830,7 +830,7 @@ public sealed class DPSMeter : ModBehaviour
             SkillTrigger skill = current.firstTrigger as SkillTrigger;
             string skillText = skill == null ? "null" : skill.GetType().Name;
             string triggerText = current.firstTrigger == null ? "null" : current.firstTrigger.GetType().Name;
-            WriteDebugLog("[v5.32] actor[ + depth + "] type=" + type.Name + " name=" + current.name + " firstTrigger=" + triggerText + " skill=" + skillText);
+            WriteDebugLog("[v5.32] actor[" + depth + "] type=" + type.Name + " name=" + current.name + " firstTrigger=" + triggerText + " skill=" + skillText);
 
             string localized = null;
             try
@@ -842,7 +842,7 @@ public sealed class DPSMeter : ModBehaviour
             }
             if (!string.IsNullOrEmpty(localized))
             {
-                WriteDebugLog("[v5.32]   uiName= + localized);
+                WriteDebugLog("[v5.32]   uiName=" + localized);
             }
 
             FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -866,7 +866,7 @@ public sealed class DPSMeter : ModBehaviour
                     object value = field.GetValue(current);
                     if (value == null)
                     {
-                        WriteDebugLog("[v5.32]   field= + field.Name + " value=null");
+                        WriteDebugLog("[v5.32]   field=" + field.Name + " value=null");
                     }
                     else
                     {
