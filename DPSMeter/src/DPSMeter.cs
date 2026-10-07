@@ -639,6 +639,30 @@ public sealed class DPSMeter : ModBehaviour
             }
         }
 
+        if (trace)
+        {
+            Actor current = source;
+            int depth = 0;
+
+            while (current != null && depth < 8)
+            {
+                string parentType = current.GetType().FullName ?? current.GetType().Name;
+                string parentName = current.name ?? "<null>";
+
+                WriteDebugLog(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorChain depth=" + depth +
+                    " type=" + parentType +
+                    " name=" + parentName +
+                    " parent=" +
+                    (current.parentActor == null
+                        ? "<null>"
+                        : current.parentActor.GetType().FullName ?? current.parentActor.GetType().Name));
+
+                current = current.parentActor;
+                depth++;
+            }
+        }
+
         // Keep the existing skill-localization fallback for actors that really
         // are represented by a skill localization entry.
         try
