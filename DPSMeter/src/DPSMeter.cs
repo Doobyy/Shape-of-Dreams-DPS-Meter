@@ -38,8 +38,24 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static void ClearDebugLog()
+    {
+        try
+        {
+            lock (_debugLogLock)
+            {
+                File.WriteAllText(_debugLogPath, string.Empty);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.Log("[DPS Meter] Failed to clear debug log: " + ex.GetType().Name);
+        }
+    }
+
     private void Awake()
     {
+        ClearDebugLog();
         Instance = this;
         _data = new DpsData();
         _overlay = gameObject.AddComponent<DpsOverlay>();
