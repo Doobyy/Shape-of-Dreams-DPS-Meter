@@ -21,7 +21,7 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private static bool _lingeringAuraIconTraceLogged;
-    private static bool _bismuthHealTraceLogged;
+    private static int _bismuthHealTraceCount;
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -695,37 +695,25 @@ public sealed class DPSMeter : ModBehaviour
 
     private static void TraceBismuthHealingSource(Actor source, string resolvedIdentity, string resolvedName, Gem resolvedGem)
     {
-        if (_bismuthHealTraceLogged || source == null)
+        if (source == null || _bismuthHealTraceCount >= 3)
         {
             return;
         }
 
+        // Only capture events whose final attribution is actually Bismuth.
+        // Other heals can legitimately originate from Bismuth-owned actors
+        // while resolving to a Gem or skill source.
+        if (!string.Equals(resolvedName, "Bismuth", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(resolvedIdentity, "Bismuth", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _bismuthHealTraceCount++;
         Actor current = source;
         int depth = 0;
-        bool relevant = false;
-        while (current != null && depth < 8)
-        {
-            string actorName = current.name;
-            string typeName = current.GetType().Name;
-            if ((actorName != null && actorName.IndexOf("bismuth", StringComparison.OrdinalIgnoreCase) >= 0) ||
-                typeName.IndexOf("bismuth", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                relevant = true;
-                break;
-            }
-
-            current = current.parentActor;
-            depth++;
-        }
-
-        if (!relevant)
-        {
-            return;
-        }
-
-        _bismuthHealTraceLogged = true;
-        WriteDebugLog("[v5.31] Bismuth heal trace start");
-        WriteDebugLog("[v5.31] resolved identity=" + (resolvedIdentity ?? "null") + " name=" + (resolvedName ?? "null") + " gem=" + (resolvedGem == null ? "null" : resolvedGem.name));
+        WriteDebugLog("[v5.32] Bismuth-attributed heal trace " + _bismuthHealTraceCount);
+        WriteDebugLog("[v5.32] resolved identity=" + (resolvedIdentity ?? "null") + " name=" + (resolvedName ?? "null") + " gem=" + (resolvedGem == null ? "null" : resolvedGem.name));
 
         current = source;
         depth = 0;
@@ -735,7 +723,7 @@ public sealed class DPSMeter : ModBehaviour
             SkillTrigger skill = current.firstTrigger as SkillTrigger;
             string skillText = skill == null ? "null" : skill.GetType().Name;
             string triggerText = current.firstTrigger == null ? "null" : current.firstTrigger.GetType().Name;
-            WriteDebugLog("[v5.31] actor[" + depth + "] type=" + type.Name + " name=" + current.name + " firstTrigger=" + triggerText + " skill=" + skillText);
+            WriteDebugLog("[v5.32] actor[ + depth + "] type=" + type.Name + " name=" + current.name + " firstTrigger=" + triggerText + " skill=" + skillText);
 
             string localized = null;
             try
@@ -747,7 +735,7 @@ public sealed class DPSMeter : ModBehaviour
             }
             if (!string.IsNullOrEmpty(localized))
             {
-                WriteDebugLog("[v5.31]   uiName=" + localized);
+                WriteDebugLog("[v5.32]   uiName= + localized);
             }
 
             FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -771,7 +759,7 @@ public sealed class DPSMeter : ModBehaviour
                     object value = field.GetValue(current);
                     if (value == null)
                     {
-                        WriteDebugLog("[v5.31]   field=" + field.Name + " value=null");
+                        WriteDebugLog("[v5.32]   field= + field.Name + " value=null");
                     }
                     else
                     {
@@ -798,7 +786,7 @@ public sealed class DPSMeter : ModBehaviour
             depth++;
         }
 
-        WriteDebugLog("[v5.31] Bismuth heal trace end");
+        WriteDebugLog("[v5.32] Bismuth-attributed heal trace end");
     }
 
 
