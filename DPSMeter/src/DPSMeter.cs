@@ -31,7 +31,7 @@ public sealed class DPSMeter : ModBehaviour
             {
                 File.AppendAllText(
                     _debugLogPath,
-                    "[v4.96]" + message + Environment.NewLine);
+                    "[v4.97]" + message + Environment.NewLine);
             }
         }
         catch (Exception ex)
