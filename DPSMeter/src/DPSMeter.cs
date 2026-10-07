@@ -497,8 +497,7 @@ public sealed class DPSMeter : ModBehaviour
             string displayName = DewLocalization.GetStarName(key);
             return string.IsNullOrEmpty(displayName) ? null : displayName;
         }
-        catch (Exception)
-        {
+        catch (Exception)        {
             return null;
         }
     }
@@ -692,6 +691,188 @@ public sealed class DPSMeter : ModBehaviour
 
     private static int _genericHealOverTimeTraceCount;
 
+    private static void TraceGenericHealOverTimeDefinition(Actor source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        Type type = source.GetType();
+        WriteDebugLog("[v5.38] genericDefinition type=" + type.Name);
+
+        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            string fieldName = field.Name.ToLowerInvariant();
+            if (fieldName.IndexOf("heal", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("effect", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("source", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("origin", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("config", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("data", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("definition", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("id", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("display", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("text", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("description", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("icon", StringComparison.Ordinal) < 0 &&
+                fieldName.IndexOf("sprite", StringComparison.Ordinal) < 0)
+            {
+                continue;
+            }
+
+            try
+            {
+                object value = field.GetValue(source);
+                string valueText = DescribeDiagnosticValue(value);
+                WriteDebugLog("[v5.38]   defField=" + field.Name + " type=" + field.FieldType.Name + " value=" + valueText);
+                GameObject gameObject = value as GameObject;
+                if (gameObject != null)
+                {
+                    TraceDiagnosticGameObject(gameObject, field.Name);
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+            {
+                continue;
+            }
+
+            string propertyName = property.Name.ToLowerInvariant();
+            if (propertyName.IndexOf("heal", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("effect", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("source", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("origin", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("config", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("data", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("definition", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("id", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("display", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("text", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("description", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("icon", StringComparison.Ordinal) < 0 &&
+                propertyName.IndexOf("sprite", StringComparison.Ordinal) < 0)
+            {
+                continue;
+            }
+
+            try
+            {
+                object value = property.GetValue(source, null);
+                WriteDebugLog("[v5.38]   defProp=" + property.Name + " type=" + property.PropertyType.Name + " value=" + DescribeDiagnosticValue(value));
+                GameObject gameObject = value as GameObject;
+                if (gameObject != null)
+                {
+                    TraceDiagnosticGameObject(gameObject, property.Name);
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
+    private static string DescribeDiagnosticValue(object value)
+    {
+        if (value == null)
+        {
+            return "null";
+        }
+
+        if (value is string text)
+        {
+            return "[" + text + "]";
+        }
+
+        if (value is UnityEngine.Object unityObject)
+        {
+            return value.GetType().Name + "(" + unityObject.name + ")";
+        }
+
+        if (value.GetType().IsPrimitive || value is decimal || value is Enum)
+        {
+            return value.GetType().Name + "(" + value + ")";
+        }
+
+        return value.GetType().Name;
+    }
+
+    private static void TraceDiagnosticGameObject(GameObject gameObject, string fieldName)
+    {
+        if (gameObject == null)
+        {
+            return;
+        }
+
+        WriteDebugLog("[v5.38]   defObject=" + fieldName + " name=" + gameObject.name);
+        Component[] components = gameObject.GetComponentsInChildren<Component>(true);
+        WriteDebugLog("[v5.38]   defObjectComponents=" + components.Length);
+
+        int logged = 0;
+        for (int i = 0; i < components.Length && logged < 24; i++)
+        {
+            Component component = components[i];
+            if (component == null)
+            {
+                continue;
+            }
+
+            WriteDebugLog("[v5.38]     defComponent=" + component.GetType().Name + " object=" + component.gameObject.name);
+            logged++;
+
+            FieldInfo[] componentFields = component.GetType().GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            for (int j = 0; j < componentFields.Length; j++)
+            {
+                FieldInfo componentField = componentFields[j];
+                string componentFieldName = componentField.Name.ToLowerInvariant();
+                if (componentFieldName.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("id", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("display", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("text", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("description", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("source", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("effect", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("heal", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("icon", StringComparison.Ordinal) < 0 &&
+                    componentFieldName.IndexOf("sprite", StringComparison.Ordinal) < 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = componentField.GetValue(component);
+                    WriteDebugLog("[v5.38]       compField=" + componentField.Name + " type=" + componentField.FieldType.Name + " value=" + DescribeDiagnosticValue(value));
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+    }
+
     private static void TraceGenericHealOverTimeSource(Actor source)
     {
         if (source == null || _genericHealOverTimeTraceCount >= 3)
@@ -719,14 +900,15 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _genericHealOverTimeTraceCount++;
-        WriteDebugLog("[v5.36] GenericHealOverTime trace " + _genericHealOverTimeTraceCount);
+        TraceGenericHealOverTimeDefinition(match);
+        WriteDebugLog("[v5.38] GenericHealOverTime trace " + _genericHealOverTimeTraceCount);
 
         Actor current = source;
         int depth = 0;
         while (current != null && depth < 8)
         {
             Type type = current.GetType();
-            WriteDebugLog("[v5.36] actor[" + depth + "] type=" + type.Name + " name=" + current.name);
+            WriteDebugLog("[v5.38] actor[" + depth + "] type=" + type.Name + " name=" + current.name);
 
             string localized = null;
             try
@@ -734,7 +916,7 @@ public sealed class DPSMeter : ModBehaviour
                 if (DewLocalization.TryGetUIValue(type.Name + "_Name", out localized) &&
                     !string.IsNullOrEmpty(localized))
                 {
-                    WriteDebugLog("[v5.36]   uiName=" + localized);
+                    WriteDebugLog("[v5.38]   uiName=" + localized);
                 }
             }
             catch (Exception)
@@ -744,7 +926,7 @@ public sealed class DPSMeter : ModBehaviour
             SkillTrigger skill = current.firstTrigger as SkillTrigger;
             if (skill != null)
             {
-                WriteDebugLog("[v5.36]   firstTrigger=" + skill.GetType().Name);
+                WriteDebugLog("[v5.38]   firstTrigger=" + skill.GetType().Name);
             }
 
             FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -781,7 +963,7 @@ public sealed class DPSMeter : ModBehaviour
                             : (gemValue != null
                                 ? "Gem(" + gemValue.name + ")"
                                 : value.GetType().Name));
-                    WriteDebugLog("[v5.36]   field=" + field.Name + " value=" + valueText);
+                    WriteDebugLog("[v5.38]   field=" + field.Name + " value=" + valueText);
                 }
                 catch (Exception)
                 {
@@ -793,7 +975,7 @@ public sealed class DPSMeter : ModBehaviour
                 Type baseType = type.BaseType;
                 if (baseType != null)
                 {
-                    WriteDebugLog("[v5.36] pickupBase=" + baseType.Name);
+                    WriteDebugLog("[v5.38] pickupBase=" + baseType.Name);
                 }
 
                 string[] pickupKeys = new string[]
@@ -819,7 +1001,7 @@ public sealed class DPSMeter : ModBehaviour
                         if (DewLocalization.TryGetUIValue(pickupKeys[k], out pickupLocalized) &&
                             !string.IsNullOrEmpty(pickupLocalized))
                         {
-                            WriteDebugLog("[v5.36] uiKey=" + pickupKeys[k] + " value=" + pickupLocalized);
+                            WriteDebugLog("[v5.38] uiKey=" + pickupKeys[k] + " value=" + pickupLocalized);
                         }
                     }
                     catch (Exception)
@@ -851,7 +1033,7 @@ public sealed class DPSMeter : ModBehaviour
 
                 if (persistentData != null)
                 {
-                    WriteDebugLog("[v5.36] persistentData count=" + persistentData.Count);
+                    WriteDebugLog("[v5.38] persistentData count=" + persistentData.Count);
                     foreach (System.Collections.DictionaryEntry entry in persistentData)
                     {
                         string valueText = entry.Value == null ? "null" : entry.Value.GetType().Name;
@@ -859,13 +1041,13 @@ public sealed class DPSMeter : ModBehaviour
                         {
                             valueText += "(" + unityObject.name + ")";
                         }
-                        WriteDebugLog("[v5.36]   persistentData[" + entry.Key + "]=" + valueText);
+                        WriteDebugLog("[v5.38]   persistentData[" + entry.Key + "]=" + valueText);
                     }
                 }
 
                 if (persistentSyncedData != null)
                 {
-                    WriteDebugLog("[v5.36] persistentSyncedData count=" + persistentSyncedData.Count);
+                    WriteDebugLog("[v5.38] persistentSyncedData count=" + persistentSyncedData.Count);
                     foreach (System.Collections.DictionaryEntry entry in persistentSyncedData)
                     {
                         string valueText = entry.Value == null ? "null" : entry.Value.GetType().Name;
@@ -873,7 +1055,7 @@ public sealed class DPSMeter : ModBehaviour
                         {
                             valueText += "(" + unityObject.name + ")";
                         }
-                        WriteDebugLog("[v5.36]   persistentSyncedData[" + entry.Key + "]=" + valueText);
+                        WriteDebugLog("[v5.38]   persistentSyncedData[" + entry.Key + "]=" + valueText);
                     }
                 }
 
@@ -918,7 +1100,7 @@ public sealed class DPSMeter : ModBehaviour
                             {
                                 valueText += "(" + unityObject.name + ")";
                             }
-                            WriteDebugLog("[v5.36]   field=" + field.Name + " type=" + field.FieldType.Name + " value=" + valueText);
+                            WriteDebugLog("[v5.38]   field=" + field.Name + " type=" + field.FieldType.Name + " value=" + valueText);
                         }
                         catch (Exception)
                         {
@@ -949,12 +1131,12 @@ public sealed class DPSMeter : ModBehaviour
                         GameObject effectObject = field.GetValue(current) as GameObject;
                         if (effectObject == null)
                         {
-                            WriteDebugLog("[v5.36] effect=" + field.Name + " null");
+                            WriteDebugLog("[v5.38] effect=" + field.Name + " null");
                             continue;
                         }
 
                         Component[] components = effectObject.GetComponents<Component>();
-                        WriteDebugLog("[v5.36] effect=" + field.Name + " object=" + effectObject.name + " components=" + components.Length);
+                        WriteDebugLog("[v5.38] effect=" + field.Name + " object=" + effectObject.name + " components=" + components.Length);
 
                         for (int componentIndex = 0; componentIndex < components.Length; componentIndex++)
                         {
@@ -964,7 +1146,7 @@ public sealed class DPSMeter : ModBehaviour
                                 continue;
                             }
 
-                            WriteDebugLog("[v5.36]   component=" + component.GetType().Name);
+                            WriteDebugLog("[v5.38]   component=" + component.GetType().Name);
 
                             Type componentType = component.GetType();
                             FieldInfo[] componentFields = componentType.GetFields(
@@ -997,9 +1179,8 @@ public sealed class DPSMeter : ModBehaviour
                                     string valueText = value == null ? "null" : value.GetType().Name;
                                     if (value is UnityEngine.Object unityObject)
                                     {
-                                        valueText += "(" + unityObject.name + ")";
-                                    }
-                                    WriteDebugLog("[v5.36]     field=" + componentField.Name + " type=" + componentField.FieldType.Name + " value=" + valueText);
+                                        valueText += "(" + unityObject.name + ")";                                    }
+                                    WriteDebugLog("[v5.38]     field=" + componentField.Name + " type=" + componentField.FieldType.Name + " value=" + valueText);
                                 }
                                 catch (Exception)
                                 {
@@ -1017,7 +1198,7 @@ public sealed class DPSMeter : ModBehaviour
             depth++;
         }
 
-        WriteDebugLog("[v5.36] GenericHealOverTime pickup trace end");
+        WriteDebugLog("[v5.38] GenericHealOverTime pickup trace end");
     }
 
 
@@ -1497,8 +1678,7 @@ public sealed class DPSMeter : ModBehaviour
             }
         }
 
-        List<Actor> children = instance.children;
-        if (children == null)
+        List<Actor> children = instance.children;        if (children == null)
         {
             return DpsData.DamageScalingType.None;
         }
