@@ -31,7 +31,7 @@ public sealed class DPSMeter : ModBehaviour
             {
                 File.AppendAllText(
                     _debugLogPath,
-                    "[v4.94]" + message + Environment.NewLine);
+                    "[v4.96]" + message + Environment.NewLine);
             }
         }
         catch (Exception ex)
@@ -39,9 +39,25 @@ public sealed class DPSMeter : ModBehaviour
             Debug.Log("[DPS Meter] Failed to write debug log: " + ex.GetType().Name);
         }
     }
+    private static void ClearDebugLog()
+    {
+        try
+        {
+            lock (_debugLogLock)
+            {
+                File.WriteAllText(_debugLogPath, string.Empty);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.Log("[DPS Meter] Failed to clear debug log: " + ex.GetType().Name);
+        }
+    }
+
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private void Awake()
     {
+        ClearDebugLog();
         Instance = this;
         _data = new DpsData();
         _overlay = gameObject.AddComponent<DpsOverlay>();
@@ -446,68 +462,6 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
-    private static void TraceDewLocalizationGemNames(Gem gem)
-    {
-        if (gem == null)
-        {
-            return;
-        }
-
-        string originalName = gem.GetOriginalName();
-        string gemName = gem.name;
-
-        try
-        {
-            string localizedFromGem = DewLocalization.GetGemName(gem);
-            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(Gem) value=" + (localizedFromGem ?? "<null>"));
-        }
-        catch (Exception)
-        {
-            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(Gem) threw");
-        }
-
-        try
-        {
-            string localizedFromOriginal = DewLocalization.GetGemName(originalName);
-            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(originalName) value=" + (localizedFromOriginal ?? "<null>"));
-        }
-        catch (Exception)
-        {
-            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemName(originalName) threw");
-        }
-
-        try
-        {
-            string nameKey = DewLocalization.GetGemNameKey(gem);
-            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemNameKey(Gem) value=" + (nameKey ?? "<null>"));
-        }
-        catch (Exception)
-        {
-            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemNameKey(Gem) threw");
-        }
-
-        try
-        {
-            string gemKeyFromType = DewLocalization.GetGemKey(gem.GetType());
-            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemKey(Type) value=" + (gemKeyFromType ?? "<null>"));
-        }
-        catch (Exception)
-        {
-            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemKey(Type) threw");
-        }
-
-        try
-        {
-            string descriptionKey = DewLocalization.GetGemDescriptionKey(gem);
-            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemDescriptionKey(Gem) value=" + (descriptionKey ?? "<null>"));
-        }
-        catch (Exception)
-        {
-            WriteDebugLog("[DPS Meter][ESSENCE NAME TRACE] DewLocalization.GetGemDescriptionKey(Gem) threw");
-        }
-    }
-
-
     private static string TryGetStarDisplayName(Actor source)
     {
         if (source == null)
@@ -612,60 +566,19 @@ public sealed class DPSMeter : ModBehaviour
         {
             string localizedName;
             bool resolved = DewLocalization.TryGetUIValue(uiKey, out localizedName);
-
-            if (trace)
-            {
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
-                    " actorName=" + (source.name ?? "<null>") +
-                    " uiKey=" + uiKey +
-                    " uiResolved=" + resolved +
-                    " uiValue=" + (localizedName ?? "<null>"));
-            }
-
             if (resolved && !string.IsNullOrEmpty(localizedName))
             {
                 return localizedName;
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            if (trace)
-            {
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
-                    " uiKey=" + uiKey +
-                    " uiLookupException=" + ex.GetType().Name);
-            }
         }
 
+        // The confirmed next reverse-engineering target for this actor is its
+        // parent actor. Keep this diagnostic focused on that object only.
         if (trace)
         {
-            Actor current = source;
-            int depth = 0;
-
-            while (current != null && depth < 8)
-            {
-                string parentType = current.GetType().FullName ?? current.GetType().Name;
-                string parentName = current.name ?? "<null>";
-
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorChain depth=" + depth +
-                    " type=" + parentType +
-                    " name=" + parentName +
-                    " parent=" +
-                    (current.parentActor == null
-                        ? "<null>"
-                        : current.parentActor.GetType().FullName ?? current.parentActor.GetType().Name));
-
-                current = current.parentActor;
-                depth++;
-            }
-        }
-
-        if (trace)
-        {
-            TraceHealingBasicEffects(source);
             TraceHealingParentMetadata(source);
         }
 
@@ -681,56 +594,20 @@ public sealed class DPSMeter : ModBehaviour
                 displayName = DewLocalization.GetSkillName(skillKey, 0);
             }
 
-            if (trace)
-            {
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
-                    " skillKey=" + (skillKey ?? "<null>") +
-                    " skillValue=" + (displayName ?? "<null>"));
-            }
-
             SkillTrigger skillTrigger = source.firstTrigger as SkillTrigger;
-
-            if (trace)
-            {
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
-                    " firstTrigger=" +
-                    (source.firstTrigger == null
-                        ? "<null>"
-                        : source.firstTrigger.GetType().FullName ?? source.firstTrigger.GetType().Name));
-            }
-
             if (skillTrigger != null)
             {
                 try
                 {
-                    string skillNameKey = DewLocalization.GetSkillNameKey(skillTrigger, 0);
                     string skillNameFromTrigger = DewLocalization.GetSkillName(skillTrigger, 0);
-
-                    if (trace)
-                    {
-                        WriteDebugLog(
-                            "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
-                            " triggerType=" + skillTrigger.GetType().Name +
-                            " triggerNameKey=" + (skillNameKey ?? "<null>") +
-                            " triggerName=" + (skillNameFromTrigger ?? "<null>"));
-                    }
-
                     if (!string.IsNullOrEmpty(skillNameFromTrigger) &&
                         !skillNameFromTrigger.StartsWith("skills.!", StringComparison.Ordinal))
                     {
                         return skillNameFromTrigger;
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    if (trace)
-                    {
-                        WriteDebugLog(
-                            "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
-                            " triggerLookupException=" + ex.GetType().Name);
-                    }
                 }
             }
 
@@ -740,153 +617,12 @@ public sealed class DPSMeter : ModBehaviour
                 return displayName;
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            if (trace)
-            {
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
-                    " skillLookupException=" + ex.GetType().Name);
-            }
-        }
-
-        if (trace)
-        {
-            WriteDebugLog(
-                "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
-                " result=<unresolved>");
         }
 
         return null;
     }
-
-
-    private static void TraceHealingBasicEffects(Actor source)
-    {
-        if (source == null)
-        {
-            return;
-        }
-
-        try
-        {
-            Type actorType = source.GetType();
-            FieldInfo basicEffectsField = actorType.GetField(
-                "_basicEffects",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            if (basicEffectsField == null)
-            {
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffects field=<missing> actorType=" +
-                    actorType.Name);
-                return;
-            }
-
-            object basicEffectsValue = basicEffectsField.GetValue(source);
-            System.Collections.IEnumerable basicEffects = basicEffectsValue as System.Collections.IEnumerable;
-
-            if (basicEffects == null)
-            {
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffects value=<null-or-not-enumerable> actorType=" +
-                    actorType.Name);
-                return;
-            }
-
-            int index = 0;
-            foreach (object effect in basicEffects)
-            {
-                if (effect == null)
-                {
-                    WriteDebugLog(
-                        "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffect[" + index + "]=<null>");
-                    index++;
-                    if (index >= 8)
-                    {
-                        break;
-                    }
-                    continue;
-                }
-
-                Type effectType = effect.GetType();
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffect[" + index + "] type=" +
-                    (effectType.FullName ?? effectType.Name));
-
-                FieldInfo[] fields = effectType.GetFields(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-                int fieldCount = 0;
-                for (int i = 0; i < fields.Length && fieldCount < 24; i++)
-                {
-                    FieldInfo field = fields[i];
-                    if (field.IsStatic)
-                    {
-                        continue;
-                    }
-
-                    object value;
-                    try
-                    {
-                        value = field.GetValue(effect);
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteDebugLog(
-                            "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffect[" + index + "] field=" +
-                            field.Name + " readException=" + ex.GetType().Name);
-                        fieldCount++;
-                        continue;
-                    }
-
-                    string rendered;
-                    if (value == null)
-                    {
-                        rendered = "<null>";
-                    }
-                    else if (value is string)
-                    {
-                        rendered = (string)value;
-                    }
-                    else if (field.FieldType.IsPrimitive || field.FieldType.IsEnum ||
-                             field.FieldType == typeof(decimal))
-                    {
-                        rendered = value.ToString();
-                    }
-                    else
-                    {
-                        rendered = value.GetType().FullName ?? value.GetType().Name;
-                    }
-
-                    WriteDebugLog(
-                        "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffect[" + index + "] field=" +
-                        field.Name + " type=" + field.FieldType.FullName + " value=" + rendered);
-                    fieldCount++;
-                }
-
-                index++;
-                if (index >= 8)
-                {
-                    break;
-                }
-            }
-
-            if (index == 0)
-            {
-                WriteDebugLog(
-                    "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffects count=0 actorType=" +
-                    actorType.Name);
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog(
-                "[DPS Meter][HEAL LOCALIZATION TRACE] basicEffects traceException=" +
-                ex.GetType().Name);
-        }
-    }
-
 
     private static void TraceHealingParentMetadata(Actor source)
     {
@@ -970,301 +706,6 @@ public sealed class DPSMeter : ModBehaviour
                 "[DPS Meter][HEAL LOCALIZATION TRACE] parentMetadata traceException=" +
                 ex.GetType().Name);
         }
-    }
-
-
-    private static void TraceHealingEventReferences(EventInfoHeal info)
-    {
-        object boxedInfo = info;
-        Type type = boxedInfo.GetType();
-
-        FieldInfo[] fields = type.GetFields(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-
-            if (field.IsStatic || field.FieldType.IsPrimitive ||
-                field.FieldType.IsEnum || field.FieldType == typeof(string) ||
-                field.FieldType == typeof(decimal) ||
-                typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType))
-            {
-                continue;
-            }
-
-            try
-            {
-                object value = field.GetValue(boxedInfo);
-                LogHealingEventReference("field", field.Name, field.FieldType, value);
-            }
-            catch (Exception)
-            {
-            }
-        }
-
-        PropertyInfo[] properties = type.GetProperties(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        for (int i = 0; i < properties.Length; i++)
-        {
-            PropertyInfo property = properties[i];
-
-            if (property.GetIndexParameters().Length != 0 ||
-                property.GetMethod == null ||
-                property.GetMethod.IsStatic ||
-                property.PropertyType.IsPrimitive ||
-                property.PropertyType.IsEnum ||
-                property.PropertyType == typeof(string) ||
-                property.PropertyType == typeof(decimal) ||
-                typeof(UnityEngine.Object).IsAssignableFrom(property.PropertyType))
-            {
-                continue;
-            }
-
-            try
-            {
-                object value = property.GetValue(boxedInfo, null);
-                LogHealingEventReference("property", property.Name, property.PropertyType, value);
-            }
-            catch (Exception)
-            {
-            }
-        }
-    }
-
-    private static void LogHealingEventReference(
-        string memberKind,
-        string memberName,
-        Type declaredType,
-        object value)
-    {
-        if (value == null)
-        {
-            return;
-        }
-
-        string valueType = value.GetType().FullName ?? value.GetType().Name;
-        string valueName = null;
-
-        try
-        {
-            PropertyInfo nameProperty = value.GetType().GetProperty(
-                "name",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            if (nameProperty != null &&
-                nameProperty.GetIndexParameters().Length == 0 &&
-                nameProperty.GetMethod != null &&
-                nameProperty.PropertyType == typeof(string))
-            {
-                valueName = nameProperty.GetValue(value, null) as string;
-            }
-        }
-        catch (Exception)
-        {
-        }
-
-        Debug.Log(
-            "[DPS Meter][HEAL EVENT REF] " +
-            memberKind + "=" + memberName +
-            " declaredType=" + (declaredType.FullName ?? declaredType.Name) +
-            " valueType=" + valueType +
-            " valueName=" + (valueName ?? "<null>"));
-
-        if (value is System.Collections.IEnumerable enumerable &&
-            !(value is string))
-        {
-            int index = 0;
-            foreach (object item in enumerable)
-            {
-                if (item == null)
-                {
-                    index++;
-                    continue;
-                }
-
-                Type itemType = item.GetType();
-                string itemName = null;
-
-                try
-                {
-                    PropertyInfo itemNameProperty = itemType.GetProperty(
-                        "name",
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-                    if (itemNameProperty != null &&
-                        itemNameProperty.GetIndexParameters().Length == 0 &&
-                        itemNameProperty.GetMethod != null &&
-                        itemNameProperty.PropertyType == typeof(string))
-                    {
-                        itemName = itemNameProperty.GetValue(item, null) as string;
-                    }
-                }
-                catch (Exception)
-                {
-                }
-
-                Debug.Log(
-                    "[DPS Meter][HEAL EVENT REF ITEM] " +
-                    "member=" + memberName +
-                    " index=" + index +
-                    " itemType=" + (itemType.FullName ?? itemType.Name) +
-                    " itemName=" + (itemName ?? "<null>"));
-
-                TraceHealingReferenceMembers(item, memberName + "[" + index + "]");
-                index++;
-
-                if (index >= 16)
-                {
-                    break;
-                }
-            }
-        }
-        else
-        {
-            TraceHealingReferenceMembers(value, memberName);
-        }
-    }
-
-    private static void TraceHealingReferenceMembers(object target, string path)
-    {
-        var seen = new List<object>();
-        TraceHealingReferenceMembersRecursive(target, path, 0, seen);
-    }
-
-    private static void TraceHealingReferenceMembersRecursive(
-        object target,
-        string path,
-        int depth,
-        List<object> seen)
-    {
-        if (target == null || depth > 3)
-        {
-            return;
-        }
-
-        for (int i = 0; i < seen.Count; i++)
-        {
-            if (object.ReferenceEquals(seen[i], target))
-            {
-                return;
-            }
-        }
-
-        seen.Add(target);
-
-        Type type = target.GetType();
-
-        while (type != null && type != typeof(object))
-        {
-            FieldInfo[] fields = type.GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                BindingFlags.DeclaredOnly);
-
-            for (int i = 0; i < fields.Length; i++)
-            {
-                FieldInfo field = fields[i];
-
-                if (field.IsStatic || field.FieldType.IsPrimitive ||
-                    field.FieldType.IsEnum || field.FieldType == typeof(string) ||
-                    field.FieldType == typeof(decimal) ||
-                    typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType) ||
-                    typeof(Delegate).IsAssignableFrom(field.FieldType))
-                {
-                    continue;
-                }
-
-                try
-                {
-                    object value = field.GetValue(target);
-                    TraceHealingReferenceValue(
-                        value,
-                        path + "." + field.Name,
-                        field.FieldType,
-                        depth,
-                        seen);
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            type = type.BaseType;
-        }
-    }
-
-    private static void TraceHealingReferenceValue(
-        object value,
-        string path,
-        Type declaredType,
-        int depth,
-        List<object> seen)
-    {
-        if (value == null)
-        {
-            return;
-        }
-
-        string valueType = value.GetType().FullName ?? value.GetType().Name;
-
-        Debug.Log(
-            "[DPS Meter][HEAL EVENT REF DETAIL] " +
-            "path=" + path +
-            " declaredType=" + (declaredType.FullName ?? declaredType.Name) +
-            " valueType=" + valueType);
-
-        if (depth >= 3)
-        {
-            return;
-        }
-
-        if (value is System.Collections.IEnumerable enumerable &&
-            !(value is string))
-        {
-            int index = 0;
-            foreach (object item in enumerable)
-            {
-                if (item != null)
-                {
-                    Debug.Log(
-                        "[DPS Meter][HEAL EVENT REF ITEM] " +
-                        "path=" + path +
-                        " index=" + index +
-                        " itemType=" + (item.GetType().FullName ?? item.GetType().Name));
-
-                    TraceHealingReferenceMembersRecursive(
-                        item,
-                        path + "[" + index + "]",
-                        depth + 1,
-                        seen);
-                }
-
-                index++;
-                if (index >= 16)
-                {
-                    break;
-                }
-            }
-
-            return;
-        }
-
-        if (value.GetType().IsPrimitive ||
-            value.GetType().IsEnum ||
-            value is string ||
-            value is decimal ||
-            value is Delegate ||
-            typeof(UnityEngine.Object).IsAssignableFrom(value.GetType()))
-        {
-            return;
-        }
-
-        TraceHealingReferenceMembersRecursive(
-            value,
-            path,
-            depth + 1,
-            seen);
     }
 
 
