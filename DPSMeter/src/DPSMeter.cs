@@ -723,14 +723,14 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _genericHealOverTimeTraceCount++;
-        WriteDebugLog("[v5.33] GenericHealOverTime trace " + _genericHealOverTimeTraceCount);
+        WriteDebugLog("[v5.34] GenericHealOverTime trace " + _genericHealOverTimeTraceCount);
 
         Actor current = source;
         int depth = 0;
         while (current != null && depth < 8)
         {
             Type type = current.GetType();
-            WriteDebugLog("[v5.33] actor[" + depth + "] type=" + type.Name + " name=" + current.name);
+            WriteDebugLog("[v5.34] actor[" + depth + "] type=" + type.Name + " name=" + current.name);
 
             string localized = null;
             try
@@ -738,7 +738,7 @@ public sealed class DPSMeter : ModBehaviour
                 if (DewLocalization.TryGetUIValue(type.Name + "_Name", out localized) &&
                     !string.IsNullOrEmpty(localized))
                 {
-                    WriteDebugLog("[v5.33]   uiName=" + localized);
+                    WriteDebugLog("[v5.34]   uiName=" + localized);
                 }
             }
             catch (Exception)
@@ -748,7 +748,7 @@ public sealed class DPSMeter : ModBehaviour
             SkillTrigger skill = current.firstTrigger as SkillTrigger;
             if (skill != null)
             {
-                WriteDebugLog("[v5.33]   firstTrigger=" + skill.GetType().Name);
+                WriteDebugLog("[v5.34]   firstTrigger=" + skill.GetType().Name);
             }
 
             FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -785,10 +785,50 @@ public sealed class DPSMeter : ModBehaviour
                             : (gemValue != null
                                 ? "Gem(" + gemValue.name + ")"
                                 : value.GetType().Name));
-                    WriteDebugLog("[v5.33]   field=" + field.Name + " value=" + valueText);
+                    WriteDebugLog("[v5.34]   field=" + field.Name + " value=" + valueText);
                 }
                 catch (Exception)
                 {
+                }
+            }
+
+            if (string.Equals(type.Name, "Pickup_RegenOrb", StringComparison.OrdinalIgnoreCase))
+            {
+                Type baseType = type.BaseType;
+                if (baseType != null)
+                {
+                    WriteDebugLog("[v5.34] pickupBase=" + baseType.Name);
+                }
+
+                string[] pickupKeys = new string[]
+                {
+                    type.Name + "_Name",
+                    type.Name + "_Description",
+                    type.Name + "_Tooltip",
+                    baseType == null ? null : baseType.Name + "_Name",
+                    baseType == null ? null : baseType.Name + "_Description",
+                    baseType == null ? null : baseType.Name + "_Tooltip"
+                };
+
+                for (int k = 0; k < pickupKeys.Length; k++)
+                {
+                    if (string.IsNullOrEmpty(pickupKeys[k]))
+                    {
+                        continue;
+                    }
+
+                    string pickupLocalized = null;
+                    try
+                    {
+                        if (DewLocalization.TryGetUIValue(pickupKeys[k], out pickupLocalized) &&
+                            !string.IsNullOrEmpty(pickupLocalized))
+                        {
+                            WriteDebugLog("[v5.34] uiKey=" + pickupKeys[k] + " value=" + pickupLocalized);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
                 }
             }
 
@@ -796,7 +836,7 @@ public sealed class DPSMeter : ModBehaviour
             depth++;
         }
 
-        WriteDebugLog("[v5.33] GenericHealOverTime trace end");
+        WriteDebugLog("[v5.34] GenericHealOverTime pickup trace end");
     }
 
 
