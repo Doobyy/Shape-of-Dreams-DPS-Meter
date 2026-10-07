@@ -16,6 +16,7 @@ public sealed class DPSMeter : ModBehaviour
     private DpsOverlay _overlay;
     private bool _subscribed;
     private Hero _currentHero;
+    private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private void Awake()
