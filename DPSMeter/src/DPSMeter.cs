@@ -660,6 +660,17 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             SkillTrigger skillTrigger = source.firstTrigger as SkillTrigger;
+
+            if (trace)
+            {
+                WriteDebugLog(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
+                    " firstTrigger=" +
+                    (source.firstTrigger == null
+                        ? "<null>"
+                        : source.firstTrigger.GetType().FullName ?? source.firstTrigger.GetType().Name));
+            }
+
             if (skillTrigger != null)
             {
                 try
