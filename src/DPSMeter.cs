@@ -190,6 +190,8 @@ public sealed class DPSMeter : ModBehaviour
         string sourceName = GetHealingSourceName(info.actor);
         string sourceIdentity = GetSkillSlotIdentity(info.actor);
 
+        TraceBismuthHealingSource(info.actor);
+
         // Passive Stars already have a dedicated resolver. Keep that path
         // authoritative so a generated actor cannot be renamed by an
         // unrelated localized parent.
@@ -239,7 +241,7 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
-        TraceGenericHealOverTimeSource(info.actor);
+        TraceHealthOrbSource(info.actor);
         _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
 
     }
@@ -760,504 +762,111 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static int _genericHealOverTimeTraceCount;
+    private static int _basicAttackTraceCount;
+    private static int _healthOrbTraceCount;
+    private static int _bismuthHealTraceCount;
 
-    private static void TraceGenericHealOverTimeDefinition(Actor source)
+    private static void TraceBasicAttackSource(Actor source)
     {
-        if (source == null)
+        if (source == null || _basicAttackTraceCount >= 2)
         {
             return;
         }
 
-        Type type = source.GetType();
-        WriteDebugLog("[v5.44] genericDefinition type=" + type.Name);
-
-        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-            string fieldName = field.Name.ToLowerInvariant();
-            if (fieldName.IndexOf("heal", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("effect", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("source", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("origin", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("config", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("data", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("definition", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("name", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("id", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("key", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("display", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("description", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("icon", StringComparison.Ordinal) < 0 &&
-                fieldName.IndexOf("sprite", StringComparison.Ordinal) < 0)
-            {
-                continue;
-            }
-
-            try
-            {
-                object value = field.GetValue(source);
-                string valueText = DescribeDiagnosticValue(value);
-                WriteDebugLog("[v5.44]   defField=" + field.Name + " type=" + field.FieldType.Name + " value=" + valueText);
-                GameObject gameObject = value as GameObject;
-                if (gameObject != null)
-                {
-                    TraceDiagnosticGameObject(gameObject, field.Name);
-                }
-            }
-            catch (Exception)
-            {
-            }
-        }
-
-        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < properties.Length; i++)
-        {
-            PropertyInfo property = properties[i];
-            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
-            {
-                continue;
-            }
-
-            string propertyName = property.Name.ToLowerInvariant();
-            if (propertyName.IndexOf("heal", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("effect", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("source", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("origin", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("config", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("data", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("definition", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("name", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("id", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("key", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("display", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("description", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("icon", StringComparison.Ordinal) < 0 &&
-                propertyName.IndexOf("sprite", StringComparison.Ordinal) < 0)
-            {
-                continue;
-            }
-
-            try
-            {
-                object value = property.GetValue(source, null);
-                WriteDebugLog("[v5.44]   defProp=" + property.Name + " type=" + property.PropertyType.Name + " value=" + DescribeDiagnosticValue(value));
-                GameObject gameObject = value as GameObject;
-                if (gameObject != null)
-                {
-                    TraceDiagnosticGameObject(gameObject, property.Name);
-                }
-            }
-            catch (Exception)
-            {
-            }
-        }
+        _basicAttackTraceCount++;
+        WriteDebugLog("[v5.51] Basic Attack trace " + _basicAttackTraceCount);
+        TraceSourceChain(source, "[v5.51] basic", true);
     }
 
-    private static string DescribeDiagnosticValue(object value)
+    private static void TraceHealthOrbSource(Actor source)
     {
-        if (value == null)
-        {
-            return "null";
-        }
-
-        if (value is string text)
-        {
-            return "[" + text + "]";
-        }
-
-        if (value is UnityEngine.Object unityObject)
-        {
-            return value.GetType().Name + "(" + unityObject.name + ")";
-        }
-
-        if (value.GetType().IsPrimitive || value is decimal || value is Enum)
-        {
-            return value.GetType().Name + "(" + value + ")";
-        }
-
-        return value.GetType().Name;
-    }
-
-    private static void TraceDiagnosticGameObject(GameObject gameObject, string fieldName)
-    {
-        if (gameObject == null)
+        if (source == null || _healthOrbTraceCount >= 3)
         {
             return;
         }
 
-        WriteDebugLog("[v5.44]   defObject=" + fieldName + " name=" + gameObject.name);
-        Component[] components = gameObject.GetComponentsInChildren<Component>(true);
-        WriteDebugLog("[v5.44]   defObjectComponents=" + components.Length);
+        Actor current = source;
+        bool foundGeneric = false;
+        bool foundRegenOrb = false;
 
-        int logged = 0;
-        for (int i = 0; i < components.Length && logged < 24; i++)
+        while (current != null && !foundRegenOrb)
         {
-            Component component = components[i];
-            if (component == null)
-            {
-                continue;
-            }
-
-            WriteDebugLog("[v5.44]     defComponent=" + component.GetType().Name + " object=" + component.gameObject.name);
-            logged++;
-
-            FieldInfo[] componentFields = component.GetType().GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            for (int j = 0; j < componentFields.Length; j++)
-            {
-                FieldInfo componentField = componentFields[j];
-                string componentFieldName = componentField.Name.ToLowerInvariant();
-                if (componentFieldName.IndexOf("name", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("id", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("key", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("display", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("description", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("source", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("effect", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("heal", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("icon", StringComparison.Ordinal) < 0 &&
-                    componentFieldName.IndexOf("sprite", StringComparison.Ordinal) < 0)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    object value = componentField.GetValue(component);
-                    WriteDebugLog("[v5.44]       compField=" + componentField.Name + " type=" + componentField.FieldType.Name + " value=" + DescribeDiagnosticValue(value));
-                }
-                catch (Exception)
-                {
-                }
-            }
-        }
-    }
-
-    private static void TraceGenericHealOverTimeLocalizationRegistry()
-    {
-        Type localizationType = typeof(DewLocalization);
-        WriteDebugLog("[v5.44] DewLocalization type=" + localizationType.FullName);
-
-        FieldInfo buildDataField = localizationType.GetField(
-            "_buildData", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-        object buildData = null;
-        try
-        {
-            buildData = buildDataField == null ? null : buildDataField.GetValue(null);
-        }
-        catch (Exception)
-        {
-        }
-
-        if (buildData != null)
-        {
-            Type buildType = buildData.GetType();
-            WriteDebugLog("[v5.44] buildData type=" + buildType.FullName);
-
-            FieldInfo[] buildFields = buildType.GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            int buildMatches = 0;
-            for (int i = 0; i < buildFields.Length && buildMatches < 40; i++)
-            {
-                FieldInfo field = buildFields[i];
-                string name = field.Name.ToLowerInvariant();
-                if (name.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("ui", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("string", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("dict", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("collection", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("data", StringComparison.Ordinal) < 0)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    object value = field.GetValue(buildData);
-                    WriteDebugLog("[v5.44]   buildField=" + field.Name + " type=" + field.FieldType.Name + " value=" + DescribeDiagnosticValue(value));
-                    buildMatches++;
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            PropertyInfo[] buildProperties = buildType.GetProperties(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            int propertyMatches = 0;
-            for (int i = 0; i < buildProperties.Length && propertyMatches < 30; i++)
-            {
-                PropertyInfo property = buildProperties[i];
-                string name = property.Name.ToLowerInvariant();
-                if (name.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("ui", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("string", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("dict", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("collection", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("data", StringComparison.Ordinal) < 0)
-                {
-                    continue;
-                }
-
-                WriteDebugLog("[v5.44]   buildProp=" + property.Name + " type=" + property.PropertyType.Name);
-                propertyMatches++;
-            }
-        }
-
-        MethodInfo[] methods = localizationType.GetMethods(
-            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-        int methodMatches = 0;
-        for (int i = 0; i < methods.Length && methodMatches < 40; i++)
-        {
-            MethodInfo method = methods[i];
-            string name = method.Name.ToLowerInvariant();
-            if (name.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                name.IndexOf("ui", StringComparison.Ordinal) < 0 &&
-                name.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                name.IndexOf("string", StringComparison.Ordinal) < 0 &&
-                name.IndexOf("name", StringComparison.Ordinal) < 0)
-            {
-                continue;
-            }
-
-            ParameterInfo[] parameters = method.GetParameters();
-            string signature = method.Name + "(";
-            for (int p = 0; p < parameters.Length; p++)
-            {
-                if (p > 0)
-                {
-                    signature += ",";
-                }
-                signature += parameters[p].ParameterType.Name;
-            }
-            signature += ")->" + method.ReturnType.Name;
-            WriteDebugLog("[v5.44]   method=" + signature);
-            methodMatches++;
-        }
-    }
-
-    private static void TraceRegenOrbFields(object instance, string label)
-    {
-        if (instance == null)
-        {
-            return;
-        }
-
-        Type currentType = instance.GetType();
-        int depth = 0;
-        while (currentType != null && depth < 4)
-        {
-            WriteDebugLog("[v5.44] " + label + " fields[" + depth + "] type=" + currentType.FullName);
-
-            FieldInfo[] fields = currentType.GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-            int count = 0;
-            for (int i = 0; i < fields.Length && count < 40; i++)
-            {
-                FieldInfo field = fields[i];
-                if (field.Name.IndexOf("<", StringComparison.Ordinal) == 0)
-                {
-                    continue;
-                }
-
-                object value = null;
-                try
-                {
-                    value = field.GetValue(instance);
-                }
-                catch (Exception)
-                {
-                }
-
-                string text = value == null ? "null" : value.ToString();
-                if (text.Length > 120)
-                {
-                    text = text.Substring(0, 120);
-                }
-
-                WriteDebugLog("[v5.44]   field=" + field.Name + " type=" + field.FieldType.Name + " value=[" + text + "]");
-                count++;
-            }
-
-            currentType = currentType.BaseType;
-            depth++;
-        }
-    }
-
-    private static void TraceRegenOrbTypeMetadata(object instance, string label)
-    {
-        if (instance == null)
-        {
-            return;
-        }
-
-        Type currentType = instance.GetType();
-        int depth = 0;
-        while (currentType != null && depth < 5)
-        {
-            WriteDebugLog("[v5.44] " + label + " type[" + depth + "]=" + currentType.FullName);
-
-            PropertyInfo[] properties = currentType.GetProperties(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-            int propertyCount = 0;
-            for (int i = 0; i < properties.Length && propertyCount < 20; i++)
-            {
-                PropertyInfo property = properties[i];
-                if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
-                {
-                    continue;
-                }
-
-                string name = property.Name.ToLowerInvariant();
-                if (name.IndexOf("name", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("display", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("title", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("description", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("key", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("id", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("type", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("icon", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("sprite", StringComparison.Ordinal) < 0)
-                {
-                    continue;
-                }
-
-                WriteDebugLog("[v5.44]   property=" + property.Name + " type=" + property.PropertyType.Name);
-                propertyCount++;
-            }
-
-            MethodInfo[] methods = currentType.GetMethods(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-            int methodCount = 0;
-            for (int i = 0; i < methods.Length && methodCount < 30; i++)
-            {
-                MethodInfo method = methods[i];
-                if (method.IsSpecialName)
-                {
-                    continue;
-                }
-
-                string name = method.Name.ToLowerInvariant();
-                if (name.IndexOf("name", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("display", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("title", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("description", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("key", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("id", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("type", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("icon", StringComparison.Ordinal) < 0 &&
-                    name.IndexOf("sprite", StringComparison.Ordinal) < 0)
-                {
-                    continue;
-                }
-
-                ParameterInfo[] parameters = method.GetParameters();
-                string signature = method.Name + "(";
-                for (int p = 0; p < parameters.Length; p++)
-                {
-                    if (p > 0)
-                    {
-                        signature += ",";
-                    }
-                    signature += parameters[p].ParameterType.Name;
-                }
-                signature += ")->" + method.ReturnType.Name;
-                WriteDebugLog("[v5.44]   method=" + signature);
-
-                if (method.ReturnType == typeof(string) &&
-                    method.GetParameters().Length == 0 &&
-                    (string.Equals(method.Name, "GetActorReadableName", StringComparison.Ordinal) ||
-                     string.Equals(method.Name, "GetOriginalName", StringComparison.Ordinal)))
-                {
-                    try
-                    {
-                        object result = method.Invoke(instance, null);
-                        WriteDebugLog("[v5.44]   invoke=" + method.Name + " value=[" + (result as string ?? "<null>") + "]");
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteDebugLog("[v5.44]   invoke=" + method.Name + " error=" + ex.GetType().Name);
-                    }
-                }
-
-                methodCount++;
-            }
-
-            currentType = currentType.BaseType;
-            depth++;
-        }
-    }
-
-    private static void TraceGenericHealOverTimeSource(Actor source)
-    {
-        if (source == null || _genericHealOverTimeTraceCount >= 3)
-        {
-            return;
-        }
-
-        Actor match = source;
-        int matchDepth = 0;
-        while (match != null && matchDepth < 8)
-        {
-            string typeName = match.GetType().Name;
+            string typeName = current.GetType().Name;
             if (string.Equals(typeName, "Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase))
             {
+                foundGeneric = true;
+            }
+
+            if (string.Equals(typeName, "Ai_RegenOrb_Projectile", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(typeName, "Pickup_RegenOrb", StringComparison.OrdinalIgnoreCase))
+            {
+                foundRegenOrb = true;
+            }
+
+            current = current.parentActor;
+        }
+
+        if (!foundGeneric || !foundRegenOrb)
+        {
+            return;
+        }
+
+        _healthOrbTraceCount++;
+        WriteDebugLog("[v5.51] Health Orb trace " + _healthOrbTraceCount);
+        TraceSourceChain(source, "[v5.51] orb", false);
+    }
+
+    private static void TraceBismuthHealingSource(Actor source)
+    {
+        if (source == null || _bismuthHealTraceCount >= 3)
+        {
+            return;
+        }
+
+        Actor current = source;
+        bool foundBismuth = false;
+
+        while (current != null)
+        {
+            if (string.Equals(current.GetType().Name, "Hero_Bismuth", StringComparison.OrdinalIgnoreCase))
+            {
+                foundBismuth = true;
                 break;
             }
 
-            match = match.parentActor;
-            matchDepth++;
+            current = current.parentActor;
         }
 
-        if (match == null)
+        if (!foundBismuth)
         {
             return;
         }
 
-        _genericHealOverTimeTraceCount++;
-        TraceGenericHealOverTimeDefinition(match);
-        TraceGenericHealOverTimeLocalizationRegistry();
-        WriteDebugLog("[v5.44] GenericHealOverTime trace " + _genericHealOverTimeTraceCount);
+        _bismuthHealTraceCount++;
+        WriteDebugLog("[v5.51] Bismuth heal trace " + _bismuthHealTraceCount);
+        TraceSourceChain(source, "[v5.51] bismuth", false);
+    }
 
+    private static void TraceSourceChain(Actor source, string label, bool traceBasicLocalization)
+    {
         Actor current = source;
         int depth = 0;
+
         while (current != null && depth < 8)
         {
             Type type = current.GetType();
-            WriteDebugLog("[v5.44] actor[" + depth + "] type=" + type.Name + " name=" + current.name);
+            WriteDebugLog(label + " actor[" + depth + "] type=" + type.Name + " name=" + current.name);
 
-            if (string.Equals(type.Name, "Ai_RegenOrb_Projectile", StringComparison.OrdinalIgnoreCase))
-            {
-                TraceRegenOrbTypeMetadata(current, "projectile");
-                TraceRegenOrbFields(current, "projectile");
-            }
+            TraceReadableIdentity(current, label);
+            TraceStringMembers(current, label);
 
-            string localized = null;
             try
             {
+                string localized;
                 if (DewLocalization.TryGetUIValue(type.Name + "_Name", out localized) &&
                     !string.IsNullOrEmpty(localized))
                 {
-                    WriteDebugLog("[v5.44]   uiName=" + localized);
+                    WriteDebugLog(label + "   uiKey=" + type.Name + "_Name value=" + localized);
                 }
             }
             catch (Exception)
@@ -1267,284 +876,110 @@ public sealed class DPSMeter : ModBehaviour
             SkillTrigger skill = current.firstTrigger as SkillTrigger;
             if (skill != null)
             {
-                WriteDebugLog("[v5.44]   firstTrigger=" + skill.GetType().Name);
-            }
-
-            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            for (int i = 0; i < fields.Length; i++)
-            {
-                FieldInfo field = fields[i];
-                string fieldName = field.Name.ToLowerInvariant();
-                if (fieldName.IndexOf("source", StringComparison.Ordinal) < 0 &&
-                    fieldName.IndexOf("origin", StringComparison.Ordinal) < 0 &&
-                    fieldName.IndexOf("trigger", StringComparison.Ordinal) < 0 &&
-                    fieldName.IndexOf("skill", StringComparison.Ordinal) < 0 &&
-                    fieldName.IndexOf("passive", StringComparison.Ordinal) < 0 &&
-                    fieldName.IndexOf("effect", StringComparison.Ordinal) < 0 &&
-                    fieldName.IndexOf("buff", StringComparison.Ordinal) < 0)
-                {
-                    continue;
-                }
-
                 try
                 {
-                    object value = field.GetValue(current);
-                    if (value == null)
+                    string skillName = DewLocalization.GetSkillName(skill, 0);
+                    if (!string.IsNullOrEmpty(skillName))
                     {
-                        continue;
-                    }
-
-                    Actor actorValue = value as Actor;
-                    SkillTrigger skillValue = value as SkillTrigger;
-                    Gem gemValue = value as Gem;
-                    string valueText = actorValue != null
-                        ? "Actor(" + actorValue.GetType().Name + "," + actorValue.name + ")"
-                        : (skillValue != null
-                            ? "SkillTrigger(" + skillValue.GetType().Name + ")"
-                            : (gemValue != null
-                                ? "Gem(" + gemValue.name + ")"
-                                : value.GetType().Name));
-                    WriteDebugLog("[v5.44]   field=" + field.Name + " value=" + valueText);
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            if (string.Equals(type.Name, "Pickup_RegenOrb", StringComparison.OrdinalIgnoreCase))
-            {
-                Type baseType = type.BaseType;
-                if (baseType != null)
-                {
-                    WriteDebugLog("[v5.44] pickupBase=" + baseType.Name);
-                }
-
-                TraceRegenOrbTypeMetadata(current, "pickup");
-                TraceRegenOrbFields(current, "pickup");
-
-                string[] pickupKeys = new string[]
-                {
-                    type.Name + "_Name",
-                    type.Name + "_Description",
-                    type.Name + "_Tooltip",
-                    baseType == null ? null : baseType.Name + "_Name",
-                    baseType == null ? null : baseType.Name + "_Description",
-                    baseType == null ? null : baseType.Name + "_Tooltip"
-                };
-
-                for (int k = 0; k < pickupKeys.Length; k++)
-                {
-                    if (string.IsNullOrEmpty(pickupKeys[k]))
-                    {
-                        continue;
-                    }
-
-                    string pickupLocalized = null;
-                    try
-                    {
-                        if (DewLocalization.TryGetUIValue(pickupKeys[k], out pickupLocalized) &&
-                            !string.IsNullOrEmpty(pickupLocalized))
-                        {
-                            WriteDebugLog("[v5.44] uiKey=" + pickupKeys[k] + " value=" + pickupLocalized);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-
-                System.Collections.IDictionary persistentData = null;
-                System.Collections.IDictionary persistentSyncedData = null;
-                try
-                {
-                    FieldInfo persistentDataField = type.GetField("persistentData",
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    if (persistentDataField != null)
-                    {
-                        persistentData = persistentDataField.GetValue(current) as System.Collections.IDictionary;
-                    }
-
-                    FieldInfo persistentSyncedDataField = type.GetField("persistentSyncedData",
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    if (persistentSyncedDataField != null)
-                    {
-                        persistentSyncedData = persistentSyncedDataField.GetValue(current) as System.Collections.IDictionary;
+                        WriteDebugLog(label + "   skillName=" + skillName);
                     }
                 }
                 catch (Exception)
                 {
-                }
-
-                if (persistentData != null)
-                {
-                    WriteDebugLog("[v5.44] persistentData count=" + persistentData.Count);
-                    foreach (System.Collections.DictionaryEntry entry in persistentData)
-                    {
-                        string valueText = entry.Value == null ? "null" : entry.Value.GetType().Name;
-                        if (entry.Value is UnityEngine.Object unityObject)
-                        {
-                            valueText += "(" + unityObject.name + ")";
-                        }
-                        WriteDebugLog("[v5.44]   persistentData[" + entry.Key + "]=" + valueText);
-                    }
-                }
-
-                if (persistentSyncedData != null)
-                {
-                    WriteDebugLog("[v5.44] persistentSyncedData count=" + persistentSyncedData.Count);
-                    foreach (System.Collections.DictionaryEntry entry in persistentSyncedData)
-                    {
-                        string valueText = entry.Value == null ? "null" : entry.Value.GetType().Name;
-                        if (entry.Value is UnityEngine.Object unityObject)
-                        {
-                            valueText += "(" + unityObject.name + ")";
-                        }
-                        WriteDebugLog("[v5.44]   persistentSyncedData[" + entry.Key + "]=" + valueText);
-                    }
-                }
-
-                // The pickup itself has no useful localization. Inspect its
-                // likely identity/display fields and the referenced effect
-                // GameObjects to see whether the game stores the pickup's
-                // player-facing identity on a component or data object.
-                Type inspectType = type;
-                int inspectDepth = 0;
-                while (inspectType != null && inspectDepth < 2)
-                {
-                    FieldInfo[] pickupFields = inspectType.GetFields(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    for (int i = 0; i < pickupFields.Length; i++)
-                    {
-                        FieldInfo field = pickupFields[i];
-                        string fieldName = field.Name.ToLowerInvariant();
-                        if (fieldName.IndexOf("name", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("id", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("key", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("display", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("title", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("description", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("data", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("config", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("definition", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("pickup", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("sprite", StringComparison.Ordinal) < 0 &&
-                            fieldName.IndexOf("icon", StringComparison.Ordinal) < 0)
-                        {
-                            continue;
-                        }
-
-                        try
-                        {
-                            object value = field.GetValue(current);
-                            string valueText = value == null ? "null" : value.GetType().Name;
-                            if (value is UnityEngine.Object unityObject)
-                            {
-                                valueText += "(" + unityObject.name + ")";
-                            }
-                            WriteDebugLog("[v5.44]   field=" + field.Name + " type=" + field.FieldType.Name + " value=" + valueText);
-                        }
-                        catch (Exception)
-                        {
-                        }
-                    }
-
-                    inspectType = inspectType.BaseType;
-                    inspectDepth++;
-                }
-
-                FieldInfo[] effectFields = type.GetFields(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                for (int i = 0; i < effectFields.Length; i++)
-                {
-                    FieldInfo field = effectFields[i];
-                    if (field.FieldType != typeof(GameObject))
-                    {
-                        continue;
-                    }
-
-                    if (field.Name.IndexOf("effect", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        GameObject effectObject = field.GetValue(current) as GameObject;
-                        if (effectObject == null)
-                        {
-                            WriteDebugLog("[v5.44] effect=" + field.Name + " null");
-                            continue;
-                        }
-
-                        Component[] components = effectObject.GetComponents<Component>();
-                        WriteDebugLog("[v5.44] effect=" + field.Name + " object=" + effectObject.name + " components=" + components.Length);
-
-                        for (int componentIndex = 0; componentIndex < components.Length; componentIndex++)
-                        {
-                            Component component = components[componentIndex];
-                            if (component == null)
-                            {
-                                continue;
-                            }
-
-                            WriteDebugLog("[v5.44]   component=" + component.GetType().Name);
-
-                            Type componentType = component.GetType();
-                            FieldInfo[] componentFields = componentType.GetFields(
-                                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                            for (int j = 0; j < componentFields.Length; j++)
-                            {
-                                FieldInfo componentField = componentFields[j];
-                                string componentFieldName = componentField.Name.ToLowerInvariant();
-                                if (componentFieldName.IndexOf("name", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("id", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("key", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("display", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("title", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("description", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("tooltip", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("data", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("config", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("definition", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("sprite", StringComparison.Ordinal) < 0 &&
-                                    componentFieldName.IndexOf("icon", StringComparison.Ordinal) < 0)
-                                {
-                                    continue;
-                                }
-
-                                try
-                                {
-                                    object value = componentField.GetValue(component);
-                                    string valueText = value == null ? "null" : value.GetType().Name;
-                                    if (value is UnityEngine.Object unityObject)
-                                    {
-                                        valueText += "(" + unityObject.name + ")";                                    }
-                                    WriteDebugLog("[v5.44]     field=" + componentField.Name + " type=" + componentField.FieldType.Name + " value=" + valueText);
-                                }
-                                catch (Exception)
-                                {
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception)
-                    {
-                    }
                 }
             }
 
             current = current.parentActor;
             depth++;
         }
-
-        WriteDebugLog("[v5.44] GenericHealOverTime pickup trace end");
     }
 
+    private static void TraceReadableIdentity(Actor actor, string label)
+    {
+        string[] methodNames = new string[]
+        {
+            "GetActorReadableName",
+            "GetOriginalName"
+        };
+
+        for (int i = 0; i < methodNames.Length; i++)
+        {
+            try
+            {
+                MethodInfo method = actor.GetType().GetMethod(
+                    methodNames[i],
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                if (method == null || method.GetParameters().Length != 0 ||
+                    method.ReturnType != typeof(string))
+                {
+                    continue;
+                }
+
+                string value = method.Invoke(actor, null) as string;
+                if (!string.IsNullOrEmpty(value))
+                {
+                    WriteDebugLog(label + "   " + methodNames[i] + "=[" + value + "]");
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
+    private static void TraceStringMembers(Actor actor, string label)
+    {
+        Type type = actor.GetType();
+        Type currentType = type;
+        int hierarchyDepth = 0;
+        int logged = 0;
+
+        while (currentType != null && hierarchyDepth < 3 && logged < 16)
+        {
+            FieldInfo[] fields = currentType.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length && logged < 16; i++)
+            {
+                FieldInfo field = fields[i];
+                if (field.FieldType != typeof(string) &&
+                    !field.Name.IndexOf("name", StringComparison.OrdinalIgnoreCase).Equals(0))
+                {
+                    continue;
+                }
+
+                string fieldName = field.Name;
+                if (fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("key", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("display", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("text", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(actor);
+                    if (value is string text && !string.IsNullOrEmpty(text))
+                    {
+                        WriteDebugLog(label + "   field=" + fieldName + " value=[" + text + "]");
+                        logged++;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            currentType = currentType.BaseType;
+            hierarchyDepth++;
+        }
+    }
 
     private static Sprite FindHealingIcon(Actor source)
     {
@@ -1635,6 +1070,11 @@ public sealed class DPSMeter : ModBehaviour
         string skillIdentity = null;
         string sourceName = "Other";
         bool isBasicAttack = !isDirectEssenceDamage && skill == null;
+
+        if (isLocalPlayer && isBasicAttack)
+        {
+            TraceBasicAttackSource(info.actor);
+        }
 
         if (isLocalPlayer && isBasicAttack && _overlay != null)
         {
