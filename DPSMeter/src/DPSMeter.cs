@@ -910,9 +910,9 @@ public sealed class DPSMeter : ModBehaviour
                         Component[] components = effectObject.GetComponents<Component>();
                         WriteDebugLog("[v5.35] effect=" + field.Name + " object=" + effectObject.name + " components=" + components.Length);
 
-                        for (int i = 0; i < components.Length; i++)
+                        for (int componentIndex = 0; componentIndex < components.Length; componentIndex++)
                         {
-                            Component component = components[i];
+                            Component component = components[componentIndex];
                             if (component == null)
                             {
                                 continue;
