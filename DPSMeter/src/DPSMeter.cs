@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.IO;
 
 using UnityEngine;
 
@@ -20,6 +21,24 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private static bool _lingeringAuraIconTraceLogged;
+    private static readonly object _debugLogLock = new object();
+    private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
+
+    private static void WriteDebugLog(string message)
+    {
+        try
+        {
+            lock (_debugLogLock)
+            {
+                File.AppendAllText(_debugLogPath, message + Environment.NewLine);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.Log("[DPS Meter] Failed to write debug log: " + ex.GetType().Name);
+        }
+    }
+
     private void Awake()
     {
         Instance = this;
@@ -653,14 +672,14 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _lingeringAuraIconTraceLogged = true;
-        Debug.Log("[v5.01] Lingering Aura icon trace start");
+        WriteDebugLog("[v5.01] Lingering Aura icon trace start");
 
         current = source;
         int depth = 0;
         while (current != null && depth < 8)
         {
             Type type = current.GetType();
-            Debug.Log("[v5.01] actor[" + depth + "] type=" + type.Name + " name=" + current.name);
+            WriteDebugLog("[v5.01] actor[" + depth + "] type=" + type.Name + " name=" + current.name);
 
             FieldInfo[] fields = type.GetFields(
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -682,11 +701,11 @@ public sealed class DPSMeter : ModBehaviour
                     string valueText = sprite != null
                         ? "Sprite(" + sprite.name + ")"
                         : (value == null ? "null" : value.ToString());
-                    Debug.Log("[v5.01]   field=" + field.Name + " type=" + field.FieldType.Name + " value=" + valueText);
+                    WriteDebugLog("[v5.01]   field=" + field.Name + " type=" + field.FieldType.Name + " value=" + valueText);
                 }
                 catch (Exception)
                 {
-                    Debug.Log("[v5.01]   field=" + field.Name + " type=" + field.FieldType.Name + " value=<error>");
+                    WriteDebugLog("[v5.01]   field=" + field.Name + " type=" + field.FieldType.Name + " value=<error>");
                 }
             }
 
@@ -715,11 +734,11 @@ public sealed class DPSMeter : ModBehaviour
                     string valueText = sprite != null
                         ? "Sprite(" + sprite.name + ")"
                         : (value == null ? "null" : value.ToString());
-                    Debug.Log("[v5.01]   property=" + property.Name + " type=" + property.PropertyType.Name + " value=" + valueText);
+                    WriteDebugLog("[v5.01]   property=" + property.Name + " type=" + property.PropertyType.Name + " value=" + valueText);
                 }
                 catch (Exception)
                 {
-                    Debug.Log("[v5.01]   property=" + property.Name + " type=" + property.PropertyType.Name + " value=<error>");
+                    WriteDebugLog("[v5.01]   property=" + property.Name + " type=" + property.PropertyType.Name + " value=<error>");
                 }
             }
 
@@ -727,19 +746,19 @@ public sealed class DPSMeter : ModBehaviour
             if (instance != null && instance.gem != null)
             {
                 Sprite gemIcon = FindSpriteMember(instance.gem);
-                Debug.Log("[v5.01]   gem=" + instance.gem.GetType().Name + " icon=" +
+                WriteDebugLog("[v5.01]   gem=" + instance.gem.GetType().Name + " icon=" +
                     (gemIcon == null ? "null" : gemIcon.name));
 
                 if (instance.gem.skill != null)
                 {
                     Sprite skillIcon = FindSpriteMember(instance.gem.skill);
-                    Debug.Log("[v5.01]   gem.skill=" + instance.gem.skill.GetType().Name + " icon=" +
+                    WriteDebugLog("[v5.01]   gem.skill=" + instance.gem.skill.GetType().Name + " icon=" +
                         (skillIcon == null ? "null" : skillIcon.name));
 
                     if (instance.gem.skill.currentConfig != null)
                     {
                         Sprite configIcon = FindSpriteMember(instance.gem.skill.currentConfig);
-                        Debug.Log("[v5.01]   gem.skill.currentConfig=" + instance.gem.skill.currentConfig.GetType().Name + " icon=" +
+                        WriteDebugLog("[v5.01]   gem.skill.currentConfig=" + instance.gem.skill.currentConfig.GetType().Name + " icon=" +
                             (configIcon == null ? "null" : configIcon.name));
                     }
                 }
@@ -749,8 +768,8 @@ public sealed class DPSMeter : ModBehaviour
             depth++;
         }
 
-        Debug.Log("[v5.01] resolvedIcon=" + (resolvedIcon == null ? "null" : resolvedIcon.name));
-        Debug.Log("[v5.01] Lingering Aura icon trace end");
+        WriteDebugLog("[v5.01] resolvedIcon=" + (resolvedIcon == null ? "null" : resolvedIcon.name));
+        WriteDebugLog("[v5.01] Lingering Aura icon trace end");
     }
 
     private static Sprite FindHealingIcon(Actor source)
