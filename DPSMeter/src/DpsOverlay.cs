@@ -30,7 +30,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v5.01";
+    private const string DevelopmentVersion = "v5.1";
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -784,13 +784,19 @@ public sealed class DpsOverlay : MonoBehaviour
         rowRect.height = Mathf.Round(rowRect.height);
 
         float iconSize = rowRect.height;
-        float barX = rowRect.x;
+        Rect iconRect = new Rect(rowRect.x, rowRect.y, iconSize, iconSize);
+        float barX = iconRect.xMax;
 
         if (icon != null)
         {
-            Rect iconRect = new Rect(rowRect.x, rowRect.y, iconSize, iconSize);
             DrawSprite(icon, iconRect);
-            barX = iconRect.xMax;
+        }
+        else
+        {
+            // Keep healing rows aligned when the game does not expose an icon.
+            GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
+            GUI.DrawTexture(iconRect, _whiteTexture);
+            GUI.color = Color.white;
         }
 
         Rect barRect = new Rect(
