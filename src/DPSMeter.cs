@@ -803,8 +803,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _basicAttackTraceCount++;
-        WriteDebugLog("[v5.51] Basic Attack trace " + _basicAttackTraceCount);
-        TraceSourceChain(source, "[v5.51] basic");
+        WriteDebugLog("[v5.52] Basic Attack trace " + _basicAttackTraceCount);
+        TraceSourceChain(source, "[v5.52] basic");
     }
 
     private static void TraceHealthOrbSource(Actor source)
@@ -841,8 +841,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _healthOrbTraceCount++;
-        WriteDebugLog("[v5.51] Health Orb trace " + _healthOrbTraceCount);
-        TraceSourceChain(source, "[v5.51] orb");
+        WriteDebugLog("[v5.52] Health Orb trace " + _healthOrbTraceCount);
+        TraceSourceChain(source, "[v5.52] orb");
     }
 
     private static void TraceBismuthHealingSource(Actor source)
@@ -872,8 +872,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _bismuthHealTraceCount++;
-        WriteDebugLog("[v5.51] Bismuth heal trace " + _bismuthHealTraceCount);
-        TraceSourceChain(source, "[v5.51] bismuth");
+        WriteDebugLog("[v5.52] Bismuth heal trace " + _bismuthHealTraceCount);
+        TraceSourceChain(source, "[v5.52] bismuth");
     }
 
     private static void TraceSourceChain(Actor source, string label)
