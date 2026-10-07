@@ -639,6 +639,40 @@ public sealed class DPSMeter : ModBehaviour
                     " skillValue=" + (displayName ?? "<null>"));
             }
 
+            SkillTrigger skillTrigger = source.firstTrigger as SkillTrigger;
+            if (skillTrigger != null)
+            {
+                try
+                {
+                    string skillNameKey = DewLocalization.GetSkillNameKey(skillTrigger, 0);
+                    string skillNameFromTrigger = DewLocalization.GetSkillName(skillTrigger, 0);
+
+                    if (trace)
+                    {
+                        Debug.Log(
+                            "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
+                            " triggerType=" + skillTrigger.GetType().Name +
+                            " triggerNameKey=" + (skillNameKey ?? "<null>") +
+                            " triggerName=" + (skillNameFromTrigger ?? "<null>"));
+                    }
+
+                    if (!string.IsNullOrEmpty(skillNameFromTrigger) &&
+                        !skillNameFromTrigger.StartsWith("skills.!", StringComparison.Ordinal))
+                    {
+                        return skillNameFromTrigger;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (trace)
+                    {
+                        Debug.Log(
+                            "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
+                            " triggerLookupException=" + ex.GetType().Name);
+                    }
+                }
+            }
+
             if (!string.IsNullOrEmpty(displayName) &&
                 !displayName.StartsWith("skills.!", StringComparison.Ordinal))
             {
