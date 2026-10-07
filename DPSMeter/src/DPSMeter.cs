@@ -673,6 +673,11 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             TraceHealingLocalizationObject("data", data);
+
+        if (data != null)
+        {
+            TraceHealingLocalizationSkillEntry(data, source);
+        }
         }
 
         FieldInfo buildDataField = type.GetField(
@@ -721,6 +726,59 @@ public sealed class DPSMeter : ModBehaviour
 
             Debug.Log("[DPS Meter][HEAL LOCALIZATION PROPERTY] " + property.Name + " type=" + property.PropertyType.FullName + " value=" + valueText);
         }
+    }
+
+
+    private static void TraceHealingLocalizationSkillEntry(object data, Actor source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        string key = null;
+        try
+        {
+            key = DewLocalization.GetSkillKey(source.GetType());
+        }
+        catch (Exception)
+        {
+        }
+
+        if (string.IsNullOrEmpty(key))
+        {
+            return;
+        }
+
+        FieldInfo skillsField = data.GetType().GetField(
+            "skills",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        if (skillsField == null)
+        {
+            return;
+        }
+
+        object skillsObject = null;
+        try
+        {
+            skillsObject = skillsField.GetValue(data);
+        }
+        catch (Exception)
+        {
+        }
+
+        System.Collections.IDictionary skills = skillsObject as System.Collections.IDictionary;
+        if (skills == null || !skills.Contains(key))
+        {
+            Debug.Log("[DPS Meter][HEAL LOCALIZATION SKILL] key=" + key + " entry=<missing>");
+            return;
+        }
+
+        object skillData = skills[key];
+        Debug.Log("[DPS Meter][HEAL LOCALIZATION SKILL] key=" + key +
+            " entryType=" + (skillData == null ? "<null>" : skillData.GetType().FullName));
+        TraceHealingLocalizationObject("skill:" + key, skillData);
     }
 
 
