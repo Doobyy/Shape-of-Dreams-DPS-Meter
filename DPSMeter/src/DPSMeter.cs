@@ -131,6 +131,8 @@ public sealed class DPSMeter : ModBehaviour
 
         float healing = Mathf.Max(0f, info.amount) + Mathf.Max(0f, info.discardedAmount);
 
+        TraceHealingLocalizationMembers(info.actor);
+
         if (healing <= 0f)
         {
             return;
