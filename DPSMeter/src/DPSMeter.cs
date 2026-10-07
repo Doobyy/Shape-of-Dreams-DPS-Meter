@@ -188,6 +188,7 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         string sourceName = GetHealingSourceName(info.actor);
+        string sourceIdentity = GetSkillSlotIdentity(info.actor);
 
         // Passive Stars already have a dedicated resolver. Keep that path
         // authoritative so a generated actor cannot be renamed by an
@@ -209,15 +210,27 @@ public sealed class DPSMeter : ModBehaviour
             }
             else
             {
-                string localizedActorName = TryGetLocalizedHealingActorName(info.actor);
-                if (!string.IsNullOrEmpty(localizedActorName))
+                // GenericHealOverTime is only the effect mechanism. A Shrine of
+                // Guidance is identified by the actual Shrine_Guidance actor in
+                // its chain, and its player-facing name comes from native UI
+                // localization rather than a hard-coded string.
+                string shrineIdentity;
+                string shrineName = TryGetLocalizedShrineName(info.actor, out shrineIdentity);
+                if (!string.IsNullOrEmpty(shrineName))
                 {
-                    sourceName = localizedActorName;
+                    sourceName = shrineName;
+                    sourceIdentity = shrineIdentity;
+                }
+                else
+                {
+                    string localizedActorName = TryGetLocalizedHealingActorName(info.actor);
+                    if (!string.IsNullOrEmpty(localizedActorName))
+                    {
+                        sourceName = localizedActorName;
+                    }
                 }
             }
         }
-
-        string sourceIdentity = GetSkillSlotIdentity(info.actor);
 
         if (healingGem != null)
         {
@@ -607,6 +620,48 @@ public sealed class DPSMeter : ModBehaviour
 
         return null;
     }
+
+    private static string TryGetLocalizedShrineName(Actor source, out string sourceIdentity)
+    {
+        sourceIdentity = null;
+
+        if (source == null)
+        {
+            return null;
+        }
+
+        Actor current = source;
+        int depth = 0;
+        while (current != null && depth < 8)
+        {
+            string typeName = current.GetType().Name;
+            if (string.Equals(typeName, "Shrine_Guidance", StringComparison.OrdinalIgnoreCase))
+            {
+                sourceIdentity = typeName;
+
+                try
+                {
+                    string localizedName;
+                    if (DewLocalization.TryGetUIValue(typeName + "_Name", out localizedName) &&
+                        !string.IsNullOrEmpty(localizedName))
+                    {
+                        return localizedName;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+
+                return null;
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
 
     private static string TryGetLocalizedHealingActorName(Actor source)
     {
