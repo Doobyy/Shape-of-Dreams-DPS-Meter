@@ -121,4 +121,6 @@ Recent verified work includes:
 
 Keep diagnostics focused and capped so normal game logs do not become flooded.
 
+**Required diagnostic output:** All temporary/runtime diagnostic logging must be written to `DPSMeter-debug.log` using the mod's file logger. Do not use `Debug.Log` for diagnostic trace output unless it is specifically needed to report that the debug-file logger itself failed. Diagnostic entries must remain compact, use the current diagnostic version tag (for example `[v5.01]`), and contain no timestamps.
+
 Old healing diagnostics and resize diagnostics have been removed. Do not restore them unless specifically needed.
