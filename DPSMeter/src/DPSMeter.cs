@@ -21,6 +21,7 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private static bool _lingeringAuraIconTraceLogged;
+    private static bool _bismuthHealTraceLogged;
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -212,6 +213,7 @@ public sealed class DPSMeter : ModBehaviour
 
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
         TraceLingeringAuraIconSource(info.actor, healingIcon);
+        TraceBismuthHealingSource(info.actor, sourceIdentity, sourceName, healingGem);
         _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
 
     }
@@ -690,6 +692,115 @@ public sealed class DPSMeter : ModBehaviour
             return null;
         }
     }
+
+    private static void TraceBismuthHealingSource(Actor source, string resolvedIdentity, string resolvedName, Gem resolvedGem)
+    {
+        if (_bismuthHealTraceLogged || source == null)
+        {
+            return;
+        }
+
+        Actor current = source;
+        int depth = 0;
+        bool relevant = false;
+        while (current != null && depth < 8)
+        {
+            string actorName = current.name;
+            string typeName = current.GetType().Name;
+            if ((actorName != null && actorName.IndexOf("bismuth", StringComparison.OrdinalIgnoreCase) >= 0) ||
+                typeName.IndexOf("bismuth", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                relevant = true;
+                break;
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        if (!relevant)
+        {
+            return;
+        }
+
+        _bismuthHealTraceLogged = true;
+        WriteDebugLog("[v5.31] Bismuth heal trace start");
+        WriteDebugLog("[v5.31] resolved identity=" + (resolvedIdentity ?? "null") + " name=" + (resolvedName ?? "null") + " gem=" + (resolvedGem == null ? "null" : resolvedGem.name));
+
+        current = source;
+        depth = 0;
+        while (current != null && depth < 8)
+        {
+            Type type = current.GetType();
+            SkillTrigger skill = current.firstTrigger as SkillTrigger;
+            string skillText = skill == null ? "null" : skill.GetType().Name;
+            string triggerText = current.firstTrigger == null ? "null" : current.firstTrigger.GetType().Name;
+            WriteDebugLog("[v5.31] actor[" + depth + "] type=" + type.Name + " name=" + current.name + " firstTrigger=" + triggerText + " skill=" + skillText);
+
+            string localized = null;
+            try
+            {
+                DewLocalization.TryGetUIValue(type.Name + "_Name", out localized);
+            }
+            catch (Exception)
+            {
+            }
+            if (!string.IsNullOrEmpty(localized))
+            {
+                WriteDebugLog("[v5.31]   uiName=" + localized);
+            }
+
+            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                string fieldName = field.Name.ToLowerInvariant();
+                if (fieldName.IndexOf("source", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("origin", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("trigger", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("skill", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("passive", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("effect", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("buff", StringComparison.Ordinal) < 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(current);
+                    if (value == null)
+                    {
+                        WriteDebugLog("[v5.31]   field=" + field.Name + " value=null");
+                    }
+                    else
+                    {
+                        Actor actorValue = value as Actor;
+                        SkillTrigger skillValue = value as SkillTrigger;
+                        Gem gemValue = value as Gem;
+                        string valueText = actorValue != null
+                            ? "Actor(" + actorValue.GetType().Name + "," + actorValue.name + ")"
+                            : (skillValue != null
+                                ? "SkillTrigger(" + skillValue.GetType().Name + ")"
+                                : (gemValue != null
+                                    ? "Gem(" + gemValue.name + ")"
+                                    : value.GetType().Name));
+                        WriteDebugLog("[v5.31]   field=" + field.Name + " type=" + field.FieldType.Name + " value=" + valueText);
+                    }
+                }
+                catch (Exception)
+                {
+                    WriteDebugLog("[v5.31]   field=" + field.Name + " type=" + field.FieldType.Name + " value=<error>");
+                }
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        WriteDebugLog("[v5.31] Bismuth heal trace end");
+    }
+
 
     private static void TraceLingeringAuraIconSource(Actor source, Sprite resolvedIcon)
     {
