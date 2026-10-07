@@ -575,26 +575,48 @@ public sealed class DPSMeter : ModBehaviour
         return source.GetType().Name;
     }
 
-    private static string TryGetLocalizedHealingActorName(Actor source)
+    private string TryGetLocalizedHealingActorName(Actor source)
     {
         if (source == null)
         {
             return null;
         }
 
+        string actorType = source.GetType().Name;
+        bool trace = _healingSourceTraceTypes.Add(actorType);
+
         // Match the game's own Actor/StatusEffect display-name resolution:
         // first try the localized "<TypeName>_Name" UI key for the active language.
+        string uiKey = actorType + "_Name";
         try
         {
             string localizedName;
-            if (DewLocalization.TryGetUIValue(source.GetType().Name + "_Name", out localizedName) &&
-                !string.IsNullOrEmpty(localizedName))
+            bool resolved = DewLocalization.TryGetUIValue(uiKey, out localizedName);
+
+            if (trace)
+            {
+                Debug.Log(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
+                    " actorName=" + (source.name ?? "<null>") +
+                    " uiKey=" + uiKey +
+                    " uiResolved=" + resolved +
+                    " uiValue=" + (localizedName ?? "<null>"));
+            }
+
+            if (resolved && !string.IsNullOrEmpty(localizedName))
             {
                 return localizedName;
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            if (trace)
+            {
+                Debug.Log(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
+                    " uiKey=" + uiKey +
+                    " uiLookupException=" + ex.GetType().Name);
+            }
         }
 
         // Keep the existing skill-localization fallback for actors that really
@@ -602,18 +624,42 @@ public sealed class DPSMeter : ModBehaviour
         try
         {
             string skillKey = DewLocalization.GetSkillKey(source.GetType());
+            string displayName = null;
+
             if (!string.IsNullOrEmpty(skillKey))
             {
-                string displayName = DewLocalization.GetSkillName(skillKey, 0);
-                if (!string.IsNullOrEmpty(displayName) &&
-                    !displayName.StartsWith("skills.!", StringComparison.Ordinal))
-                {
-                    return displayName;
-                }
+                displayName = DewLocalization.GetSkillName(skillKey, 0);
+            }
+
+            if (trace)
+            {
+                Debug.Log(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
+                    " skillKey=" + (skillKey ?? "<null>") +
+                    " skillValue=" + (displayName ?? "<null>"));
+            }
+
+            if (!string.IsNullOrEmpty(displayName) &&
+                !displayName.StartsWith("skills.!", StringComparison.Ordinal))
+            {
+                return displayName;
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            if (trace)
+            {
+                Debug.Log(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
+                    " skillLookupException=" + ex.GetType().Name);
+            }
+        }
+
+        if (trace)
+        {
+            Debug.Log(
+                "[DPS Meter][HEAL LOCALIZATION TRACE] actorType=" + actorType +
+                " result=<unresolved>");
         }
 
         return null;
