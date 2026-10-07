@@ -31,7 +31,7 @@ public sealed class DPSMeter : ModBehaviour
             {
                 File.AppendAllText(
                     _debugLogPath,
-                    "[v4.97]" + message + Environment.NewLine);
+                    "[v4.98]" + message + Environment.NewLine);
             }
         }
         catch (Exception ex)
@@ -580,6 +580,7 @@ public sealed class DPSMeter : ModBehaviour
         if (trace)
         {
             TraceHealingParentMetadata(source);
+            TraceHealingLocalizationCollections();
         }
 
         // Keep the existing skill-localization fallback for actors that really
@@ -711,6 +712,106 @@ public sealed class DPSMeter : ModBehaviour
                 ex.GetType().Name);
         }
     }
+
+    private static void TraceHealingLocalizationCollections()
+    {
+        try
+        {
+            Type localizationType = typeof(DewLocalization);
+            object data = null;
+
+            FieldInfo dataField = localizationType.GetField(
+                "data",
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (dataField != null)
+            {
+                data = dataField.GetValue(null);
+            }
+
+            if (data == null)
+            {
+                PropertyInfo dataProperty = localizationType.GetProperty(
+                    "data",
+                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+                if (dataProperty != null && dataProperty.GetMethod != null)
+                {
+                    data = dataProperty.GetValue(null, null);
+                }
+            }
+
+            if (data == null)
+            {
+                WriteDebugLog(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] localizationCollections dataUnavailable");
+                return;
+            }
+
+            Type dataType = data.GetType();
+            FieldInfo[] fields = dataType.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            int matches = 0;
+
+            for (int i = 0; i < fields.Length && matches < 24; i++)
+            {
+                FieldInfo field = fields[i];
+                object collection;
+
+                try
+                {
+                    collection = field.GetValue(data);
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                System.Collections.IEnumerable enumerable =
+                    collection as System.Collections.IEnumerable;
+                if (enumerable == null)
+                {
+                    continue;
+                }
+
+                foreach (object entry in enumerable)
+                {
+                    if (entry == null)
+                    {
+                        continue;
+                    }
+
+                    string entryText = entry.ToString();
+                    if (entryText.IndexOf(
+                            "LingeringAuraOfGuidance",
+                            StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+
+                    WriteDebugLog(
+                        "[DPS Meter][HEAL LOCALIZATION TRACE] localizationMatch collection=" +
+                        field.Name +
+                        " entry=" + entryText);
+                    matches++;
+                }
+            }
+
+            if (matches == 0)
+            {
+                WriteDebugLog(
+                    "[DPS Meter][HEAL LOCALIZATION TRACE] localizationCollections noIdentifierMatch");
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog(
+                "[DPS Meter][HEAL LOCALIZATION TRACE] localizationCollections traceException=" +
+                ex.GetType().Name);
+        }
+    }
+
 
     private static string GetEssenceIdentity(Gem gem)
     {
