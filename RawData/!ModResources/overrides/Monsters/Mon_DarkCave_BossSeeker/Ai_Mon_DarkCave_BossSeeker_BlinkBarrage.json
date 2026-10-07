@@ -1,9 +1,0 @@
-﻿[
-  {
-    "target": "Ai_Mon_DarkCave_BossSeeker_BlinkBarrage",
-    "overrides": {
-      "blinkCount": "2",
-      "blinkInterval": "0.7"
-    }
-  }
-]

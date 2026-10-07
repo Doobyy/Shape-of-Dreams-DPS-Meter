@@ -1,9 +1,0 @@
-﻿[
-  {
-    "target": "Ai_Mon_Sky_StarSeed_SelfDestruct",
-    "overrides": {
-      "killCaster": "True",
-      "projCount": "10"
-    }
-  }
-]

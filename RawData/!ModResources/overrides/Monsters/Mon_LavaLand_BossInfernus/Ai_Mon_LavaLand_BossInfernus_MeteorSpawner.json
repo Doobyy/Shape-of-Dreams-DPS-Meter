@@ -1,9 +1,0 @@
-﻿[
-  {
-    "target": "Ai_Mon_LavaLand_BossInfernus_MeteorSpawner",
-    "overrides": {
-      "targetedMeteorChance": "0.15",
-      "interval": "0.05"
-    }
-  }
-]

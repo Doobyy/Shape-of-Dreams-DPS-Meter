@@ -1,9 +1,0 @@
-﻿[
-  {
-    "target": "LucidDream_SparklingDreamFlask",
-    "overrides": {
-      "potionAmount": "0.4",
-      "shrineAmount": "1.2"
-    }
-  }
-]

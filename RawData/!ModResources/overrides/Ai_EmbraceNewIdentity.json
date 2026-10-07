@@ -1,9 +1,0 @@
-﻿[
-  {
-    "target": "Ai_EmbraceNewIdentity",
-    "overrides": {
-      "channelTime": "2.5",
-      "postDaze": "0.25"
-    }
-  }
-]

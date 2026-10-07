@@ -1,9 +1,0 @@
-﻿[
-  {
-    "target": "Ai_ArcticTerritory",
-    "overrides": {
-      "radius": "5",
-      "collisionCheckInterval": "0.05"
-    }
-  }
-]

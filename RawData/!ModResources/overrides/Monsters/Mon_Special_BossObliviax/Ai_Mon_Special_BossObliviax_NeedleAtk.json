@@ -1,9 +1,0 @@
-﻿[
-  {
-    "target": "Ai_Mon_Special_BossObliviax_NeedleAtk",
-    "overrides": {
-      "postDelay": "0.55",
-      "startDelay": "0.75"
-    }
-  }
-]
