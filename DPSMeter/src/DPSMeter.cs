@@ -214,6 +214,7 @@ public sealed class DPSMeter : ModBehaviour
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
         TraceLingeringAuraIconSource(info.actor, healingIcon);
         TraceBismuthHealingSource(info.actor, sourceIdentity, sourceName, healingGem);
+        TraceGenericHealOverTimeSource(info.actor);
         _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
 
     }
@@ -692,6 +693,112 @@ public sealed class DPSMeter : ModBehaviour
             return null;
         }
     }
+
+    private static int _genericHealOverTimeTraceCount;
+
+    private static void TraceGenericHealOverTimeSource(Actor source)
+    {
+        if (source == null || _genericHealOverTimeTraceCount >= 3)
+        {
+            return;
+        }
+
+        Actor match = source;
+        int matchDepth = 0;
+        while (match != null && matchDepth < 8)
+        {
+            string typeName = match.GetType().Name;
+            if (string.Equals(typeName, "Se_GenericHealOverTime", StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+
+            match = match.parentActor;
+            matchDepth++;
+        }
+
+        if (match == null)
+        {
+            return;
+        }
+
+        _genericHealOverTimeTraceCount++;
+        WriteDebugLog("[v5.33] GenericHealOverTime trace " + _genericHealOverTimeTraceCount);
+
+        Actor current = source;
+        int depth = 0;
+        while (current != null && depth < 8)
+        {
+            Type type = current.GetType();
+            WriteDebugLog("[v5.33] actor[" + depth + "] type=" + type.Name + " name=" + current.name);
+
+            string localized = null;
+            try
+            {
+                if (DewLocalization.TryGetUIValue(type.Name + "_Name", out localized) &&
+                    !string.IsNullOrEmpty(localized))
+                {
+                    WriteDebugLog("[v5.33]   uiName=" + localized);
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            SkillTrigger skill = current.firstTrigger as SkillTrigger;
+            if (skill != null)
+            {
+                WriteDebugLog("[v5.33]   firstTrigger=" + skill.GetType().Name);
+            }
+
+            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                string fieldName = field.Name.ToLowerInvariant();
+                if (fieldName.IndexOf("source", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("origin", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("trigger", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("skill", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("passive", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("effect", StringComparison.Ordinal) < 0 &&
+                    fieldName.IndexOf("buff", StringComparison.Ordinal) < 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(current);
+                    if (value == null)
+                    {
+                        continue;
+                    }
+
+                    Actor actorValue = value as Actor;
+                    SkillTrigger skillValue = value as SkillTrigger;
+                    Gem gemValue = value as Gem;
+                    string valueText = actorValue != null
+                        ? "Actor(" + actorValue.GetType().Name + "," + actorValue.name + ")"
+                        : (skillValue != null
+                            ? "SkillTrigger(" + skillValue.GetType().Name + ")"
+                            : (gemValue != null
+                                ? "Gem(" + gemValue.name + ")"
+                                : value.GetType().Name));
+                    WriteDebugLog("[v5.33]   field=" + field.Name + " value=" + valueText);
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        WriteDebugLog("[v5.33] GenericHealOverTime trace end");
+    }
+
 
     private static void TraceBismuthHealingSource(Actor source, string resolvedIdentity, string resolvedName, Gem resolvedGem)
     {
