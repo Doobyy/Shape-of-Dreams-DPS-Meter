@@ -198,3 +198,4 @@ public sealed class DpsOverlay : MonoBehaviour
 
         DrawResizeGrip();
     }
+}
