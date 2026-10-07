@@ -765,6 +765,35 @@ public sealed class DPSMeter : ModBehaviour
     private static int _basicAttackTraceCount;
     private static int _healthOrbTraceCount;
     private static int _bismuthHealTraceCount;
+    private static int _bismuthBookDamageTraceCount;
+
+    private static void TraceBismuthBookDamage(EventInfoDamage info)
+    {
+        if (info.actor == null || _bismuthBookDamageTraceCount >= 8)
+        {
+            return;
+        }
+
+        _bismuthBookDamageTraceCount++;
+        DamageData damage = info.damage;
+
+        WriteDebugLog("[v5.52] Bismuth Book damage trace " + _bismuthBookDamageTraceCount);
+        WriteDebugLog("[v5.52] book   amount=" + damage.currentAmount
+            + " original=" + damage.originalAmount
+            + " source=" + damage.source
+            + " elemental=" + damage.elemental
+            + " attributes=" + damage.attributes
+            + " attackEffectType=" + damage.attackEffectType
+            + " attackEffectStrength=" + damage.attackEffectStrength);
+
+        if (damage.actor != null)
+        {
+            WriteDebugLog("[v5.52] book   damageActor type=" + damage.actor.GetType().Name
+                + " name=" + damage.actor.name);
+        }
+
+        TraceSourceChain(info.actor, "[v5.52] book");
+    }
 
     private static void TraceBasicAttackSource(Actor source)
     {
@@ -1037,6 +1066,11 @@ public sealed class DPSMeter : ModBehaviour
         if (sourceHero == null)
         {
             return;
+        }
+
+        if (sourceHero.GetType().Name == "Hero_Bismuth" && local.hero == sourceHero)
+        {
+            TraceBismuthBookDamage(info);
         }
 
         DewPlayer sourcePlayer = FindPlayer(sourceHero);
