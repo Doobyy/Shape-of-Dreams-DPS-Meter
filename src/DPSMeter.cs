@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.101";
+    public const string DevelopmentVersion = "v5.102";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2247,6 +2247,8 @@ public sealed class DPSMeter : ModBehaviour
                 }
             }
 
+            TryPrismaticLocalizationLookup(source, type);
+
             MethodInfo[] localizationMethods = typeof(DewLocalization).GetMethods(
                 BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             int localizationLogged = 0;
@@ -2280,6 +2282,76 @@ public sealed class DPSMeter : ModBehaviour
         catch (Exception ex)
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity error=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TryPrismaticLocalizationLookup(object source, Type type)
+    {
+        if (source == null || type == null)
+        {
+            return;
+        }
+
+        try
+        {
+            string[] candidates = new string[]
+            {
+                type.Name,
+                source is Actor ? ((Actor)source).GetOriginalName() : null,
+                "63"
+            };
+
+            MethodInfo getSkillKeyString = typeof(DewLocalization).GetMethod(
+                "GetSkillKey", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new Type[] { typeof(string) }, null);
+            MethodInfo getSkillNameString = typeof(DewLocalization).GetMethod(
+                "GetSkillName", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new Type[] { typeof(string), typeof(int) }, null);
+            MethodInfo getSkillNameKeyString = typeof(DewLocalization).GetMethod(
+                "GetSkillNameKey", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new Type[] { typeof(SkillTrigger), typeof(int) }, null);
+
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                string candidate = candidates[i];
+                if (string.IsNullOrEmpty(candidate))
+                {
+                    continue;
+                }
+
+                string key = null;
+                if (getSkillKeyString != null)
+                {
+                    try { key = getSkillKeyString.Invoke(null, new object[] { candidate }) as string; }
+                    catch (Exception) { }
+                }
+
+                string name = null;
+                if (getSkillNameString != null)
+                {
+                    try { name = getSkillNameString.Invoke(null, new object[] { candidate, 0 }) as string; }
+                    catch (Exception) { }
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME lookup candidate=[" + candidate +
+                    "] skillKey=[" + (key ?? "<null>") + "] skillName=[" + (name ?? "<null>") + "]");
+            }
+
+            MethodInfo getSkillKeyType = typeof(DewLocalization).GetMethod(
+                "GetSkillKey", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new Type[] { typeof(Type) }, null);
+            if (getSkillKeyType != null)
+            {
+                string key = null;
+                try { key = getSkillKeyType.Invoke(null, new object[] { type }) as string; }
+                catch (Exception) { }
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME lookup type=[" + type.FullName +
+                    "] skillKey=[" + (key ?? "<null>") + "]");
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME lookup error=" + ex.GetType().Name);
         }
     }
 
