@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.104";
+    public const string DevelopmentVersion = "v5.105";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2310,90 +2310,155 @@ public sealed class DPSMeter : ModBehaviour
             Type configType = config.GetType();
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG type=" + configType.FullName);
 
-            FieldInfo[] fields = configType.GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
             int logged = 0;
-            for (int i = 0; i < fields.Length && logged < 40; i++)
+            for (Type cursor = configType; cursor != null && logged < 60; cursor = cursor.BaseType)
             {
-                FieldInfo field = fields[i];
-                object value;
-                try { value = field.GetValue(config); }
-                catch (Exception) { continue; }
+                FieldInfo[] fields = cursor.GetFields(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
 
-                if (value == null)
+                for (int i = 0; i < fields.Length && logged < 60; i++)
                 {
-                    continue;
-                }
+                    FieldInfo field = fields[i];
+                    string fieldName = field.Name ?? string.Empty;
+                    bool interesting =
+                        fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("memory", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("description", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("type", StringComparison.OrdinalIgnoreCase) >= 0;
 
-                string fieldName = field.Name ?? string.Empty;
-                bool interesting =
-                    fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    fieldName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    fieldName.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    fieldName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    fieldName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    fieldName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    fieldName.IndexOf("memory", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    fieldName.IndexOf("description", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                if (!interesting)
-                {
-                    continue;
-                }
-
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG field=" +
-                    fieldName + " type=" + field.FieldType.FullName +
-                    " value=[" + value + "] objectType=" + value.GetType().FullName);
-                logged++;
-            }
-
-            PropertyInfo[] properties = configType.GetProperties(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            for (int i = 0; i < properties.Length && logged < 56; i++)
-            {
-                PropertyInfo property = properties[i];
-                if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
-                {
-                    continue;
-                }
-
-                string propertyName = property.Name ?? string.Empty;
-                bool interesting =
-                    propertyName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    propertyName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    propertyName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    propertyName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    propertyName.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    propertyName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    propertyName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    propertyName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    propertyName.IndexOf("memory", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    propertyName.IndexOf("description", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                if (!interesting)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    object value = property.GetValue(config, null);
-                    if (value == null)
+                    if (!interesting)
                     {
                         continue;
                     }
 
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG property=" +
-                        propertyName + " type=" + property.PropertyType.FullName +
-                        " value=[" + value + "] objectType=" + value.GetType().FullName);
-                    logged++;
+                    try
+                    {
+                        object value = field.GetValue(config);
+                        if (value == null)
+                        {
+                            continue;
+                        }
+
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG field=" +
+                            fieldName + " declaringType=" + cursor.FullName +
+                            " type=" + field.FieldType.FullName +
+                            " value=[" + value + "] objectType=" + value.GetType().FullName);
+                        logged++;
+                    }
+                    catch (Exception)
+                    {
+                    }
                 }
-                catch (Exception)
+            }
+
+            for (Type cursor = configType; cursor != null && logged < 72; cursor = cursor.BaseType)
+            {
+                PropertyInfo[] properties = cursor.GetProperties(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+
+                for (int i = 0; i < properties.Length && logged < 72; i++)
                 {
+                    PropertyInfo property = properties[i];
+                    if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+                    {
+                        continue;
+                    }
+
+                    string propertyName = property.Name ?? string.Empty;
+                    bool interesting =
+                        propertyName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("memory", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("description", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("type", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    if (!interesting)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        object value = property.GetValue(config, null);
+                        if (value == null)
+                        {
+                            continue;
+                        }
+
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG property=" +
+                            propertyName + " declaringType=" + cursor.FullName +
+                            " type=" + property.PropertyType.FullName +
+                            " value=[" + value + "] objectType=" + value.GetType().FullName);
+                        logged++;
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+            }
+
+            for (Type cursor = configType; cursor != null && logged < 84; cursor = cursor.BaseType)
+            {
+                MethodInfo[] methods = cursor.GetMethods(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+
+                for (int i = 0; i < methods.Length && logged < 84; i++)
+                {
+                    MethodInfo method = methods[i];
+                    string methodName = method.Name ?? string.Empty;
+                    if (method.GetParameters().Length != 0 ||
+                        method.ReturnType != typeof(string))
+                    {
+                        continue;
+                    }
+
+                    bool interesting =
+                        methodName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        methodName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        methodName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        methodName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        methodName.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        methodName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        methodName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        methodName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        methodName.IndexOf("memory", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        methodName.IndexOf("description", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    if (!interesting)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        string value = method.Invoke(config, null) as string;
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG method=" +
+                                methodName + " declaringType=" + cursor.FullName +
+                                " value=[" + value + "]");
+                        }
+                        logged++;
+                    }
+                    catch (Exception)
+                    {
+                    }
                 }
             }
         }
