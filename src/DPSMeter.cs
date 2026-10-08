@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.157";
+    public const string DevelopmentVersion = "v5.158";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2147,10 +2147,12 @@ public sealed class DPSMeter : ModBehaviour
         {
             Type meleeType = typeof(Actor).Assembly.GetType("MeleeAttackInstance");
             if (meleeType == null) return;
-            foreach (MethodInfo method in meleeType.Assembly.GetTypes().SelectMany(t => t.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)))
+            foreach (Type type in meleeType.Assembly.GetTypes())
             {
-                if (method.Name != "<OnHit>b__0" && method.Name != "<OnHit>b__1") continue;
-                if (method.DeclaringType == null || method.DeclaringType.Name != "<>c__DisplayClass18_0") continue;
+                if (type.Name != "<>c__DisplayClass18_0") continue;
+                foreach (MethodInfo method in type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    if (method.Name != "<OnHit>b__0" && method.Name != "<OnHit>b__1") continue;
                 WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLBACK BODY method=" + method.Name + " declaring=" + method.DeclaringType.FullName);
                 MethodBody body = method.GetMethodBody();
                 byte[] il = body == null ? null : body.GetILAsByteArray();
@@ -2166,6 +2168,7 @@ public sealed class DPSMeter : ModBehaviour
                         int token=BitConverter.ToInt32(il,p); try{MemberInfo member=method.Module.ResolveMember(token);WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLBACK BODY il=" + at.ToString("X4") + " op=" + op.Name + " member=" + member);}catch(Exception){WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLBACK BODY il=" + at.ToString("X4") + " op=" + op.Name + " token=0x" + token.ToString("X8"));}
                     }
                     p+=size;
+                    }
                 }
             }
         }
