@@ -413,6 +413,9 @@ public sealed class DpsOverlay : MonoBehaviour
                 : _data.CumulativeBarrierRows;
         height += 22f + (Mathf.Max(1, barrierRows != null ? barrierRows.Count : 0) * 22f);
 
+        // Keep a small visual gap below the final barrier row.
+        height += 6f;
+
         return height;
     }
 
