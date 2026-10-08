@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.161";
+    public const string DevelopmentVersion = "v5.162";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2161,11 +2161,32 @@ public sealed class DPSMeter : ModBehaviour
 
             MethodBody body = target.GetMethodBody();
             byte[] il = body == null ? null : body.GetILAsByteArray();
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH body=" +
+                (body == null ? "<null>" : "present") +
+                " ilLength=" + (il == null ? "<null>" : il.Length.ToString()) +
+                " initLocals=" + (body == null ? "<null>" : body.InitLocals.ToString()) +
+                " locals=" + (body == null ? "<null>" : body.LocalVariables.Count.ToString()) +
+                " exceptions=" + (body == null ? "<null>" : body.ExceptionHandlingClauses.Count.ToString()));
+
             if (il == null)
             {
                 WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH il=<null>");
                 return;
             }
+
+            if (il.Length == 0)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH il=<empty>");
+                return;
+            }
+
+            StringBuilder rawIl = new StringBuilder();
+            for (int i = 0; i < il.Length; i++)
+            {
+                if (i > 0) rawIl.Append(' ');
+                rawIl.Append(il[i].ToString("X2"));
+            }
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH rawIL=" + rawIl);
 
             Dictionary<short, OpCode> single = new Dictionary<short, OpCode>();
             Dictionary<short, OpCode> multi = new Dictionary<short, OpCode>();
@@ -2251,6 +2272,11 @@ public sealed class DPSMeter : ModBehaviour
                     WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH decode-stop il=" + instructionOffset.ToString("X4") + " reason=short-operand");
                     break;
                 }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH op=" +
+                    instructionOffset.ToString("X4") + " opcode=" + opcode.Name +
+                    " operandType=" + opcode.OperandType +
+                    " operandSize=" + operandSize);
 
                 if (opcode == OpCodes.Call ||
                     opcode == OpCodes.Callvirt ||
