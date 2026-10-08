@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.135";
+    public const string DevelopmentVersion = "v5.136";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1492,11 +1492,7 @@ public sealed class DPSMeter : ModBehaviour
 
             if (isLocalPlayer && string.IsNullOrEmpty(skillName) && !string.IsNullOrEmpty(sourceName))
             {
-                Sprite otherIcon = string.Equals(sourceName, "Fire", StringComparison.OrdinalIgnoreCase)
-                    ? FindElmFireIcon(info.actor)
-                    : FindActorIcon(info.actor);
-
-                _data.RegisterOtherIcon(sourceName, otherIcon);
+                _data.RegisterOtherIcon(sourceName, FindActorIcon(info.actor));
             }
         }
 
@@ -3665,29 +3661,6 @@ public sealed class DPSMeter : ModBehaviour
             Sprite icon = FindSpriteMember(current);
             if (icon != null)
                 return icon;
-
-            current = current.parentActor;
-            depth++;
-        }
-
-        return null;
-    }
-
-    private static Sprite FindElmFireIcon(Actor actor)
-    {
-        Actor current = actor;
-        int depth = 0;
-
-        while (current != null && depth < 8)
-        {
-            if (string.Equals(current.GetType().Name, "Se_Elm_Fire", StringComparison.Ordinal))
-            {
-                Sprite icon = FindSpriteMember(current);
-                if (icon != null)
-                {
-                    return icon;
-                }
-            }
 
             current = current.parentActor;
             depth++;
