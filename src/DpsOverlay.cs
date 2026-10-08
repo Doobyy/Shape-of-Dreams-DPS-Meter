@@ -996,7 +996,7 @@ public sealed class DpsOverlay : MonoBehaviour
         return text.Replace("</color>", string.Empty);
     }
 
-    private static void DrawBarWithOutline(Rect barRect, float ratio, Color fillColor, Color outlineColor)
+    private void DrawBarWithOutline(Rect barRect, float ratio, Color fillColor, Color outlineColor)
     {
         float fillWidth = barRect.width * ratio;
         if (fillWidth <= 0f) return;
