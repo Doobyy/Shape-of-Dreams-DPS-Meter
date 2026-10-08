@@ -935,8 +935,8 @@ public sealed class DpsOverlay : MonoBehaviour
             rowRect.width - 14f,
             rowRect.height);
 
-        DrawReadableLabel(nameRect, name, _row);
-        DrawReadableLabel(valueRect, FormatNumber(amount) + "  " + percent.ToString("0.0") + "%", _rowRight);
+        DrawAdaptiveBarText(nameRect, name, CreateBarTextStyle(_row, Color.black), barRect, ratio);
+        DrawAdaptiveBarText(valueRect, FormatNumber(amount) + "  " + percent.ToString("0.0") + "%", CreateBarTextStyle(_rowRight, Color.black), barRect, ratio);
 
         GUI.color = Color.white;
     }
@@ -1025,28 +1025,41 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.DrawTexture(innerRect, _whiteTexture);
     }
 
-    private void DrawReadableLabel(Rect rect, string text, GUIStyle style)
+    private void DrawAdaptiveBarText(Rect textRect, string text, GUIStyle style, Rect barRect, float ratio)
     {
-        if (style == null || string.IsNullOrEmpty(text))
+        if (style == null || string.IsNullOrEmpty(text) || textRect.width <= 0f)
         {
             return;
         }
 
-        Color previousColor = GUI.color;
-        GUIStyle outlineStyle = new GUIStyle(style)
+        float fillRight = barRect.x + (barRect.width * ratio);
+        float left = textRect.x;
+        float right = textRect.xMax;
+
+        // Draw the same text in two clipped regions so it stays readable without a halo.
+        GUI.color = Color.white;
+        if (left < fillRight)
         {
-            alignment = style.alignment
-        };
+            Rect filledRect = new Rect(left, textRect.y, Mathf.Min(right, fillRight) - left, textRect.height);
+            GUI.Label(filledRect, text, style);
+        }
+
+        if (right > fillRight)
+        {
+            Rect emptyRect = new Rect(Mathf.Max(left, fillRight), textRect.y, right - Mathf.Max(left, fillRight), textRect.height);
+            GUI.Label(emptyRect, text, style);
+        }
 
         GUI.color = Color.white;
-        GUI.Label(new Rect(rect.x - 1f, rect.y, rect.width, rect.height), text, outlineStyle);
-        GUI.Label(new Rect(rect.x + 1f, rect.y, rect.width, rect.height), text, outlineStyle);
-        GUI.Label(new Rect(rect.x, rect.y - 1f, rect.width, rect.height), text, outlineStyle);
-        GUI.Label(new Rect(rect.x, rect.y + 1f, rect.width, rect.height), text, outlineStyle);
+    }
 
-        GUI.color = Color.black;
-        GUI.Label(rect, text, style);
-        GUI.color = previousColor;
+    private static GUIStyle CreateBarTextStyle(GUIStyle source, Color color)
+    {
+        GUIStyle style = new GUIStyle(source)
+        {
+            normal = { textColor = color }
+        };
+        return style;
     }
 
     private static Color GetBarOutlineColor(ElementalType? elemental, DpsData.DamageScalingType scaling)
