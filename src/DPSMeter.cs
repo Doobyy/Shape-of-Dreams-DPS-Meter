@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.172";
+    public const string DevelopmentVersion = "v5.173";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1234,6 +1234,8 @@ public sealed class DPSMeter : ModBehaviour
                     "Actor DealDamage(DamageData, Entity, ReactionChain)");
             }
 
+            TracePrismaticDamageDataActorSetter();
+
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH END");
         }
         catch (Exception ex)
@@ -1387,11 +1389,18 @@ public sealed class DPSMeter : ModBehaviour
                     ((instructionOffset >= 0x0050 && instructionOffset <= 0x0080) ||
                      (instructionOffset >= 0x00C0 && instructionOffset <= 0x00E8));
 
-                if (readableNameSite || readableNameContext)
+                bool damageCtorActorContext =
+                    label.IndexOf("DamageData ctor(SourceType", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    instructionOffset >= 0x005C && instructionOffset <= 0x0070;
+
+                bool shouldLog = readableNameSite || readableNameContext || damageCtorActorContext;
+
+                if (shouldLog)
                 {
                     foundRelevant = true;
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC READABLE NAME " +
-                        (readableNameSite ? "SITE" : "CONTEXT") +
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH " +
+                        (readableNameSite ? "READABLE NAME SITE" :
+                         damageCtorActorContext ? "CTOR ACTOR CONTEXT" : "READABLE NAME CONTEXT") +
                         " label=" + label +
                         " il=" + instructionOffset.ToString("X4") +
                         " op=" + opcode +
@@ -1411,6 +1420,29 @@ public sealed class DPSMeter : ModBehaviour
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH method error=" +
                 label + " " + ex.GetType().Name + " " + ex.Message);
+        }
+    }
+
+    private static void TracePrismaticDamageDataActorSetter()
+    {
+        try
+        {
+            MethodInfo setter = typeof(DamageData).GetProperty(
+                "actor",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetSetMethod(true);
+
+            if (setter == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DamageData.actor setter=<null>");
+                return;
+            }
+
+            TracePrismaticMethodIL(setter, "DamageData actor setter");
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DamageData.actor setter error=" +
+                ex.GetType().Name + " " + ex.Message);
         }
     }
 
