@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.96";
+    public const string DevelopmentVersion = "v5.97";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2359,69 +2359,194 @@ private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
 
         try
         {
-            Type type = actor.GetType();
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC componentState type=" + type.FullName +
-                " name=" + (actor.name ?? "<null>") + " instanceId=" + actor.GetInstanceID());
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe actorType=" +
+                actor.GetType().FullName + " actorName=" + (actor.name ?? "<null>") +
+                " readable=[" + (actor.GetActorReadableName() ?? "<null>") + "]" +
+                " original=[" + (actor.GetOriginalName() ?? "<null>") + "]" +
+                " instanceId=" + actor.GetInstanceID());
 
+            AbilityTrigger firstTrigger = actor.firstTrigger;
+            if (firstTrigger != null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe firstTrigger type=" +
+                    firstTrigger.GetType().FullName + " name=" + (firstTrigger.name ?? "<null>") +
+                    " readable=[" + (firstTrigger.GetActorReadableName() ?? "<null>") + "]" +
+                    " original=[" + (firstTrigger.GetOriginalName() ?? "<null>") + "]");
+
+                SkillTrigger skill = firstTrigger as SkillTrigger;
+                if (skill != null)
+                {
+                    string localized = null;
+                    try
+                    {
+                        localized = DewLocalization.GetSkillName(skill, 0);
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe skillTrigger" +
+                        " skillType=" + skill.skillType +
+                        " abilityIndex=" + skill.abilityIndex +
+                        " localized=[" + (localized ?? "<null>") + "]");
+
+                    TracePrismaticReadableMembers(skill, "skillTrigger");
+                }
+                else
+                {
+                    TracePrismaticReadableMembers(firstTrigger, "firstTrigger");
+                }
+            }
+            else
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe firstTrigger=<null>");
+            }
+
+            Entity firstEntity = actor.firstEntity;
+            if (firstEntity != null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe firstEntity type=" +
+                    firstEntity.GetType().FullName + " name=" + (firstEntity.name ?? "<null>") +
+                    " readable=[" + (firstEntity.GetActorReadableName() ?? "<null>") + "]" +
+                    " original=[" + (firstEntity.GetOriginalName() ?? "<null>") + "]");
+            }
+
+            Actor current = actor;
+            int depth = 0;
+            while (current != null && depth < 4)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe chain depth=" +
+                    depth + " type=" + current.GetType().FullName +
+                    " name=" + (current.name ?? "<null>") +
+                    " readable=[" + (current.GetActorReadableName() ?? "<null>") + "]" +
+                    " original=[" + (current.GetOriginalName() ?? "<null>") + "]");
+
+                if (current != actor)
+                {
+                    TracePrismaticReadableMembers(current, "chain" + depth);
+                }
+
+                current = current.parentActor;
+                depth++;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe error=" +
+                ex.GetType().Name + " message=" + (ex.Message ?? "<null>"));
+        }
+    }
+
+    private static void TracePrismaticReadableMembers(object source, string label)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        try
+        {
+            Type type = source.GetType();
             Type currentType = type;
             int hierarchyDepth = 0;
             int logged = 0;
-            while (currentType != null && hierarchyDepth < 4 && logged < 40)
+
+            while (currentType != null && hierarchyDepth < 3 && logged < 50)
             {
                 FieldInfo[] fields = currentType.GetFields(
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-                for (int i = 0; i < fields.Length && logged < 40; i++)
+
+                for (int i = 0; i < fields.Length && logged < 50; i++)
                 {
                     FieldInfo field = fields[i];
                     string lower = field.Name.ToLowerInvariant();
-                    if (lower.IndexOf("main", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("basic", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("attack", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("effect", StringComparison.Ordinal) < 0 &&
+
+                    if (lower.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                        lower.IndexOf("title", StringComparison.Ordinal) < 0 &&
+                        lower.IndexOf("text", StringComparison.Ordinal) < 0 &&
+                        lower.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                        lower.IndexOf("skill", StringComparison.Ordinal) < 0 &&
+                        lower.IndexOf("trigger", StringComparison.Ordinal) < 0 &&
+                        lower.IndexOf("config", StringComparison.Ordinal) < 0 &&
+                        lower.IndexOf("cast", StringComparison.Ordinal) < 0 &&
                         lower.IndexOf("source", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("variant", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("override", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("original", StringComparison.Ordinal) < 0)
+                        lower.IndexOf("resource", StringComparison.Ordinal) < 0 &&
+                        lower.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                        lower.IndexOf("id", StringComparison.Ordinal) < 0)
                     {
                         continue;
                     }
 
                     Type fieldType = field.FieldType;
-                    if (fieldType != typeof(bool) && fieldType != typeof(int) &&
-                        fieldType != typeof(float) && fieldType != typeof(string) && !fieldType.IsEnum)
+                    bool supported =
+                        fieldType == typeof(string) ||
+                        fieldType == typeof(bool) ||
+                        fieldType == typeof(int) ||
+                        fieldType == typeof(uint) ||
+                        fieldType == typeof(float) ||
+                        fieldType == typeof(long) ||
+                        fieldType == typeof(ulong) ||
+                        fieldType.IsEnum ||
+                        typeof(UnityEngine.Object).IsAssignableFrom(fieldType);
+
+                    if (!supported)
                     {
                         continue;
                     }
 
                     try
                     {
-                        object value = field.GetValue(actor);
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC componentState field=" +
-                            field.Name + " type=" + fieldType.Name + " value=[" + (value ?? "<null>") + "]");
+                        object value = field.GetValue(source);
+                        if (value == null)
+                        {
+                            continue;
+                        }
+
+                        string rendered = value.ToString();
+                        UnityEngine.Object unityObject = value as UnityEngine.Object;
+                        if (unityObject != null)
+                        {
+                            rendered = unityObject.GetType().FullName +
+                                " name=[" + (unityObject.name ?? "<null>") + "]" +
+                                " readable=[" + (unityObject is Actor
+                                    ? ((Actor)unityObject).GetActorReadableName()
+                                    : "<not-actor>") + "]";
+                        }
+
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe " +
+                            label + " field=" + field.Name + " type=" + fieldType.FullName +
+                            " value=[" + rendered + "]");
                         logged++;
                     }
                     catch (Exception)
                     {
                     }
                 }
+
                 currentType = currentType.BaseType;
                 hierarchyDepth++;
             }
 
             PropertyInfo[] properties = type.GetProperties(
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            for (int i = 0; i < properties.Length && logged < 40; i++)
+
+            for (int i = 0; i < properties.Length && logged < 50; i++)
             {
                 PropertyInfo property = properties[i];
                 string lower = property.Name.ToLowerInvariant();
-                if (lower.IndexOf("main", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("basic", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("attack", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("effect", StringComparison.Ordinal) < 0 &&
+
+                if (lower.IndexOf("name", StringComparison.Ordinal) < 0 &&
+                    lower.IndexOf("title", StringComparison.Ordinal) < 0 &&
+                    lower.IndexOf("text", StringComparison.Ordinal) < 0 &&
+                    lower.IndexOf("local", StringComparison.Ordinal) < 0 &&
+                    lower.IndexOf("skill", StringComparison.Ordinal) < 0 &&
+                    lower.IndexOf("trigger", StringComparison.Ordinal) < 0 &&
+                    lower.IndexOf("config", StringComparison.Ordinal) < 0 &&
+                    lower.IndexOf("cast", StringComparison.Ordinal) < 0 &&
                     lower.IndexOf("source", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("variant", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("override", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("original", StringComparison.Ordinal) < 0)
+                    lower.IndexOf("resource", StringComparison.Ordinal) < 0 &&
+                    lower.IndexOf("key", StringComparison.Ordinal) < 0 &&
+                    lower.IndexOf("id", StringComparison.Ordinal) < 0)
                 {
                     continue;
                 }
@@ -2432,17 +2557,44 @@ private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
                 }
 
                 Type propertyType = property.PropertyType;
-                if (propertyType != typeof(bool) && propertyType != typeof(int) &&
-                    propertyType != typeof(float) && propertyType != typeof(string) && !propertyType.IsEnum)
+                bool supported =
+                    propertyType == typeof(string) ||
+                    propertyType == typeof(bool) ||
+                    propertyType == typeof(int) ||
+                    propertyType == typeof(uint) ||
+                    propertyType == typeof(float) ||
+                    propertyType == typeof(long) ||
+                    propertyType == typeof(ulong) ||
+                    propertyType.IsEnum ||
+                    typeof(UnityEngine.Object).IsAssignableFrom(propertyType);
+
+                if (!supported)
                 {
                     continue;
                 }
 
                 try
                 {
-                    object value = property.GetValue(actor, null);
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC componentState property=" +
-                        property.Name + " type=" + propertyType.Name + " value=[" + (value ?? "<null>") + "]");
+                    object value = property.GetValue(source, null);
+                    if (value == null)
+                    {
+                        continue;
+                    }
+
+                    string rendered = value.ToString();
+                    UnityEngine.Object unityObject = value as UnityEngine.Object;
+                    if (unityObject != null)
+                    {
+                        rendered = unityObject.GetType().FullName +
+                            " name=[" + (unityObject.name ?? "<null>") + "]" +
+                            " readable=[" + (unityObject is Actor
+                                ? ((Actor)unityObject).GetActorReadableName()
+                                : "<not-actor>") + "]";
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe " +
+                        label + " property=" + property.Name + " type=" + propertyType.FullName +
+                        " value=[" + rendered + "]");
                     logged++;
                 }
                 catch (Exception)
@@ -2452,7 +2604,8 @@ private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC componentState error=" + ex.GetType().Name);
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe membersError label=" +
+                label + " error=" + ex.GetType().Name);
         }
     }
 
