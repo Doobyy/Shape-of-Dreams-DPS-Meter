@@ -34,7 +34,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color BarTextStrokeColor = Color.black;
     private static readonly Color DefaultBarOutlineColor = new Color(0.259f, 0.259f, 0.259f, 1f);
     private static readonly Color FireBarOutlineColor = new Color(0.675f, 0.039f, 0.000f, 1f);
-    private static readonly Color IceBarOutlineColor = new Color(0.180f, 0.529f, 0.925f, 1f);
+    private static readonly Color IceBarOutlineColor = new Color(0.184f, 0.420f, 0.694f, 1f);
     private static readonly Color LightBarOutlineColor = new Color(0.729f, 0.518f, 0.000f, 1f);
     private static readonly Color DarkBarOutlineColor = new Color(0.200f, 0.000f, 0.631f, 1f);
     private static readonly Color AdScalingBarOutlineColor = new Color(0.298f, 0.129f, 0.000f, 1f);
