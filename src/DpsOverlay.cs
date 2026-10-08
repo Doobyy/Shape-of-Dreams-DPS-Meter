@@ -60,6 +60,10 @@ public sealed class DpsOverlay : MonoBehaviour
     private bool _showBarrier = true;
     private float _collapsedWindowHeight;
     private bool _manualResize;
+    private bool _contextMenuOpen;
+    private bool _settingsOpen;
+    private Rect _contextMenuRect;
+    private Rect _settingsRect = new Rect(0f, 0f, 230f, 150f);
 
     private GUIStyle _header;
     private GUIStyle _headerRight;
@@ -106,8 +110,6 @@ public sealed class DpsOverlay : MonoBehaviour
             24f);
 
         DrawHeader(headerRect);
-        DrawDevelopmentReloadButton();
-        DrawDevelopmentExportButton();
 
         Rect contentRect = new Rect(
             _windowRect.x + 6f,
@@ -205,6 +207,16 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         DrawResizeGrip();
+
+        if (_contextMenuOpen)
+        {
+            DrawContextMenu();
+        }
+
+        if (_settingsOpen)
+        {
+            DrawSettingsWindow();
+        }
     }
 
     private void HandleWindowInput()
@@ -223,7 +235,60 @@ public sealed class DpsOverlay : MonoBehaviour
             16f,
             16f);
 
-        Rect reloadRect = GetReloadButtonRect();
+        if (e.type == EventType.MouseDown && e.button == 1)
+        {
+            if (_settingsOpen && !_settingsRect.Contains(e.mousePosition))
+            {
+                _settingsOpen = false;
+                e.Use();
+                return;
+            }
+
+            if (_contextMenuOpen)
+            {
+                if (!_contextMenuRect.Contains(e.mousePosition))
+                {
+                    _contextMenuOpen = false;
+                    e.Use();
+                }
+
+                return;
+            }
+
+            if (_windowRect.Contains(e.mousePosition))
+            {
+                const float menuWidth = 110f;
+                const float menuHeight = 96f;
+                const float menuGap = 4f;
+
+                float x = e.mousePosition.x;
+                float y = e.mousePosition.y;
+
+                if (x + menuWidth > Screen.width - 4f)
+                {
+                    x = Screen.width - menuWidth - 4f;
+                }
+
+                if (y + menuHeight > Screen.height - 4f)
+                {
+                    y = Screen.height - menuHeight - 4f;
+                }
+
+                _contextMenuRect = new Rect(
+                    Mathf.Max(4f, x + menuGap),
+                    Mathf.Max(4f, y + menuGap),
+                    menuWidth,
+                    menuHeight);
+                _contextMenuOpen = true;
+                e.Use();
+                return;
+            }
+        }
+
+        if (_settingsOpen || _contextMenuOpen)
+        {
+            return;
+        }
 
         if (e.type == EventType.MouseDown && e.button == 0)
         {
@@ -241,11 +306,6 @@ public sealed class DpsOverlay : MonoBehaviour
                 _resizeMoved = false;
 
                 e.Use();
-                return;
-            }
-
-            if (reloadRect.Contains(e.mousePosition))
-            {
                 return;
             }
 
@@ -534,63 +594,111 @@ public sealed class DpsOverlay : MonoBehaviour
         }
     }
 
-    private Rect GetDevelopmentButtonRect(float yOffset)
+    private void DrawContextMenu()
     {
-        const float buttonWidth = 74f;
-        const float buttonHeight = 24f;
-        const float gap = 6f;
+        GUI.Box(_contextMenuRect, GUIContent.none);
 
-        float x = _windowRect.xMax + gap;
-        if (x + buttonWidth > Screen.width - 4f)
+        const float padding = 6f;
+        const float buttonHeight = 24f;
+        const float gap = 2f;
+        float buttonWidth = _contextMenuRect.width - (padding * 2f);
+
+        Rect settingsRect = new Rect(
+            _contextMenuRect.x + padding,
+            _contextMenuRect.y + padding,
+            buttonWidth,
+            buttonHeight);
+
+        Rect reloadRect = new Rect(
+            settingsRect.x,
+            settingsRect.yMax + gap,
+            buttonWidth,
+            buttonHeight);
+
+        Rect exportRect = new Rect(
+            reloadRect.x,
+            reloadRect.yMax + gap,
+            buttonWidth,
+            buttonHeight);
+
+        if (GUI.Button(settingsRect, "Settings"))
         {
-            x = _windowRect.x - buttonWidth - gap;
+            _contextMenuOpen = false;
+            OpenSettingsWindow();
         }
 
-        x = Mathf.Clamp(x, 4f, Mathf.Max(4f, Screen.width - buttonWidth - 4f));
-
-        float y = _windowRect.y + 4f + yOffset;
-        y = Mathf.Clamp(y, 4f, Mathf.Max(4f, Screen.height - buttonHeight - 4f));
-
-        return new Rect(x, y, buttonWidth, buttonHeight);
-    }
-
-    private Rect GetReloadButtonRect()
-    {
-        return GetDevelopmentButtonRect(0f);
-    }
-
-    private Rect GetExportButtonRect()
-    {
-        return GetDevelopmentButtonRect(30f);
-    }
-
-    private void DrawDevelopmentReloadButton()
-    {
-        Rect reloadRect = GetReloadButtonRect();
-
-        if (GUI.Button(reloadRect, "RELOAD"))
+        if (GUI.Button(reloadRect, "Reload"))
         {
+            _contextMenuOpen = false;
             DewMod.ReloadFromActiveMods();
         }
+
+        if (GUI.Button(exportRect, "Export"))
+        {
+            _contextMenuOpen = false;
+            ExportHealingLog();
+        }
     }
 
-    private void DrawDevelopmentExportButton()
+    private void OpenSettingsWindow()
     {
-        Rect exportRect = GetExportButtonRect();
+        _settingsRect = new Rect(
+            Mathf.Clamp(
+                _windowRect.x + 12f,
+                4f,
+                Mathf.Max(4f, Screen.width - _settingsRect.width - 4f)),
+            Mathf.Clamp(
+                _windowRect.y + 28f,
+                4f,
+                Mathf.Max(4f, Screen.height - _settingsRect.height - 4f)),
+            _settingsRect.width,
+            _settingsRect.height);
 
-        if (GUI.Button(exportRect, "EXPORT LOG"))
+        _settingsOpen = true;
+    }
+
+    private void DrawSettingsWindow()
+    {
+        GUI.Box(_settingsRect, "Settings");
+
+        const float left = 12f;
+        const float top = 32f;
+        const float rowHeight = 26f;
+
+        _showHealing = GUI.Toggle(
+            new Rect(_settingsRect.x + left, _settingsRect.y + top, _settingsRect.width - 24f, rowHeight),
+            _showHealing,
+            "Show Healing Breakdown");
+
+        _showBarrier = GUI.Toggle(
+            new Rect(_settingsRect.x + left, _settingsRect.y + top + rowHeight, _settingsRect.width - 24f, rowHeight),
+            _showBarrier,
+            "Show Barrier Breakdown");
+
+        if (GUI.Button(
+            new Rect(
+                _settingsRect.xMax - 72f,
+                _settingsRect.yMax - 30f,
+                60f,
+                22f),
+            "Close"))
         {
-            try
-            {
-                string path = Path.Combine(
-                    Application.persistentDataPath,
-                    "DPSMeter-healing-export.log");
+            _settingsOpen = false;
+        }
+    }
 
-                File.WriteAllText(path, _data.ExportHealingLog());
-            }
-            catch (Exception)
-            {
-            }
+    private void ExportHealingLog()
+    {
+        try
+        {
+            string path = Path.Combine(
+                Application.persistentDataPath,
+                "DPSMeter-healing-export.log");
+
+            File.WriteAllText(path, _data.ExportHealingLog());
+        }
+        catch (Exception)
+        {
         }
     }
 
