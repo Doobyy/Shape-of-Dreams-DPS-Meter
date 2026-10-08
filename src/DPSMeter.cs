@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.58";
+    public const string DevelopmentVersion = "v5.59";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -823,6 +823,8 @@ public sealed class DPSMeter : ModBehaviour
             + " attributes=" + damage.attributes
             + " attackEffectType=" + damage.attackEffectType
             + " attackEffectStrength=" + damage.attackEffectStrength);
+        WriteDebugLog("[" + DevelopmentVersion + "]  book   resolvedScaling=" +
+            FindDamageScalingType(info.actor));
 
         WriteDebugLog("[" + DevelopmentVersion + "]  book   eventActor type=" + info.actor.GetType().Name
             + " name=" + info.actor.name);
@@ -948,8 +950,61 @@ public sealed class DPSMeter : ModBehaviour
         _healthOrbTraceCount++;
         WriteDebugLog("[" + DevelopmentVersion + "]  Health Orb trace " + _healthOrbTraceCount);
         TraceSourceChain(source, "[" + DevelopmentVersion + "]  orb");
+        TraceHealingRuntimeData(source, "[" + DevelopmentVersion + "]  orb");
         TraceRegenOrbPickup(source);
     }
+
+    private static void TraceHealingRuntimeData(Actor source, string label)
+    {
+        Actor current = source;
+        int depth = 0;
+
+        while (current != null && depth < 4)
+        {
+            Type type = current.GetType();
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            int logged = 0;
+            for (int i = 0; i < fields.Length && logged < 24; i++)
+            {
+                FieldInfo field = fields[i];
+
+                if (field.FieldType != typeof(ScalingValue) &&
+                    field.FieldType != typeof(float) &&
+                    field.FieldType != typeof(int) &&
+                    field.FieldType != typeof(string))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(current);
+                    if (value == null)
+                    {
+                        continue;
+                    }
+
+                    if (field.FieldType == typeof(string) && string.IsNullOrEmpty((string)value))
+                    {
+                        continue;
+                    }
+
+                    WriteDebugLog(label + "   runtime actor[" + depth + "] field=" +
+                        field.Name + " type=" + field.FieldType.Name + " value=[" + value + "]");
+                    logged++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+    }
+
 
     private static void TraceRegenOrbPickup(Actor source)
     {
