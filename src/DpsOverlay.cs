@@ -23,7 +23,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color DefaultBarColor = new Color(0.871f, 0.871f, 0.871f, 0.68f);
     private static readonly Color WindowFillColor = new Color(0f, 0f, 0f, 0.55f);
     private static readonly Color FireBarColor = new Color(1.00f, 0.396f, 0.224f, 0.68f);
-    private static readonly Color IceBarColor = new Color(0.816f, 0.914f, 1.00f, 0.68f);
+    private static readonly Color IceBarColor = new Color(0.78f, 0.90f, 1.00f, 0.68f);
     private static readonly Color LightBarColor = new Color(1.00f, 0.918f, 0.655f, 0.68f);
     private static readonly Color DarkBarColor = new Color(0.737f, 0.565f, 1.00f, 0.68f);
     private static readonly Color AdScalingBarColor = new Color(1.00f, 0.624f, 0.412f, 0.68f);
