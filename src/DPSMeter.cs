@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.140";
+    public const string DevelopmentVersion = "v5.141";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1488,15 +1488,17 @@ public sealed class DPSMeter : ModBehaviour
         else
         {
             scalingType = FindDamageScalingType(info.actor);
+        }
 
-            if (isLocalPlayer && string.IsNullOrEmpty(skillName) && !string.IsNullOrEmpty(sourceName))
-            {
-                Sprite otherIcon = string.Equals(sourceName, "Fire", StringComparison.OrdinalIgnoreCase)
-                    ? FindElmFireIcon(info.actor)
-                    : FindActorIcon(info.actor);
+        // Source-only damage such as Fire has no SkillTrigger, so it must not
+        // be hidden behind the non-basic-attack branch above.
+        if (isLocalPlayer && skill == null && !string.IsNullOrEmpty(sourceName))
+        {
+            Sprite otherIcon = string.Equals(sourceName, "Fire", StringComparison.OrdinalIgnoreCase)
+                ? FindElmFireIcon(info.actor)
+                : FindActorIcon(info.actor);
 
-                _data.RegisterOtherIcon(sourceName, otherIcon);
-            }
+            _data.RegisterOtherIcon(sourceName, otherIcon);
         }
 
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
