@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.151";
+    public const string DevelopmentVersion = "v5.152";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2014,6 +2014,157 @@ public sealed class DPSMeter : ModBehaviour
         if (_prismaticVisionDiagnosticSeen.Add(traceKey))
         {
             TracePrismaticDisplayIdentity(info.actor, prismaticEffect);
+            TracePrismaticMeleeCallbackIdentity();
+        }
+    }
+
+    private static void TracePrismaticMeleeCallbackIdentity()
+    {
+        try
+        {
+            Assembly coreAssembly = typeof(Actor).Assembly;
+            Type meleeType = coreAssembly.GetType("MeleeAttackInstance");
+            if (meleeType == null)
+            {
+                foreach (Type type in coreAssembly.GetTypes())
+                {
+                    if (type.Name == "MeleeAttackInstance")
+                    {
+                        meleeType = type;
+                        break;
+                    }
+                }
+            }
+
+            if (meleeType == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC MELEE CALLBACK type=<null>");
+                return;
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC MELEE CALLBACK type=" + meleeType.FullName);
+            MethodInfo[] methods = meleeType.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+            foreach (MethodInfo method in methods)
+            {
+                if (method.Name != "<OnHit>b__0" && method.Name != "<OnHit>b__1")
+                {
+                    continue;
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC MELEE CALLBACK method=" + method.Name + " return=" + method.ReturnType.FullName);
+                ParameterInfo[] parameters = method.GetParameters();
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC MELEE CALLBACK param=" + i + " name=" + parameters[i].Name + " type=" + parameters[i].ParameterType.FullName);
+                }
+
+                MethodBody body = method.GetMethodBody();
+                if (body == null)
+                {
+                    continue;
+                }
+
+                byte[] il = body.GetILAsByteArray();
+                if (il == null)
+                {
+                    continue;
+                }
+
+                Dictionary<short, OpCode> singleByteOpCodes = new Dictionary<short, OpCode>();
+                Dictionary<short, OpCode> multiByteOpCodes = new Dictionary<short, OpCode>();
+                foreach (FieldInfo field in typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static))
+                {
+                    if (field.FieldType != typeof(OpCode))
+                    {
+                        continue;
+                    }
+
+                    OpCode opcode = (OpCode)field.GetValue(null);
+                    short value = opcode.Value;
+                    if (value < 0x100)
+                    {
+                        singleByteOpCodes[value] = opcode;
+                    }
+                    else if ((value & 0xFF00) == 0xFE00)
+                    {
+                        multiByteOpCodes[(short)(value & 0xFF)] = opcode;
+                    }
+                }
+
+                for (int offset = 0; offset < il.Length;)
+                {
+                    int instructionOffset = offset;
+                    OpCode opcode;
+                    byte first = il[offset++];
+                    if (first == 0xFE)
+                    {
+                        if (offset >= il.Length || !multiByteOpCodes.TryGetValue(il[offset], out opcode))
+                        {
+                            break;
+                        }
+                        offset++;
+                    }
+                    else if (!singleByteOpCodes.TryGetValue(first, out opcode))
+                    {
+                        break;
+                    }
+
+                    int operandSize;
+                    switch (opcode.OperandType)
+                    {
+                        case OperandType.InlineNone: operandSize = 0; break;
+                        case OperandType.ShortInlineI:
+                        case OperandType.ShortInlineBrTarget:
+                        case OperandType.ShortInlineVar: operandSize = 1; break;
+                        case OperandType.InlineVar: operandSize = 2; break;
+                        case OperandType.InlineI:
+                        case OperandType.InlineBrTarget:
+                        case OperandType.InlineField:
+                        case OperandType.InlineMethod:
+                        case OperandType.InlineSig:
+                        case OperandType.InlineString:
+                        case OperandType.InlineTok:
+                        case OperandType.InlineType: operandSize = 4; break;
+                        case OperandType.ShortInlineR: operandSize = 4; break;
+                        case OperandType.InlineI8:
+                        case OperandType.InlineR: operandSize = 8; break;
+                        case OperandType.InlineSwitch:
+                            if (offset + 4 > il.Length) { return; }
+                            operandSize = 4 + (BitConverter.ToInt32(il, offset) * 4);
+                            break;
+                        default: return;
+                    }
+
+                    if (offset + operandSize > il.Length)
+                    {
+                        break;
+                    }
+
+                    if (opcode.OperandType == OperandType.InlineField ||
+                        opcode.OperandType == OperandType.InlineMethod ||
+                        opcode.OperandType == OperandType.InlineTok ||
+                        opcode.OperandType == OperandType.InlineType)
+                    {
+                        int token = BitConverter.ToInt32(il, offset);
+                        try
+                        {
+                            MemberInfo member = method.Module.ResolveMember(token);
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC MELEE CALLBACK il=" + instructionOffset.ToString("X4") + " op=" + opcode.Name + " member=" + member);
+                        }
+                        catch (Exception)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC MELEE CALLBACK il=" + instructionOffset.ToString("X4") + " op=" + opcode.Name + " token=0x" + token.ToString("X8"));
+                        }
+                    }
+
+                    offset += operandSize;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC MELEE CALLBACK error=" + ex.GetType().Name);
         }
     }
 
