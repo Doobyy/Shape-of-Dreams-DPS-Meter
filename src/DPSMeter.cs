@@ -1441,27 +1441,42 @@ public sealed class DPSMeter : ModBehaviour
                 return;
             }
 
-            int[] offsets = new int[] { 0x015B, 0x0305, 0x03A0, 0x0522 };
-            for (int n = 0; n < offsets.Length; n++)
+            int hits = 0;
+            for (int offset = 0; offset <= il.Length - 5; offset++)
             {
-                int offset = offsets[n];
-                int start = Math.Max(0, offset - 24);
-                int end = Math.Min(il.Length, offset + 8);
-                StringBuilder bytes = new StringBuilder();
+                if (il[offset] != 0x7D)
+                {
+                    continue;
+                }
 
+                int token = BitConverter.ToInt32(il, offset + 1);
+                string operand = "<unresolved>";
+                try
+                {
+                    MemberInfo member = dealDamage.Module.ResolveMember(token);
+                    operand = member == null ? "<null>" : member.ToString();
+                }
+                catch (Exception ex)
+                {
+                    operand = "<resolve-error:" + ex.GetType().Name + ">";
+                }
+
+                hits++;
+                int start = Math.Max(0, offset - 16);
+                int end = Math.Min(il.Length, offset + 5);
+                StringBuilder bytes = new StringBuilder();
                 for (int i = start; i < end; i++)
                 {
-                    if (i > start)
-                    {
-                        bytes.Append(' ');
-                    }
+                    if (i > start) bytes.Append(' ');
                     bytes.Append(il[i].ToString("X2"));
                 }
 
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage actor store #" +
-                    (n + 1) + " il=" + offset.ToString("X4") + " contextStart=" +
-                    start.ToString("X4") + " contextBytes=" + bytes);
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage stfld #" +
+                    hits + " il=" + offset.ToString("X4") + " token=0x" +
+                    token.ToString("X8") + " operand=" + operand + " contextBytes=" + bytes);
             }
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage stfld count=" + hits);
         }
         catch (Exception ex)
         {
