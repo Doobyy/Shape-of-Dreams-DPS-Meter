@@ -2357,6 +2357,18 @@ public sealed class DPSMeter : ModBehaviour
             scalingType = FindDamageScalingType(info.actor);
         }
 
+        // The Prismatic split is intentionally authoritative for this one
+        // generated actor. Do not let the normal skill-scaling resolver
+        // collapse the AD/AP portions back into one scaling color.
+        if (isPrismaticPhysical)
+        {
+            scalingType = DpsData.DamageScalingType.Ad;
+        }
+        else if (isPrismaticMagic)
+        {
+            scalingType = DpsData.DamageScalingType.Ap;
+        }
+
         // Source-only damage such as Fire has no SkillTrigger, so it must not
         // be hidden behind the non-basic-attack branch above.
         if (isLocalPlayer && skill == null && !string.IsNullOrEmpty(sourceName))
