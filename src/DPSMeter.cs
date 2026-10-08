@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.110";
+    public const string DevelopmentVersion = "v5.111";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2290,7 +2290,7 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    pri    private static void TracePrismaticOriginChain(Actor effect)
+    private static void TracePrismaticOriginChain(Actor effect)
     {
         try
         {
