@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.67";
+    public const string DevelopmentVersion = "v5.68";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2372,6 +2372,38 @@ public sealed class DPSMeter : ModBehaviour
         {
             return DpsData.DamageScalingType.None;
         }
+    }
+
+    private static DpsData.DamageScalingType FindRuntimeDamageScaling(
+        Actor actor,
+        string preferredFieldName)
+    {
+        return FindRuntimeDamageScaling(actor, preferredFieldName, false);
+    }
+
+    private static DamageInstance FindDamageInstance(Actor actor)
+    {
+        if (actor == null)
+        {
+            return null;
+        }
+
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            DamageInstance damageInstance = current as DamageInstance;
+            if (damageInstance != null)
+            {
+                return damageInstance;
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
     }
 
     private static DpsData.DamageScalingType FindDamageScalingType(Actor actor)
