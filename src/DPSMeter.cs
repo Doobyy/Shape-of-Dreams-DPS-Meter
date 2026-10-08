@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.98";
+    public const string DevelopmentVersion = "v5.99";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -26,7 +26,6 @@ public sealed class DPSMeter : ModBehaviour
     private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _chompScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _prismaticVisionDiagnosticSeen = new HashSet<string>();
-    private static readonly HashSet<Actor> _prismaticAttackEventSubscribed = new HashSet<Actor>();
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -2204,6 +2203,12 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static bool ContainsTargetChompName(string value)
+    {
+        return !string.IsNullOrEmpty(value) &&
+            value.IndexOf("Chomp", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
     private static void TraceTargetChompScaling(Actor actor, SkillTrigger directSkill)
     {
         if (actor == null)
@@ -3228,40 +3233,6 @@ public sealed class DPSMeter : ModBehaviour
         {
             _data.Reset();
         }
-    }
-
-    private void UnsubscribePrismaticAttackEvents()
-    {
-        foreach (Actor actor in _prismaticAttackEventSubscribed)
-        {
-            if (actor == null)
-            {
-                continue;
-            }
-
-            try
-            {
-                if (actor.ActorEvent_OnAttackHit != null)
-                {
-                    actor.ActorEvent_OnAttackHit.Remove(OnPrismaticAttackHit);
-                }
-
-                if (actor.ActorEvent_OnAttackEffectTriggered != null)
-                {
-                    actor.ActorEvent_OnAttackEffectTriggered.Remove(OnPrismaticAttackEffectTriggered);
-                }
-
-                if (actor.ActorEvent_OnDealDamage != null)
-                {
-                    actor.ActorEvent_OnDealDamage.Remove(OnPrismaticDealDamage);
-                }
-            }
-            catch (Exception)
-            {
-            }
-        }
-
-        _prismaticAttackEventSubscribed.Clear();
     }
 
     private void OnDestroy()
