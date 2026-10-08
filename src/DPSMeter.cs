@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.97";
+    public const string DevelopmentVersion = "v5.98";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1941,19 +1941,37 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        SkillTrigger skill = directSkill;
-        Actor skillSourceActor = info.actor;
-        if (skill == null)
+        bool prismaticActor = false;
+        Actor current = info.actor;
+        int depth = 0;
+        Actor prismaticEffect = null;
+
+        while (current != null && depth < 8)
         {
-            skill = FindSkillTriggerInActorChain(info.actor, out skillSourceActor);
+            string typeName = current.GetType().Name;
+            string actorName = current.name ?? string.Empty;
+
+            if (typeName.IndexOf("PrismaticEyes", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                actorName.IndexOf("PrismaticEyes", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                prismaticActor = true;
+
+                if (typeName.IndexOf("Se_D_PrismaticEyes", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    prismaticEffect = current;
+                }
+            }
+
+            current = current.parentActor;
+            depth++;
         }
 
         string skillName = null;
-        if (skill != null)
+        if (directSkill != null)
         {
             try
             {
-                skillName = skill.GetFormattedSkillTitle();
+                skillName = directSkill.GetFormattedSkillTitle();
             }
             catch (Exception)
             {
@@ -1963,29 +1981,12 @@ public sealed class DPSMeter : ModBehaviour
             {
                 try
                 {
-                    skillName = DewLocalization.GetSkillName(skill, 0);
+                    skillName = DewLocalization.GetSkillName(directSkill, 0);
                 }
                 catch (Exception)
                 {
                 }
             }
-        }
-
-        bool prismaticActor = false;
-        Actor current = info.actor;
-        int actorDepth = 0;
-        while (current != null && actorDepth < 8)
-        {
-            if (current.GetType().Name.IndexOf("PrismaticEyes", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                (!string.IsNullOrEmpty(current.name) &&
-                 current.name.IndexOf("PrismaticEyes", StringComparison.OrdinalIgnoreCase) >= 0))
-            {
-                prismaticActor = true;
-                break;
-            }
-
-            current = current.parentActor;
-            actorDepth++;
         }
 
         bool prismaticSkill = !string.IsNullOrEmpty(skillName) &&
@@ -1996,448 +1997,103 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        string identity = GetSkillSlotIdentity(skillSourceActor, skill);
-        string traceKey = "prismatic:" +
-            (identity ?? skillName ?? "<null>") + ":" +
-            info.damage.GetType().FullName;
-
+        string traceKey = "prismatic-name:" + info.actor.GetInstanceID();
         if (!_prismaticVisionDiagnosticSeen.Add(traceKey))
         {
             return;
         }
 
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE trace skill=" +
-            (skillName ?? "<null>") + " identity=" + (identity ?? "<null>") +
-            " actor=" + info.actor.GetType().FullName +
-            " name=" + (info.actor.name ?? "<null>"));
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME target type=" +
+            info.actor.GetType().FullName + " name=" + (info.actor.name ?? "<null>"));
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME target readable=[" +
+            (info.actor.GetActorReadableName() ?? "<null>") + "] original=[" +
+            (info.actor.GetOriginalName() ?? "<null>") + "]");
 
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE values amount=" +
-            info.damage.amount + " discarded=" + info.damage.discardedAmount +
-            " elemental=" + info.damage.elemental);
-
-        TracePrismaticObjectMembers(info.damage, "[" + DevelopmentVersion + "] PRISMATIC damageData");
-        TracePrismaticObjectMembers(info, "[" + DevelopmentVersion + "] PRISMATIC eventInfo");
-
-        current = info.actor;
-        actorDepth = 0;
-        while (current != null && actorDepth < 8)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC actor[" + actorDepth +
-                "] type=" + current.GetType().FullName +
-                " name=" + (current.name ?? "<null>"));
-
-            TraceReadableIdentity(current, "[" + DevelopmentVersion + "] PRISMATIC actor[" + actorDepth + "]");
-            TracePrismaticObjectMembers(current, "[" + DevelopmentVersion + "] PRISMATIC actor[" + actorDepth + "]");
-
-            if (current.GetType().Name.IndexOf("Se_D_PrismaticEyes", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                TracePrismaticPendingAttack(current);
-            }
-
-            current = current.parentActor;
-            actorDepth++;
-        }
-    }
-
-    private static void TracePrismaticPendingAttack(Actor actor)
-    {
-        if (actor == null)
+        if (prismaticEffect == null)
         {
             return;
         }
 
-        FieldInfo pendingField = actor.GetType().GetField(
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME effect readable=[" +
+            (prismaticEffect.GetActorReadableName() ?? "<null>") + "] original=[" +
+            (prismaticEffect.GetOriginalName() ?? "<null>") + "]");
+
+        TracePrismaticNameSource(prismaticEffect, "effect");
+
+        Actor pendingAttack = GetPrismaticPendingAttack(prismaticEffect);
+        if (pendingAttack == null)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingAttack=<null>");
+            return;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingAttack type=" +
+            pendingAttack.GetType().FullName + " name=" + (pendingAttack.name ?? "<null>"));
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingAttack readable=[" +
+            (pendingAttack.GetActorReadableName() ?? "<null>") + "] original=[" +
+            (pendingAttack.GetOriginalName() ?? "<null>") + "]");
+
+        TracePrismaticNameSource(pendingAttack, "pendingAttack");
+
+        AbilityTrigger trigger = pendingAttack.firstTrigger;
+        if (trigger != null)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingTrigger type=" +
+                trigger.GetType().FullName + " name=" + (trigger.name ?? "<null>") +
+                " readable=[" + (trigger.GetActorReadableName() ?? "<null>") + "] original=[" +
+                (trigger.GetOriginalName() ?? "<null>") + "]");
+
+            SkillTrigger skillTrigger = trigger as SkillTrigger;
+            if (skillTrigger != null)
+            {
+                string localized = null;
+                try
+                {
+                    localized = DewLocalization.GetSkillName(skillTrigger, 0);
+                }
+                catch (Exception)
+                {
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingTrigger skillType=" +
+                    skillTrigger.skillType + " abilityIndex=" + skillTrigger.abilityIndex +
+                    " formatted=[" + (skillTrigger.GetFormattedSkillTitle() ?? "<null>") +
+                    "] localized=[" + (localized ?? "<null>") + "]");
+            }
+        }
+        else
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingTrigger=<null>");
+        }
+    }
+
+    private static Actor GetPrismaticPendingAttack(Actor effect)
+    {
+        if (effect == null)
+        {
+            return null;
+        }
+
+        FieldInfo pendingField = effect.GetType().GetField(
             "_pendingAttack",
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
         if (pendingField == null)
         {
-            return;
+            return null;
         }
 
         try
         {
-            object pendingAttack = pendingField.GetValue(actor);
-            if (pendingAttack == null)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack=<null>");
-                return;
-            }
-
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack type=" +
-                pendingAttack.GetType().FullName +
-                " value=[" + pendingAttack + "]");
-
-            TracePrismaticAttackEventTypes(pendingAttack);
-            SubscribePrismaticAttackEventsOnActorChain(pendingAttack as Actor);
-
-            FieldInfo configsField = pendingAttack.GetType().GetField(
-                "configs",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            if (configsField != null && configsField.FieldType.IsArray)
-            {
-                try
-                {
-                    Array configs = configsField.GetValue(pendingAttack) as Array;
-                    if (configs != null)
-                    {
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack configs length=" +
-                            configs.Length);
-
-                        for (int i = 0; i < configs.Length && i < 8; i++)
-                        {
-                            object config = configs.GetValue(i);
-                            if (config == null)
-                            {
-                                continue;
-                            }
-
-                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack config[" + i +
-                                "] type=" + config.GetType().FullName +
-                                " value=[" + config + "]");
-                            TracePrismaticObjectMembers(
-                                config,
-                                "[" + DevelopmentVersion + "] PRISMATIC pendingAttack config[" + i + "]");
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack configs readError=" +
-                        ex.GetType().Name);
-                }
-            }
-
-            Type currentType = pendingAttack.GetType();
-            int hierarchyDepth = 0;
-
-            while (currentType != null && hierarchyDepth < 6)
-            {
-                FieldInfo[] identityFields = currentType.GetFields(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-
-                for (int i = 0; i < identityFields.Length; i++)
-                {
-                    FieldInfo field = identityFields[i];
-                    string fieldName = field.Name ?? string.Empty;
-                    bool interestingName =
-                        fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        fieldName.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        fieldName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        fieldName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                    if (!interestingName)
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        object value = field.GetValue(pendingAttack);
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack identityField=" +
-                            field.Name + " type=" + field.FieldType.FullName +
-                            " value=[" + (value ?? "<null>") + "]");
-
-                        if (value != null &&
-                            !field.FieldType.IsPrimitive &&
-                            field.FieldType != typeof(string) &&
-                            !field.FieldType.IsEnum)
-                        {
-                            TracePrismaticObjectMembers(
-                                value,
-                                "[" + DevelopmentVersion + "] PRISMATIC pendingAttack " + field.Name);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack identityField=" +
-                            field.Name + " readError=" + ex.GetType().Name);
-                    }
-                }
-
-                currentType = currentType.BaseType;
-                hierarchyDepth++;
-            }
-
-            while (currentType != null && hierarchyDepth < 4)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack hierarchy[" +
-                    hierarchyDepth + "] type=" + currentType.FullName);
-
-                PropertyInfo[] properties = currentType.GetProperties(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-
-                for (int i = 0; i < properties.Length && i < 40; i++)
-                {
-                    PropertyInfo property = properties[i];
-                    bool interestingName =
-                        property.Name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        property.Name.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        property.Name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        property.Name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        property.Name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        property.Name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        property.Name.IndexOf("index", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                    bool interestingType =
-                        property.PropertyType == typeof(string) ||
-                        property.PropertyType == typeof(int) ||
-                        property.PropertyType.IsEnum ||
-                        property.PropertyType.Name.IndexOf("Skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        property.PropertyType.Name.IndexOf("Ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        property.PropertyType.Name.IndexOf("Attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        property.PropertyType.Name.IndexOf("Actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        property.PropertyType.Name.IndexOf("Trigger", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                    if (!interestingName && !interestingType)
-                    {
-                        continue;
-                    }
-
-                    if (property.GetIndexParameters().Length != 0 || !property.CanRead)
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        object value = property.GetValue(pendingAttack, null);
-                        if (value != null)
-                        {
-                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack property=" +
-                                property.Name + " type=" + property.PropertyType.FullName +
-                                " value=[" + value + "]");
-                        }
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-
-                currentType = currentType.BaseType;
-                hierarchyDepth++;
-            }
-            int logged = 0;
-
-            while (currentType != null && hierarchyDepth < 3 && logged < 40)
-            {
-                FieldInfo[] fields = currentType.GetFields(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-
-                for (int i = 0; i < fields.Length && logged < 40; i++)
-                {
-                    FieldInfo field = fields[i];
-                    bool interestingType =
-                        field.FieldType == typeof(string) ||
-                        field.FieldType == typeof(bool) ||
-                        field.FieldType == typeof(int) ||
-                        field.FieldType == typeof(float) ||
-                        field.FieldType == typeof(double) ||
-                        field.FieldType == typeof(long) ||
-                        field.FieldType == typeof(short) ||
-                        field.FieldType == typeof(byte) ||
-                        field.FieldType.IsEnum ||
-                        field.FieldType.Name.IndexOf("Attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        field.FieldType.Name.IndexOf("Skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        field.FieldType.Name.IndexOf("Actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        field.FieldType.Name.IndexOf("Trigger", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                    if (!interestingType)
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        object value = field.GetValue(pendingAttack);
-                        if (value == null)
-                        {
-                            continue;
-                        }
-
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack field=" +
-                            field.Name + " type=" + field.FieldType.FullName +
-                            " value=[" + value + "]");
-                        logged++;
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-
-                currentType = currentType.BaseType;
-                hierarchyDepth++;
-            }
+            return pendingField.GetValue(effect) as Actor;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack readError=" +
-                ex.GetType().Name);
+            return null;
         }
     }
 
-private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
-    {
-        Actor current = actor;
-        int depth = 0;
-
-        while (current != null && depth < 8)
-        {
-            SubscribePrismaticAttackEvents(current, depth);
-            current = current.parentActor;
-            depth++;
-        }
-    }
-
-    private static void SubscribePrismaticAttackEvents(Actor actor, int depth)
-    {
-        if (actor == null || _prismaticAttackEventSubscribed.Contains(actor))
-        {
-            return;
-        }
-
-        try
-        {
-            int hitCount = actor.ActorEvent_OnAttackHit != null
-                ? actor.ActorEvent_OnAttackHit.Count
-                : -1;
-            int effectCount = actor.ActorEvent_OnAttackEffectTriggered != null
-                ? actor.ActorEvent_OnAttackEffectTriggered.Count
-                : -1;
-            int dealDamageCount = actor.ActorEvent_OnDealDamage != null
-                ? actor.ActorEvent_OnDealDamage.Count
-                : -1;
-
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent actor depth=" +
-                depth + " type=" + actor.GetType().Name + " hitCount=" + hitCount +
-                " effectCount=" + effectCount + " dealDamageCount=" + dealDamageCount);
-
-            if (actor.ActorEvent_OnAttackHit != null)
-            {
-                actor.ActorEvent_OnAttackHit.Add(OnPrismaticAttackHit);
-            }
-
-            if (actor.ActorEvent_OnAttackEffectTriggered != null)
-            {
-                actor.ActorEvent_OnAttackEffectTriggered.Add(OnPrismaticAttackEffectTriggered);
-            }
-
-            if (actor.ActorEvent_OnDealDamage != null)
-            {
-                actor.ActorEvent_OnDealDamage.Add(OnPrismaticDealDamage);
-            }
-
-            if (actor.ActorEvent_OnAttackHit != null ||
-                actor.ActorEvent_OnAttackEffectTriggered != null ||
-                actor.ActorEvent_OnDealDamage != null)
-            {
-                _prismaticAttackEventSubscribed.Add(actor);
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent subscribed actor=" +
-                    actor.GetType().Name + " depth=" + depth);
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent subscribeError actor=" +
-                actor.GetType().Name + " depth=" + depth + " error=" + ex.GetType().Name);
-        }
-    }
-
-    private static void TracePrismaticComponentState(Actor actor)
-    {
-        if (actor == null)
-        {
-            return;
-        }
-
-        try
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe actorType=" +
-                actor.GetType().FullName + " actorName=" + (actor.name ?? "<null>") +
-                " readable=[" + (actor.GetActorReadableName() ?? "<null>") + "]" +
-                " original=[" + (actor.GetOriginalName() ?? "<null>") + "]" +
-                " instanceId=" + actor.GetInstanceID());
-
-            AbilityTrigger firstTrigger = actor.firstTrigger;
-            if (firstTrigger != null)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe firstTrigger type=" +
-                    firstTrigger.GetType().FullName + " name=" + (firstTrigger.name ?? "<null>") +
-                    " readable=[" + (firstTrigger.GetActorReadableName() ?? "<null>") + "]" +
-                    " original=[" + (firstTrigger.GetOriginalName() ?? "<null>") + "]");
-
-                SkillTrigger skill = firstTrigger as SkillTrigger;
-                if (skill != null)
-                {
-                    string localized = null;
-                    try
-                    {
-                        localized = DewLocalization.GetSkillName(skill, 0);
-                    }
-                    catch (Exception)
-                    {
-                    }
-
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe skillTrigger" +
-                        " skillType=" + skill.skillType +
-                        " abilityIndex=" + skill.abilityIndex +
-                        " localized=[" + (localized ?? "<null>") + "]");
-
-                    TracePrismaticReadableMembers(skill, "skillTrigger");
-                }
-                else
-                {
-                    TracePrismaticReadableMembers(firstTrigger, "firstTrigger");
-                }
-            }
-            else
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe firstTrigger=<null>");
-            }
-
-            Entity firstEntity = actor.firstEntity;
-            if (firstEntity != null)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe firstEntity type=" +
-                    firstEntity.GetType().FullName + " name=" + (firstEntity.name ?? "<null>") +
-                    " readable=[" + (firstEntity.GetActorReadableName() ?? "<null>") + "]" +
-                    " original=[" + (firstEntity.GetOriginalName() ?? "<null>") + "]");
-            }
-
-            Actor current = actor;
-            int depth = 0;
-            while (current != null && depth < 4)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe chain depth=" +
-                    depth + " type=" + current.GetType().FullName +
-                    " name=" + (current.name ?? "<null>") +
-                    " readable=[" + (current.GetActorReadableName() ?? "<null>") + "]" +
-                    " original=[" + (current.GetOriginalName() ?? "<null>") + "]");
-
-                if (current != actor)
-                {
-                    TracePrismaticReadableMembers(current, "chain" + depth);
-                }
-
-                current = current.parentActor;
-                depth++;
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe error=" +
-                ex.GetType().Name + " message=" + (ex.Message ?? "<null>"));
-        }
-    }
-
-    private static void TracePrismaticReadableMembers(object source, string label)
+    private static void TracePrismaticNameSource(object source, string label)
     {
         if (source == null)
         {
@@ -2451,45 +2107,28 @@ private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
             int hierarchyDepth = 0;
             int logged = 0;
 
-            while (currentType != null && hierarchyDepth < 3 && logged < 50)
+            while (currentType != null && hierarchyDepth < 3 && logged < 24)
             {
                 FieldInfo[] fields = currentType.GetFields(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
 
-                for (int i = 0; i < fields.Length && logged < 50; i++)
+                for (int i = 0; i < fields.Length && logged < 24; i++)
                 {
                     FieldInfo field = fields[i];
-                    string lower = field.Name.ToLowerInvariant();
+                    string name = field.Name ?? string.Empty;
+                    bool interestingName =
+                        name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0;
 
-                    if (lower.IndexOf("name", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("title", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("skill", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("trigger", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("config", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("cast", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("source", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("resource", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("key", StringComparison.Ordinal) < 0 &&
-                        lower.IndexOf("id", StringComparison.Ordinal) < 0)
-                    {
-                        continue;
-                    }
-
-                    Type fieldType = field.FieldType;
-                    bool supported =
-                        fieldType == typeof(string) ||
-                        fieldType == typeof(bool) ||
-                        fieldType == typeof(int) ||
-                        fieldType == typeof(uint) ||
-                        fieldType == typeof(float) ||
-                        fieldType == typeof(long) ||
-                        fieldType == typeof(ulong) ||
-                        fieldType.IsEnum ||
-                        typeof(UnityEngine.Object).IsAssignableFrom(fieldType);
-
-                    if (!supported)
+                    if (!interestingName)
                     {
                         continue;
                     }
@@ -2502,21 +2141,17 @@ private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
                             continue;
                         }
 
-                        string rendered = value.ToString();
-                        UnityEngine.Object unityObject = value as UnityEngine.Object;
-                        if (unityObject != null)
+                        if (value is string ||
+                            field.FieldType.IsEnum ||
+                            field.FieldType == typeof(int) ||
+                            field.FieldType == typeof(bool) ||
+                            field.FieldType == typeof(float))
                         {
-                            rendered = unityObject.GetType().FullName +
-                                " name=[" + (unityObject.name ?? "<null>") + "]" +
-                                " readable=[" + (unityObject is Actor
-                                    ? ((Actor)unityObject).GetActorReadableName()
-                                    : "<not-actor>") + "]";
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME " + label +
+                                " field=" + name + " type=" + field.FieldType.FullName +
+                                " value=[" + value + "]");
+                            logged++;
                         }
-
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe " +
-                            label + " field=" + field.Name + " type=" + fieldType.FullName +
-                            " value=[" + rendered + "]");
-                        logged++;
                     }
                     catch (Exception)
                     {
@@ -2527,75 +2162,35 @@ private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
                 hierarchyDepth++;
             }
 
-            PropertyInfo[] properties = type.GetProperties(
+            MethodInfo[] methods = type.GetMethods(
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-            for (int i = 0; i < properties.Length && logged < 50; i++)
+            for (int i = 0; i < methods.Length && logged < 24; i++)
             {
-                PropertyInfo property = properties[i];
-                string lower = property.Name.ToLowerInvariant();
-
-                if (lower.IndexOf("name", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("title", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("text", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("local", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("skill", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("trigger", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("config", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("cast", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("source", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("resource", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("key", StringComparison.Ordinal) < 0 &&
-                    lower.IndexOf("id", StringComparison.Ordinal) < 0)
+                MethodInfo method = methods[i];
+                if (method.GetParameters().Length != 0 || method.ReturnType != typeof(string))
                 {
                     continue;
                 }
 
-                if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
-                {
-                    continue;
-                }
-
-                Type propertyType = property.PropertyType;
-                bool supported =
-                    propertyType == typeof(string) ||
-                    propertyType == typeof(bool) ||
-                    propertyType == typeof(int) ||
-                    propertyType == typeof(uint) ||
-                    propertyType == typeof(float) ||
-                    propertyType == typeof(long) ||
-                    propertyType == typeof(ulong) ||
-                    propertyType.IsEnum ||
-                    typeof(UnityEngine.Object).IsAssignableFrom(propertyType);
-
-                if (!supported)
+                string name = method.Name ?? string.Empty;
+                if (name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("display", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0)
                 {
                     continue;
                 }
 
                 try
                 {
-                    object value = property.GetValue(source, null);
-                    if (value == null)
+                    string value = method.Invoke(source, null) as string;
+                    if (!string.IsNullOrEmpty(value))
                     {
-                        continue;
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME " + label +
+                            " method=" + name + " value=[" + value + "]");
+                        logged++;
                     }
-
-                    string rendered = value.ToString();
-                    UnityEngine.Object unityObject = value as UnityEngine.Object;
-                    if (unityObject != null)
-                    {
-                        rendered = unityObject.GetType().FullName +
-                            " name=[" + (unityObject.name ?? "<null>") + "]" +
-                            " readable=[" + (unityObject is Actor
-                                ? ((Actor)unityObject).GetActorReadableName()
-                                : "<not-actor>") + "]";
-                    }
-
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe " +
-                        label + " property=" + property.Name + " type=" + propertyType.FullName +
-                        " value=[" + rendered + "]");
-                    logged++;
                 }
                 catch (Exception)
                 {
@@ -2604,329 +2199,9 @@ private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC readableProbe membersError label=" +
-                label + " error=" + ex.GetType().Name);
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME " + label +
+                " probeError=" + ex.GetType().Name);
         }
-    }
-
-    private static void OnPrismaticDealDamage(EventInfoDamage info)
-    {
-        if (info.actor == null)
-        {
-            return;
-        }
-
-        FinalDamageData damage = info.damage;
-
-        TracePrismaticComponentState(info.actor);
-
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DEAL DAMAGE actor=" +
-            DescribeActor(info.actor));
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DEAL DAMAGE values amount=" +
-            damage.amount + " discarded=" + damage.discardedAmount +
-            " type=" + damage.type + " elemental=" + damage.elemental +
-            " attackEffectType=" + damage.attackEffectType +
-            " attackEffectStrength=" + damage.attackEffectStrength);
-
-        Actor current = info.actor;
-        int depth = 0;
-        while (current != null && depth < 8)
-        {
-            string actorReadableName = null;
-            AbilityInstance abilityInstance = current as AbilityInstance;
-            if (abilityInstance != null)
-            {
-                try
-                {
-                    actorReadableName = abilityInstance.GetActorReadableName();
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            string originalName = null;
-            try
-            {
-                originalName = current.GetOriginalName();
-            }
-            catch (Exception)
-            {
-            }
-
-            SkillTrigger skill = current.firstTrigger as SkillTrigger;
-            string formattedSkill = null;
-            string localizedSkill = null;
-            string skillIdentity = null;
-
-            if (skill != null)
-            {
-                try
-                {
-                    formattedSkill = skill.GetFormattedSkillTitle();
-                }
-                catch (Exception)
-                {
-                }
-
-                try
-                {
-                    localizedSkill = DewLocalization.GetSkillName(skill, 0);
-                }
-                catch (Exception)
-                {
-                }
-
-                skillIdentity = GetSkillSlotIdentity(current, skill);
-            }
-
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DEAL DAMAGE identity depth=" +
-                depth + " type=" + current.GetType().FullName +
-                " name=" + (current.name ?? "<null>") +
-                " originalName=" + (originalName ?? "<null>") +
-                " readableName=" + (actorReadableName ?? "<null>") +
-                " skillTitle=[" + (formattedSkill ?? "<null>") + "]" +
-                " localizedSkill=[" + (localizedSkill ?? "<null>") + "]" +
-                " skillIdentity=[" + (skillIdentity ?? "<null>") + "]");
-
-            current = current.parentActor;
-            depth++;
-        }
-    }
-
-    private static void OnPrismaticAttackHit(EventInfoAttackHit info)
-    {
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT actor=" +
-            DescribeActor(info.actor) + " attacker=" + DescribeEntity(info.attacker) +
-            " victim=" + DescribeEntity(info.victim) + " strength=" + info.strength +
-            " crit=" + info.isCrit);
-
-        TracePrismaticAttackEventActorChain(info.actor, "attackHit.actor");
-        TracePrismaticAttackEventActorChain(info.attacker as Actor, "attackHit.attacker");
-    }
-
-    private static void OnPrismaticAttackEffectTriggered(EventInfoAttackEffect info)
-    {
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK EFFECT actor=" +
-            DescribeActor(info.actor) + " attacker=" + DescribeEntity(info.attacker) +
-            " victim=" + DescribeEntity(info.victim) + " type=" + info.type +
-            " strength=" + info.strength);
-
-        TracePrismaticAttackEventActorChain(info.actor, "attackEffect.actor");
-        TracePrismaticAttackEventActorChain(info.attacker as Actor, "attackEffect.attacker");
-        TracePrismaticReactionChain(info.chain, "attackEffect.chain");
-    }
-
-    private static void TracePrismaticAttackEventActorChain(Actor actor, string label)
-    {
-        Actor current = actor;
-        int depth = 0;
-
-        while (current != null && depth < 8)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
-                " depth=" + depth + " " + DescribeActor(current));
-
-            SkillTrigger skill = current.firstTrigger as SkillTrigger;
-            if (skill != null)
-            {
-                string skillTitle = skill.GetFormattedSkillTitle();
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
-                    " depth=" + depth + " skillTitle=[" + (skillTitle ?? "<null>") +
-                    "] skillIdentity=[" + (GetSkillSlotIdentity(current, skill) ?? "<null>") + "]");
-            }
-
-            current = current.parentActor;
-            depth++;
-        }
-    }
-
-    private static void TracePrismaticReactionChain(ReactionChain chain, string label)
-    {
-        try
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
-                " value=[" + chain + "]");
-
-            Type currentType = chain.GetType();
-            int hierarchyDepth = 0;
-            while (currentType != null && hierarchyDepth < 3)
-            {
-                FieldInfo[] fields = currentType.GetFields(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-
-                for (int i = 0; i < fields.Length; i++)
-                {
-                    FieldInfo field = fields[i];
-                    try
-                    {
-                        object value = field.GetValue(chain);
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
-                            " field=" + field.Name + " type=" +
-                            (field.FieldType.FullName ?? field.FieldType.Name) +
-                            " value=[" + (value ?? "<null>") + "]");
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
-                            " field=" + field.Name + " readError=" + ex.GetType().Name);
-                    }
-                }
-
-                currentType = currentType.BaseType;
-                hierarchyDepth++;
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
-                " readError=" + ex.GetType().Name);
-        }
-    }
-
-    private static string DescribeEntity(Entity entity)
-    {
-        if (entity == null)
-        {
-            return "<null>";
-        }
-
-        return "type=" + entity.GetType().Name + " name=" + (entity.name ?? "<null>");
-    }
-
-    private static void TracePrismaticAttackEventTypes(object pendingAttack)
-{
-    if (pendingAttack == null)
-    {
-        return;
-    }
-
-    Type currentType = pendingAttack.GetType();
-    int hierarchyDepth = 0;
-
-    while (currentType != null && hierarchyDepth < 6)
-    {
-        FieldInfo[] fields = currentType.GetFields(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-            BindingFlags.DeclaredOnly);
-
-        for (int i = 0; i < fields.Length; i++)
-        {
-            FieldInfo field = fields[i];
-            if (!string.Equals(field.Name, "ActorEvent_OnAttackHit", StringComparison.Ordinal) &&
-                !string.Equals(field.Name, "ActorEvent_OnAttackEffectTriggered", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            Type fieldType = field.FieldType;
-            string genericArguments = string.Empty;
-            if (fieldType.IsGenericType)
-            {
-                Type[] arguments = fieldType.GetGenericArguments();
-                for (int j = 0; j < arguments.Length; j++)
-                {
-                    if (j > 0)
-                    {
-                        genericArguments += ",";
-                    }
-
-                    genericArguments += arguments[j].FullName ?? arguments[j].Name;
-                }
-            }
-
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent field=" +
-                field.Name + " type=" + (fieldType.FullName ?? fieldType.Name) +
-                " genericArgs=[" + genericArguments + "]");
-        }
-
-        currentType = currentType.BaseType;
-        hierarchyDepth++;
-    }
-}
-
-private static void TracePrismaticObjectMembers(object target, string label)
-    {
-        if (target == null)
-        {
-            return;
-        }
-
-        Type currentType = target.GetType();
-        int hierarchyDepth = 0;
-        int logged = 0;
-
-        while (currentType != null && hierarchyDepth < 3 && logged < 24)
-        {
-            FieldInfo[] fields = currentType.GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                BindingFlags.DeclaredOnly);
-
-            for (int i = 0; i < fields.Length && logged < 24; i++)
-            {
-                FieldInfo field = fields[i];
-
-                if (!IsPrismaticDiagnosticFieldType(field.FieldType))
-                {
-                    continue;
-                }
-
-                try
-                {
-                    object value = field.GetValue(target);
-                    if (value == null)
-                    {
-                        continue;
-                    }
-
-                    string text = value.ToString();
-                    if (string.IsNullOrEmpty(text))
-                    {
-                        continue;
-                    }
-
-                    WriteDebugLog(label + " field=" + field.Name +
-                        " type=" + field.FieldType.Name +
-                        " value=[" + text + "]");
-                    logged++;
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            currentType = currentType.BaseType;
-            hierarchyDepth++;
-        }
-    }
-
-    private static bool IsPrismaticDiagnosticFieldType(Type type)
-    {
-        if (type == typeof(string) ||
-            type == typeof(bool) ||
-            type == typeof(int) ||
-            type == typeof(float) ||
-            type == typeof(double) ||
-            type == typeof(long) ||
-            type == typeof(short) ||
-            type == typeof(byte) ||
-            type.IsEnum)
-        {
-            return true;
-        }
-
-        string name = type.Name;
-        return name.IndexOf("Attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            name.IndexOf("Damage", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            name.IndexOf("Source", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            name.IndexOf("Origin", StringComparison.OrdinalIgnoreCase) >= 0;
-    }
-
-    private static bool ContainsTargetChompName(string value)
-    {
-        return !string.IsNullOrEmpty(value) &&
-            value.IndexOf("Chomp", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static void TraceTargetChompScaling(Actor actor, SkillTrigger directSkill)
