@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.169";
+    public const string DevelopmentVersion = "v5.170";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1180,16 +1180,45 @@ public sealed class DPSMeter : ModBehaviour
         try
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH BEGIN");
-            ConstructorInfo[] constructors = typeof(DamageData).GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            for (int i = 0; i < constructors.Length; i++)
-                TracePrismaticMethodIL(constructors[i], "DamageData ctor");
 
-            MethodInfo[] actorMethods = typeof(Actor).GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            for (int i = 0; i < actorMethods.Length; i++)
+            ConstructorInfo damageConstructor = typeof(DamageData).GetConstructor(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                new Type[]
+                {
+                    typeof(SourceType),
+                    typeof(ScalingValue),
+                    typeof(Entity),
+                    typeof(int),
+                    typeof(float)
+                },
+                null);
+
+            if (damageConstructor == null)
             {
-                if (actorMethods[i].Name == "DealDamage")
-                    TracePrismaticMethodIL(actorMethods[i], "Actor DealDamage");
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH DamageData ctor=<null>");
             }
+            else
+            {
+                TracePrismaticMethodIL(damageConstructor, "DamageData ctor(SourceType, ScalingValue, Entity, Int32, Single)");
+            }
+
+            MethodInfo dealDamage = typeof(Actor).GetMethod(
+                "DealDamage",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                new Type[] { typeof(DamageData), typeof(Entity), typeof(ReactionChain) },
+                null);
+
+            if (dealDamage == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH Actor DealDamage=<null>");
+            }
+            else
+            {
+                TracePrismaticMethodIL(dealDamage, "Actor DealDamage(DamageData, Entity, ReactionChain)");
+            }
+
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH END");
         }
         catch (Exception ex)
