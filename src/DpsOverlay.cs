@@ -565,12 +565,12 @@ public sealed class DpsOverlay : MonoBehaviour
 
             case DisplayMode.DamageTotal:
                 title = "TOTAL";
-                metric = string.Empty;
+                metric = "DMG: " + FormatNumber(_data.CumulativePersonalDamage);
                 break;
 
             default:
                 title = "TOTAL";
-                metric = string.Empty;
+                metric = "DMG: " + FormatNumber(_data.CumulativePersonalDamage);
                 break;
         }
 
@@ -582,55 +582,14 @@ public sealed class DpsOverlay : MonoBehaviour
             title,
             _header);
 
-        if (_mode == DisplayMode.DamageTotal)
-        {
-            GUIStyle totalSummaryStyle = new GUIStyle(_headerRight)
-            {
-                fontSize = 8,
-                fontStyle = FontStyle.Normal,
-                alignment = TextAnchor.MiddleRight
-            };
-
-            float lineHeight = headerRect.height / 3f;
-
-            GUI.Label(
-                new Rect(
-                    headerRect.x + titleWidth,
-                    headerRect.y,
-                    metricWidth,
-                    lineHeight),
-                "DMG: " + FormatNumber(_data.CumulativePersonalDamage),
-                totalSummaryStyle);
-
-            GUI.Label(
-                new Rect(
-                    headerRect.x + titleWidth,
-                    headerRect.y + lineHeight,
-                    metricWidth,
-                    lineHeight),
-                "HEAL: " + FormatNumber(_data.CumulativePersonalHealing),
-                totalSummaryStyle);
-
-            GUI.Label(
-                new Rect(
-                    headerRect.x + titleWidth,
-                    headerRect.y + (lineHeight * 2f),
-                    metricWidth,
-                    lineHeight),
-                "BARRIER: " + FormatNumber(_data.CumulativePersonalBarrier),
-                totalSummaryStyle);
-        }
-        else
-        {
-            GUI.Label(
-                new Rect(
-                    headerRect.x + titleWidth,
-                    headerRect.y,
-                    metricWidth,
-                    headerRect.height),
-                metric,
-                _headerRight);
-        }
+        GUI.Label(
+            new Rect(
+                headerRect.x + titleWidth,
+                headerRect.y,
+                metricWidth,
+                headerRect.height),
+            metric,
+            _headerRight);
 
         if (_mode == DisplayMode.CurrentDps)
         {
@@ -886,8 +845,12 @@ public sealed class DpsOverlay : MonoBehaviour
             ? _data.CurrentPersonalBps
             : _data.CumulativePersonalBarrier;
 
+        string barrierLabel = _mode == DisplayMode.CurrentDps
+            ? FormatNumber(bps) + " BPS"
+            : "BARRIER: " + FormatNumber(_data.CumulativePersonalBarrier);
+
         GUILayout.Label(
-            FormatNumber(bps) + " BPS",
+            barrierLabel,
             _headerRight);
 
         DrawBarrierSources(rows, total);
@@ -985,8 +948,12 @@ public sealed class DpsOverlay : MonoBehaviour
             ? _data.CurrentPersonalHps
             : _data.TotalPersonalHps;
 
+        string healingLabel = _mode == DisplayMode.CurrentDps
+            ? FormatNumber(hps) + " HPS"
+            : "HEAL: " + FormatNumber(_data.CumulativePersonalHealing);
+
         GUILayout.Label(
-            FormatNumber(hps) + " HPS",
+            healingLabel,
             _headerRight);
 
         DrawHealingSources(rows, total);
