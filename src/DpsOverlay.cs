@@ -219,14 +219,9 @@ public sealed class DpsOverlay : MonoBehaviour
                 return;
             }
 
-            if (_contextMenuOpen)
+            if (_contextMenuOpen && _contextMenuRect.Contains(e.mousePosition))
             {
-                if (_contextMenuRect.Contains(e.mousePosition))
-                {
-                    return;
-                }
-
-                _contextMenuOpen = false;
+                return;
             }
 
             if (_windowRect.Contains(e.mousePosition))
@@ -235,28 +230,36 @@ public sealed class DpsOverlay : MonoBehaviour
                 const float menuHeight = 92f;
                 const float menuGap = 4f;
 
-                float x = e.mousePosition.x;
-                float y = e.mousePosition.y;
+                // A manual resize can leave the left-button interaction state
+                // active if the drag ends outside the overlay. Reset those
+                // transient states before opening a fresh context menu so the
+                // resized window remains fully interactive.
+                _resizing = false;
+                _dragging = false;
+                _resizeMoved = false;
+                _headerMoved = false;
+                _contextMenuOpen = false;
 
-                if (x + menuWidth > Screen.width - 4f)
-                {
-                    x = Screen.width - menuWidth - 4f;
-                }
+                float x = e.mousePosition.x + menuGap;
+                float y = e.mousePosition.y + menuGap;
 
-                if (y + menuHeight > Screen.height - 4f)
-                {
-                    y = Screen.height - menuHeight - 4f;
-                }
+                x = Mathf.Clamp(
+                    x,
+                    4f,
+                    Mathf.Max(4f, Screen.width - menuWidth - 4f));
 
-                _contextMenuRect = new Rect(
-                    Mathf.Max(4f, x + menuGap),
-                    Mathf.Max(4f, y + menuGap),
-                    menuWidth,
-                    menuHeight);
+                y = Mathf.Clamp(
+                    y,
+                    4f,
+                    Mathf.Max(4f, Screen.height - menuHeight - 4f));
+
+                _contextMenuRect = new Rect(x, y, menuWidth, menuHeight);
                 _contextMenuOpen = true;
                 e.Use();
                 return;
             }
+
+            _contextMenuOpen = false;
         }
 
         if (_settingsOpen)
