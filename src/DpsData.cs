@@ -331,7 +331,7 @@ public sealed class DpsData
     {
         StringBuilder builder = new StringBuilder();
         builder.AppendLine("Shape of Dreams DPS Meter - Healing Diagnostic Export");
-        builder.AppendLine("Version: v5.52");
+        builder.AppendLine("Version: v5.53");
         builder.AppendLine("Records retained: " + _healingRecords.Count);
         builder.AppendLine();
 
