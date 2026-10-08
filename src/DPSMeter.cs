@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.166";
+    public const string DevelopmentVersion = "v5.167";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -984,6 +984,191 @@ public sealed class DPSMeter : ModBehaviour
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT METADATA ERROR=" +
                 ex.GetType().Name + " " + ex.Message);
+        }
+    }
+
+
+    private static void TracePrismaticAttackHitIL(string methodName)
+    {
+        try
+        {
+            MethodInfo target = null;
+            MethodInfo[] methods = typeof(Actor).GetMethods(
+                BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < methods.Length; i++)
+            {
+                if (methods[i].Name == methodName)
+                {
+                    target = methods[i];
+                    break;
+                }
+            }
+
+            if (target == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT IL method=" +
+                    methodName + " notFound");
+                return;
+            }
+
+            MethodBody body = target.GetMethodBody();
+            byte[] il = body == null ? null : body.GetILAsByteArray();
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT IL method=" +
+                target + " ilLength=" + (il == null ? -1 : il.Length));
+
+            if (il == null)
+            {
+                return;
+            }
+
+            Dictionary<short, OpCode> single = new Dictionary<short, OpCode>();
+            Dictionary<short, OpCode> multi = new Dictionary<short, OpCode>();
+
+            foreach (FieldInfo field in typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (field.FieldType != typeof(OpCode))
+                {
+                    continue;
+                }
+
+                OpCode op = (OpCode)field.GetValue(null);
+                if (op.Value < 0x100)
+                {
+                    single[op.Value] = op;
+                }
+                else if ((op.Value & 0xFF00) == 0xFE00)
+                {
+                    multi[(short)(op.Value & 0xFF)] = op;
+                }
+            }
+
+            for (int offset = 0; offset < il.Length;)
+            {
+                int instructionOffset = offset;
+                byte first = il[offset++];
+                OpCode opcode;
+
+                if (first == 0xFE)
+                {
+                    if (offset >= il.Length || !multi.TryGetValue((short)il[offset++], out opcode))
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT IL method=" +
+                            methodName + " malformedMultiOpcode");
+                        break;
+                    }
+                }
+                else if (!single.TryGetValue((short)first, out opcode))
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT IL method=" +
+                        methodName + " unknownOpcode=0x" + first.ToString("X2"));
+                    break;
+                }
+
+                int operandSize;
+                switch (opcode.OperandType)
+                {
+                    case OperandType.InlineNone:
+                        operandSize = 0;
+                        break;
+                    case OperandType.ShortInlineI:
+                    case OperandType.ShortInlineVar:
+                    case OperandType.ShortInlineBrTarget:
+                        operandSize = 1;
+                        break;
+                    case OperandType.InlineVar:
+                        operandSize = 2;
+                        break;
+                    case OperandType.InlineI:
+                    case OperandType.InlineBrTarget:
+                    case OperandType.InlineR:
+                        operandSize = opcode.OperandType == OperandType.InlineR ? 8 : 4;
+                        break;
+                    case OperandType.ShortInlineR:
+                        operandSize = 4;
+                        break;
+                    case OperandType.InlineI8:
+                        operandSize = 8;
+                        break;
+                    case OperandType.InlineSwitch:
+                        if (offset + 4 > il.Length)
+                        {
+                            operandSize = il.Length - offset;
+                        }
+                        else
+                        {
+                            operandSize = 4 + BitConverter.ToInt32(il, offset) * 4;
+                        }
+                        break;
+                    case OperandType.InlineString:
+                    case OperandType.InlineSig:
+                    case OperandType.InlineMethod:
+                    case OperandType.InlineField:
+                    case OperandType.InlineType:
+                    case OperandType.InlineTok:
+                        operandSize = 4;
+                        break;
+                    default:
+                        operandSize = 0;
+                        break;
+                }
+
+                if (offset + operandSize > il.Length)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT IL method=" +
+                        methodName + " offset=" + instructionOffset +
+                        " truncated operandSize=" + operandSize);
+                    break;
+                }
+
+                string operandText = null;
+                if (operandSize == 4 &&
+                    (opcode.OperandType == OperandType.InlineMethod ||
+                     opcode.OperandType == OperandType.InlineField ||
+                     opcode.OperandType == OperandType.InlineType ||
+                     opcode.OperandType == OperandType.InlineTok))
+                {
+                    int token = BitConverter.ToInt32(il, offset);
+                    try
+                    {
+                        operandText = target.Module.ResolveMember(token).ToString();
+                    }
+                    catch (Exception)
+                    {
+                        operandText = "token=0x" + token.ToString("X8");
+                    }
+                }
+                else if (operandSize == 4 && opcode.OperandType == OperandType.InlineString)
+                {
+                    int token = BitConverter.ToInt32(il, offset);
+                    try
+                    {
+                        operandText = target.Module.ResolveString(token);
+                    }
+                    catch (Exception)
+                    {
+                        operandText = "stringToken=0x" + token.ToString("X8");
+                    }
+                }
+                else if (operandSize > 0)
+                {
+                    operandText = BitConverter.ToString(il, offset, operandSize);
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT IL method=" +
+                    methodName + " il=" + instructionOffset.ToString("X4") +
+                    " op=" + opcode +
+                    " operandType=" + opcode.OperandType +
+                    " operandSize=" + operandSize +
+                    (operandText == null ? "" : " operand=" + operandText));
+
+                offset += operandSize;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT IL method=" +
+                methodName + " error=" + ex.GetType().Name + " " + ex.Message);
         }
     }
 
@@ -2626,6 +2811,8 @@ public sealed class DPSMeter : ModBehaviour
             {
                 TracePrismaticBismuthRockIdentity(pendingAttack);
             TracePrismaticAttackHitMetadata(pendingAttack);
+            TracePrismaticAttackHitIL("DoBasicAttackHit");
+            TracePrismaticAttackHitIL("InvokeOnAttackHit");
             }
         }
         catch (Exception ex)
