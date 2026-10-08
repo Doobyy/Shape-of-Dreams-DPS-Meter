@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.61";
+    public const string DevelopmentVersion = "v5.62";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -22,6 +22,7 @@ public sealed class DPSMeter : ModBehaviour
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
+    private readonly HashSet<string> _essenceScalingDiagnosticSeen = new HashSet<string>();
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -1399,6 +1400,7 @@ public sealed class DPSMeter : ModBehaviour
         // case the damage event's actor chain can contain the Gem even when
         // the first AbilityInstance is not the Essence's instance.
         Gem directGem = FindDamageSourceEssence(info.actor);
+        TraceTargetEssenceScaling(info.actor, directGem);
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
         bool isDirectEssenceDamage = directGem != null;
         Actor skillSourceActor = info.actor;
@@ -1586,6 +1588,197 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return null;
+    }
+
+    private void TraceTargetEssenceScaling(Actor actor, Gem directGem)
+    {
+        Gem targetGem = null;
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            AbilityInstance instance = current as AbilityInstance;
+            if (instance != null && IsTargetEssenceGem(instance.gem))
+            {
+                targetGem = instance.gem;
+                break;
+            }
+
+            if (current is Gem currentGem && IsTargetEssenceGem(currentGem))
+            {
+                targetGem = currentGem;
+                break;
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        if (targetGem == null)
+        {
+            return;
+        }
+
+        string identity = targetGem.GetOriginalName();
+        if (string.IsNullOrEmpty(identity))
+        {
+            identity = targetGem.name;
+        }
+
+        if (string.IsNullOrEmpty(identity) || !_essenceScalingDiagnosticSeen.Add(identity))
+        {
+            return;
+        }
+
+        WriteDebugLog("[v5.62] TARGET ESSENCE trace gem=" + identity +
+            " localized=" + (GetLocalizedEssenceName(targetGem) ?? "<null>") +
+            " directGem=" + DescribeGem(directGem));
+
+        current = actor;
+        depth = 0;
+        while (current != null && depth < 8)
+        {
+            AbilityInstance instance = current as AbilityInstance;
+            string instanceGem = instance == null ? "<none>" : DescribeGem(instance.gem);
+            WriteDebugLog("[v5.62] runtime depth=" + depth +
+                " type=" + current.GetType().FullName +
+                " name=" + (current.name ?? "<null>") +
+                " instanceGem=" + instanceGem);
+
+            LogScalingFields(current, "[v5.62] runtime depth=" + depth);
+            current = current.parentActor;
+            depth++;
+        }
+
+        try
+        {
+            if (targetGem.skill == null || targetGem.skill.currentConfig == null)
+            {
+                WriteDebugLog("[v5.62] configured unavailable skillOrConfig=<null>");
+                return;
+            }
+
+            AbilityInstance configured = targetGem.skill.currentConfig.spawnedInstance;
+            if (configured == null)
+            {
+                WriteDebugLog("[v5.62] configured unavailable spawnedInstance=<null>");
+                return;
+            }
+
+            WriteDebugLog("[v5.62] configured root type=" + configured.GetType().FullName +
+                " name=" + (configured.name ?? "<null>") +
+                " gem=" + DescribeGem(configured.gem));
+            TraceConfiguredEssenceTree(configured, targetGem, 0);
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[v5.62] configured trace exception=" + ex.GetType().Name);
+        }
+    }
+
+    private static bool IsTargetEssenceGem(Gem gem)
+    {
+        if (gem == null)
+        {
+            return false;
+        }
+
+        string original = gem.GetOriginalName();
+        string name = gem.name;
+        string localized = GetLocalizedEssenceName(gem);
+
+        return ContainsTargetEssenceName(original) ||
+            ContainsTargetEssenceName(name) ||
+            ContainsTargetEssenceName(localized);
+    }
+
+    private static bool ContainsTargetEssenceName(string value)
+    {
+        return !string.IsNullOrEmpty(value) &&
+            (value.IndexOf("Backstep", StringComparison.OrdinalIgnoreCase) >= 0 ||
+             value.IndexOf("Sharpness", StringComparison.OrdinalIgnoreCase) >= 0);
+    }
+
+    private static string DescribeGem(Gem gem)
+    {
+        if (gem == null)
+        {
+            return "<null>";
+        }
+
+        return "original=" + (gem.GetOriginalName() ?? "<null>") +
+            " name=" + (gem.name ?? "<null>") +
+            " localized=" + (GetLocalizedEssenceName(gem) ?? "<null>");
+    }
+
+    private static void LogScalingFields(Actor actor, string label)
+    {
+        if (actor == null)
+        {
+            return;
+        }
+
+        FieldInfo[] fields = actor.GetType().GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field.FieldType != typeof(ScalingValue))
+            {
+                continue;
+            }
+
+            try
+            {
+                ScalingValue value = (ScalingValue)field.GetValue(actor);
+                WriteDebugLog(label + " scalingField=" + field.Name +
+                    " ad=" + value.adFactor.ToString("0.######") +
+                    " ap=" + value.apFactor.ToString("0.######") +
+                    " hp=" + value.addedHpFactor.ToString("0.######") +
+                    " resolved=" + GetScalingType(value));
+            }
+            catch (Exception ex)
+            {
+                WriteDebugLog(label + " scalingField=" + field.Name +
+                    " readException=" + ex.GetType().Name);
+            }
+        }
+    }
+
+    private static void TraceConfiguredEssenceTree(
+        AbilityInstance instance,
+        Gem targetGem,
+        int depth)
+    {
+        if (instance == null || depth > 8)
+        {
+            return;
+        }
+
+        WriteDebugLog("[v5.62] configured depth=" + depth +
+            " type=" + instance.GetType().FullName +
+            " name=" + (instance.name ?? "<null>") +
+            " gem=" + DescribeGem(instance.gem) +
+            " gemMatches=" + (instance.gem == targetGem));
+
+        LogScalingFields(instance, "[v5.62] configured depth=" + depth);
+
+        List<Actor> children = instance.children;
+        if (children == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child != null)
+            {
+                TraceConfiguredEssenceTree(child, targetGem, depth + 1);
+            }
+        }
     }
 
     private DpsData.DamageScalingType GetCachedEssenceScaling(Gem gem, Actor actor)
