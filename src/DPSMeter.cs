@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.69";
+    public const string DevelopmentVersion = "v5.70";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -24,6 +24,7 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private readonly HashSet<string> _essenceScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
+    private static readonly HashSet<string> _chompScalingDiagnosticSeen = new HashSet<string>();
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -1403,6 +1404,7 @@ public sealed class DPSMeter : ModBehaviour
         Gem directGem = FindDamageSourceEssence(info.actor);
         TraceTargetEssenceScaling(info.actor, directGem);
         TraceTargetMemoryScaling(info.actor, skill);
+        TraceTargetChompScaling(info.actor, skill);
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
         bool isDirectEssenceDamage = directGem != null;
         Actor skillSourceActor = info.actor;
@@ -1870,6 +1872,185 @@ public sealed class DPSMeter : ModBehaviour
             if (child != null)
             {
                 TraceConfiguredAbilityTree(child, depth + 1);
+            }
+        }
+    }
+
+    private static bool IsTargetChompSkill(SkillTrigger skill)
+    {
+        if (skill == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            if (ContainsTargetChompName(skill.GetFormattedSkillTitle()))
+            {
+                return true;
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        try
+        {
+            return ContainsTargetChompName(DewLocalization.GetSkillName(skill, 0));
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private static bool IsTargetChompActor(Actor actor)
+    {
+        if (actor == null)
+        {
+            return false;
+        }
+
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            if (current.GetType().Name.IndexOf("Chomp", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (!string.IsNullOrEmpty(current.name) &&
+                 current.name.IndexOf("Chomp", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                return true;
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return false;
+    }
+
+    private static bool ContainsTargetChompName(string value)
+    {
+        return !string.IsNullOrEmpty(value) &&
+            value.IndexOf("Chomp", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static void TraceTargetChompScaling(Actor actor, SkillTrigger directSkill)
+    {
+        if (actor == null)
+        {
+            return;
+        }
+
+        SkillTrigger skill = directSkill;
+        Actor skillSourceActor = actor;
+        if (skill == null)
+        {
+            skill = FindSkillTriggerInActorChain(actor, out skillSourceActor);
+        }
+
+        if (skill == null || !IsTargetChompSkill(skill))
+        {
+            return;
+        }
+
+        string skillName = null;
+        try
+        {
+            skillName = skill.GetFormattedSkillTitle();
+        }
+        catch (Exception)
+        {
+        }
+
+        if (!ContainsTargetChompName(skillName))
+        {
+            try
+            {
+                string localized = DewLocalization.GetSkillName(skill, 0);
+                if (ContainsTargetChompName(localized))
+                {
+                    skillName = localized;
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        string identity = GetSkillSlotIdentity(skillSourceActor, skill);
+        string traceKey = "memory:chomp:" + (identity ?? skillName);
+        if (!_chompScalingDiagnosticSeen.Add(traceKey))
+        {
+            return;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] TARGET MEMORY CHOMP trace skill=" +
+            (skillName ?? "<null>") + " identity=" + (identity ?? "<null>"));
+
+        Actor current = actor;
+        int depth = 0;
+        while (current != null && depth < 8)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] CHOMP runtime depth=" + depth +
+                " type=" + current.GetType().FullName +
+                " name=" + (current.name ?? "<null>"));
+            LogScalingFields(current, "[" + DevelopmentVersion + "] CHOMP runtime depth=" + depth);
+            current = current.parentActor;
+            depth++;
+        }
+
+        try
+        {
+            var config = skill.currentConfig;
+            if (config == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] CHOMP configured unavailable currentConfig=<null>");
+                return;
+            }
+
+            AbilityInstance configured = config.spawnedInstance;
+            WriteDebugLog("[" + DevelopmentVersion + "] CHOMP configured root type=" +
+                (configured == null ? "<null>" : configured.GetType().FullName) +
+                " name=" + (configured == null ? "<null>" : (configured.name ?? "<null>")));
+
+            if (configured != null)
+            {
+                TraceConfiguredChompAbilityTree(configured, 0);
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] CHOMP configured trace exception=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TraceConfiguredChompAbilityTree(AbilityInstance instance, int depth)
+    {
+        if (instance == null || depth > 8)
+        {
+            return;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] CHOMP configured depth=" + depth +
+            " type=" + instance.GetType().FullName +
+            " name=" + (instance.name ?? "<null>") +
+            " gem=" + DescribeGem(instance.gem));
+        LogScalingFields(instance, "[" + DevelopmentVersion + "] CHOMP configured depth=" + depth);
+
+        List<Actor> children = instance.children;
+        if (children == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child != null)
+            {
+                TraceConfiguredChompAbilityTree(child, depth + 1);
             }
         }
     }
