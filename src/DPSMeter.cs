@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.113";
+    public const string DevelopmentVersion = "v5.114";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1939,8 +1939,8 @@ public sealed class DPSMeter : ModBehaviour
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT begin");
             TracePrismaticObjectMembers(info, "info", true);
-            TracePrismaticObjectMembers(info == null ? null : info.actor, "actor", false);
-            TracePrismaticObjectMembers(info == null ? null : (object)info.damage, "damage", false);
+            TracePrismaticObjectMembers(info.actor, "actor", false);
+            TracePrismaticObjectMembers(info.damage, "damage", false);
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT end");
         }
         catch (Exception ex)
