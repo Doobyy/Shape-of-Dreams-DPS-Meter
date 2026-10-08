@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.80";
+    public const string DevelopmentVersion = "v5.81";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2037,58 +2037,6 @@ public sealed class DPSMeter : ModBehaviour
 
             current = current.parentActor;
             actorDepth++;
-        }
-    }
-
-        private static void TracePrismaticAbilityInstanceReferences(Actor actor)
-    {
-        if (actor == null)
-        {
-            return;
-        }
-
-        FieldInfo[] fields = actor.GetType().GetFields(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        foreach (FieldInfo field in fields)
-        {
-            Type fieldType = field.FieldType;
-            if (fieldType == null ||
-                fieldType.Name.IndexOf("AbilityInstance", StringComparison.OrdinalIgnoreCase) < 0)
-            {
-                continue;
-            }
-
-            try
-            {
-                object value = field.GetValue(actor);
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC abilityRef actor=" +
-                    actor.GetType().FullName + " field=" + field.Name +
-                    " type=" + fieldType.FullName + " value=[" +
-                    (value != null ? value.ToString() : "<null>") + "]");
-
-                if (value == null)
-                {
-                    continue;
-                }
-
-                Actor abilityActor = value as Actor;
-                if (abilityActor != null)
-                {
-                    TraceReadableIdentity(
-                        abilityActor,
-                        "[" + DevelopmentVersion + "] PRISMATIC abilityRef " + field.Name);
-                }
-
-                TracePrismaticObjectMembers(
-                    value,
-                    "[" + DevelopmentVersion + "] PRISMATIC abilityRef " + field.Name);
-            }
-            catch (Exception ex)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC abilityRef field=" +
-                    field.Name + " ERROR=" + ex.GetType().Name);
-            }
         }
     }
 
