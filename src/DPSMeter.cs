@@ -819,6 +819,87 @@ public sealed class DPSMeter : ModBehaviour
         TraceSourceChain(source, "[v5.52] basic");
     }
 
+    private static string BuildHealingExportActorChain(Actor source)
+    {
+        if (source == null)
+        {
+            return null;
+        }
+
+        StringBuilder builder = new StringBuilder();
+        Actor current = source;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            Type type = current.GetType();
+
+            builder.Append("  actor[")
+                .Append(depth)
+                .Append("] type=")
+                .Append(type.Name)
+                .Append(" name=")
+                .Append(current.name ?? "<null>");
+
+            try
+            {
+                MethodInfo originalNameMethod = type.GetMethod(
+                    "GetOriginalName",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                if (originalNameMethod != null &&
+                    originalNameMethod.GetParameters().Length == 0 &&
+                    originalNameMethod.ReturnType == typeof(string))
+                {
+                    string originalName = originalNameMethod.Invoke(current, null) as string;
+                    if (!string.IsNullOrEmpty(originalName))
+                    {
+                        builder.Append(" original=").Append(originalName);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            try
+            {
+                string localized;
+                if (DewLocalization.TryGetUIValue(type.Name + "_Name", out localized) &&
+                    !string.IsNullOrEmpty(localized))
+                {
+                    builder.Append(" uiName=").Append(localized);
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            SkillTrigger skill = current.firstTrigger as SkillTrigger;
+            if (skill != null)
+            {
+                try
+                {
+                    string skillName = DewLocalization.GetSkillName(skill, 0);
+                    if (!string.IsNullOrEmpty(skillName))
+                    {
+                        builder.Append(" skillName=").Append(skillName);
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            builder.AppendLine();
+            current = current.parentActor;
+            depth++;
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+
+
     private static void TraceHealthOrbSource(Actor source)
     {
         if (source == null || _healthOrbTraceCount >= 3)
