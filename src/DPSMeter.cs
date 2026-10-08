@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.83";
+    public const string DevelopmentVersion = "v5.84";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2067,7 +2067,9 @@ public sealed class DPSMeter : ModBehaviour
                 pendingAttack.GetType().FullName +
                 " value=[" + pendingAttack + "]");
 
-            TracePrismaticAttackEventTypes(pendingAttack);\n\n            FieldInfo configsField = pendingAttack.GetType().GetField(
+            TracePrismaticAttackEventTypes(pendingAttack);
+
+            FieldInfo configsField = pendingAttack.GetType().GetField(
                 "configs",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
@@ -2279,7 +2281,58 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-private static void TracePrismaticAttackEventTypes(object pendingAttack)\n{\n    if (pendingAttack == null)\n    {\n        return;\n    }\n\n    Type currentType = pendingAttack.GetType();\n    int hierarchyDepth = 0;\n\n    while (currentType != null && hierarchyDepth < 6)\n    {\n        FieldInfo[] fields = currentType.GetFields(\n            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |\n            BindingFlags.DeclaredOnly);\n\n        for (int i = 0; i < fields.Length; i++)\n        {\n            FieldInfo field = fields[i];\n            if (!string.Equals(field.Name, "ActorEvent_OnAttackHit", StringComparison.Ordinal) &&\n                !string.Equals(field.Name, "ActorEvent_OnAttackEffectTriggered", StringComparison.Ordinal))\n            {\n                continue;\n            }\n\n            Type fieldType = field.FieldType;\n            string genericArguments = string.Empty;\n            if (fieldType.IsGenericType)\n            {\n                Type[] arguments = fieldType.GetGenericArguments();\n                for (int j = 0; j < arguments.Length; j++)\n                {\n                    if (j > 0)\n                    {\n                        genericArguments += ",";\n                    }\n\n                    genericArguments += arguments[j].FullName ?? arguments[j].Name;\n                }\n            }\n\n            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent field=" +\n                field.Name + " type=" + (fieldType.FullName ?? fieldType.Name) +\n                " genericArgs=[" + genericArguments + "]");\n        }\n\n        currentType = currentType.BaseType;\n        hierarchyDepth++;\n    }\n}\n\nprivate static void TracePrismaticObjectMembers(object target, string label)
+private static void TracePrismaticAttackEventTypes(object pendingAttack)
+{
+    if (pendingAttack == null)
+    {
+        return;
+    }
+
+    Type currentType = pendingAttack.GetType();
+    int hierarchyDepth = 0;
+
+    while (currentType != null && hierarchyDepth < 6)
+    {
+        FieldInfo[] fields = currentType.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+            BindingFlags.DeclaredOnly);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (!string.Equals(field.Name, "ActorEvent_OnAttackHit", StringComparison.Ordinal) &&
+                !string.Equals(field.Name, "ActorEvent_OnAttackEffectTriggered", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            Type fieldType = field.FieldType;
+            string genericArguments = string.Empty;
+            if (fieldType.IsGenericType)
+            {
+                Type[] arguments = fieldType.GetGenericArguments();
+                for (int j = 0; j < arguments.Length; j++)
+                {
+                    if (j > 0)
+                    {
+                        genericArguments += ",";
+                    }
+
+                    genericArguments += arguments[j].FullName ?? arguments[j].Name;
+                }
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent field=" +
+                field.Name + " type=" + (fieldType.FullName ?? fieldType.Name) +
+                " genericArgs=[" + genericArguments + "]");
+        }
+
+        currentType = currentType.BaseType;
+        hierarchyDepth++;
+    }
+}
+
+private static void TracePrismaticObjectMembers(object target, string label)
     {
         if (target == null)
         {
