@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.160";
+    public const string DevelopmentVersion = "v5.161";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2147,22 +2147,150 @@ public sealed class DPSMeter : ModBehaviour
         {
             Type meleeType = typeof(Actor).Assembly.GetType("MeleeAttackInstance");
             if (meleeType == null) return;
-            MethodInfo target = meleeType.GetMethod("OnBeforeDispatchDamage", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new Type[] { typeof(DamageData).MakeByRefType(), typeof(Entity) }, null);
+
+            MethodInfo target = meleeType.GetMethod(
+                "OnBeforeDispatchDamage",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                new Type[] { typeof(DamageData).MakeByRefType(), typeof(Entity) },
+                null);
+
             if (target == null) return;
+
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH method=" + target);
+
             MethodBody body = target.GetMethodBody();
             byte[] il = body == null ? null : body.GetILAsByteArray();
-            if (il == null) return;
-            for (int p=0;p<il.Length;)
+            if (il == null)
             {
-                int at=p; byte b=il[p++]; OpCode op=OpCodes.Nop;
-                foreach(FieldInfo f in typeof(OpCodes).GetFields(BindingFlags.Public|BindingFlags.Static)){if(f.FieldType==typeof(OpCode)){OpCode x=(OpCode)f.GetValue(null);if(x.Value==b){op=x;break;}}}
-                int size=0; switch(op.OperandType){case OperandType.InlineNone:size=0;break;case OperandType.ShortInlineI:case OperandType.ShortInlineBrTarget:case OperandType.ShortInlineVar:size=1;break;case OperandType.InlineVar:size=2;break;case OperandType.InlineI:case OperandType.InlineBrTarget:case OperandType.InlineField:case OperandType.InlineMethod:case OperandType.InlineSig:case OperandType.InlineString:case OperandType.InlineTok:case OperandType.InlineType:case OperandType.ShortInlineR:size=4;break;case OperandType.InlineI8:case OperandType.InlineR:size=8;break;case OperandType.InlineSwitch:if(p+4>il.Length)return;size=4+BitConverter.ToInt32(il,p)*4;break;default:return;}
-                if(p+size>il.Length)return;
-                if(op==OpCodes.Call||op==OpCodes.Callvirt||op==OpCodes.Ldftn||op==OpCodes.Ldvirtftn||op==OpCodes.Newobj||op==OpCodes.Ldfld||op==OpCodes.Ldsfld||op==OpCodes.Stfld||op==OpCodes.Ldflda){int token=BitConverter.ToInt32(il,p);try{MemberInfo member=target.Module.ResolveMember(token);WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH il=" + at.ToString("X4") + " op=" + op.Name + " member=" + member);}catch(Exception){WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH il=" + at.ToString("X4") + " op=" + op.Name + " token=0x" + token.ToString("X8"));}}
-                p+=size;
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH il=<null>");
+                return;
             }
-        } catch(Exception ex){WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH error=" + ex.GetType().Name);}
+
+            Dictionary<short, OpCode> single = new Dictionary<short, OpCode>();
+            Dictionary<short, OpCode> multi = new Dictionary<short, OpCode>();
+            foreach (FieldInfo field in typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (field.FieldType != typeof(OpCode)) continue;
+                OpCode op = (OpCode)field.GetValue(null);
+                if (op.Value < 0x100)
+                {
+                    single[op.Value] = op;
+                }
+                else if ((op.Value & 0xFF00) == 0xFE00)
+                {
+                    multi[(short)(op.Value & 0xFF)] = op;
+                }
+            }
+
+            for (int offset = 0; offset < il.Length;)
+            {
+                int instructionOffset = offset;
+                OpCode opcode;
+
+                byte first = il[offset++];
+                if (first == 0xFE)
+                {
+                    if (offset >= il.Length || !multi.TryGetValue(il[offset], out opcode))
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH decode-stop il=" + instructionOffset.ToString("X4") + " reason=unknown-multi");
+                        break;
+                    }
+                    offset++;
+                }
+                else if (!single.TryGetValue(first, out opcode))
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH decode-stop il=" + instructionOffset.ToString("X4") + " reason=unknown-op");
+                    break;
+                }
+
+                int operandSize;
+                switch (opcode.OperandType)
+                {
+                    case OperandType.InlineNone:
+                        operandSize = 0;
+                        break;
+                    case OperandType.ShortInlineI:
+                    case OperandType.ShortInlineBrTarget:
+                    case OperandType.ShortInlineVar:
+                        operandSize = 1;
+                        break;
+                    case OperandType.InlineVar:
+                        operandSize = 2;
+                        break;
+                    case OperandType.InlineI:
+                    case OperandType.InlineBrTarget:
+                    case OperandType.InlineField:
+                    case OperandType.InlineMethod:
+                    case OperandType.InlineSig:
+                    case OperandType.InlineString:
+                    case OperandType.InlineTok:
+                    case OperandType.InlineType:
+                    case OperandType.ShortInlineR:
+                        operandSize = 4;
+                        break;
+                    case OperandType.InlineI8:
+                    case OperandType.InlineR:
+                        operandSize = 8;
+                        break;
+                    case OperandType.InlineSwitch:
+                        if (offset + 4 > il.Length)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH decode-stop il=" + instructionOffset.ToString("X4") + " reason=short-switch");
+                            return;
+                        }
+                        operandSize = 4 + BitConverter.ToInt32(il, offset) * 4;
+                        break;
+                    default:
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH decode-stop il=" + instructionOffset.ToString("X4") + " reason=unsupported-operand");
+                        return;
+                }
+
+                if (offset + operandSize > il.Length)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH decode-stop il=" + instructionOffset.ToString("X4") + " reason=short-operand");
+                    break;
+                }
+
+                if (opcode == OpCodes.Call ||
+                    opcode == OpCodes.Callvirt ||
+                    opcode == OpCodes.Ldftn ||
+                    opcode == OpCodes.Ldvirtftn ||
+                    opcode == OpCodes.Newobj ||
+                    opcode == OpCodes.Ldfld ||
+                    opcode == OpCodes.Ldsfld ||
+                    opcode == OpCodes.Stfld ||
+                    opcode == OpCodes.Ldflda)
+                {
+                    int token = BitConverter.ToInt32(il, offset);
+                    try
+                    {
+                        MemberInfo member = target.Module.ResolveMember(
+                            token,
+                            target.DeclaringType.GetGenericArguments(),
+                            target.GetGenericArguments());
+
+                        WriteDebugLog(
+                            "[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH il=" +
+                            instructionOffset.ToString("X4") + " op=" + opcode.Name +
+                            " member=" + member);
+                    }
+                    catch (Exception)
+                    {
+                        WriteDebugLog(
+                            "[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH il=" +
+                            instructionOffset.ToString("X4") + " op=" + opcode.Name +
+                            " token=0x" + token.ToString("X8"));
+                    }
+                }
+
+                offset += operandSize;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH error=" + ex.GetType().Name);
+        }
     }
 
     private static Actor GetPrismaticPendingAttack(Actor effect)
