@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.168";
+    public const string DevelopmentVersion = "v5.169";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2816,6 +2816,7 @@ public sealed class DPSMeter : ModBehaviour
                 TracePrismaticAttackHitMetadata(pendingAttack);
                 TracePrismaticAttackHitIL("DoBasicAttackHit");
                 TracePrismaticAttackHitIL("InvokeOnAttackHit");
+                TracePrismaticDamagePathIL();
             }
         }
         catch (Exception ex)
