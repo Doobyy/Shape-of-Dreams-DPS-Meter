@@ -123,6 +123,8 @@ public sealed class DpsData
     public float CumulativePartyHealing { get; private set; }
     public float CurrentInstancePartyBarrier { get; private set; }
     public float CumulativePartyBarrier { get; private set; }
+    public float PartyDamageStartedAt { get; private set; }
+    public float LastPartyDamageAt { get; private set; }
     public float PartyHealingStartedAt { get; private set; }
     public float LastPartyHealingAt { get; private set; }
     public float PartyBarrierStartedAt { get; private set; }
@@ -425,6 +427,13 @@ public sealed class DpsData
         float overkill = Mathf.Max(0f, producedDamage - appliedDamage);
         float now = Time.time;
 
+        if (PartyDamageStartedAt <= 0f)
+        {
+            PartyDamageStartedAt = now;
+        }
+
+        LastPartyDamageAt = now;
+
         if (CurrentHitCount == 0)
         {
             StartedAt = now;
@@ -523,6 +532,8 @@ public sealed class DpsData
         CurrentInstancePersonalOverkill = 0f;
         CurrentInstancePartyHealing = 0f;
         CurrentInstancePartyBarrier = 0f;
+        PartyDamageStartedAt = 0f;
+        LastPartyDamageAt = 0f;
         PartyHealingStartedAt = 0f;
         LastPartyHealingAt = 0f;
         PartyBarrierStartedAt = 0f;
@@ -568,6 +579,8 @@ public sealed class DpsData
         CumulativePersonalOverkill = 0f;
         CumulativePartyHealing = 0f;
         CumulativePartyBarrier = 0f;
+        PartyDamageStartedAt = 0f;
+        LastPartyDamageAt = 0f;
         PartyHealingStartedAt = 0f;
         LastPartyHealingAt = 0f;
         PartyBarrierStartedAt = 0f;
