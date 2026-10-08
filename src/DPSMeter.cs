@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.139";
+    public const string DevelopmentVersion = "v5.140";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2202,6 +2202,26 @@ public sealed class DPSMeter : ModBehaviour
                     }
 
                     int operandSize = GetPrismaticIlOperandSize(opcode.OperandType);
+                    if (opcode.OperandType == OperandType.InlineSwitch)
+                    {
+                        if (offset + 4 > il.Length)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER DETAIL ilStop offset=" +
+                                instructionOffset + " opcode=" + opcode.Name + " operandType=" + opcode.OperandType);
+                            break;
+                        }
+
+                        int switchCount = BitConverter.ToInt32(il, offset);
+                        if (switchCount < 0 || offset + 4 + (switchCount * 4) > il.Length)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER DETAIL ilStop offset=" +
+                                instructionOffset + " opcode=" + opcode.Name + " switchCount=" + switchCount);
+                            break;
+                        }
+
+                        operandSize = 4 + (switchCount * 4);
+                    }
+
                     if (operandSize < 0 || offset + operandSize > il.Length)
                     {
                         WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER DETAIL ilStop offset=" +
@@ -2333,7 +2353,6 @@ public sealed class DPSMeter : ModBehaviour
             case OperandType.InlineVar:
                 return 2;
             case OperandType.InlineI:
-            case OperandType.InlineR:
             case OperandType.InlineBrTarget:
             case OperandType.InlineField:
             case OperandType.InlineMethod:
@@ -2342,10 +2361,11 @@ public sealed class DPSMeter : ModBehaviour
             case OperandType.InlineTok:
             case OperandType.InlineType:
                 return 4;
+            case OperandType.InlineI8:
+            case OperandType.InlineR:
+                return 8;
             case OperandType.InlineSwitch:
-                if (operandType == OperandType.InlineSwitch)
-                    return 4;
-                break;
+                return 4;
         }
 
         return -1;
