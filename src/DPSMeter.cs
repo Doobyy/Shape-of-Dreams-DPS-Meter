@@ -1224,10 +1224,6 @@ public sealed class DPSMeter : ModBehaviour
                 }
             }
 
-            if (string.IsNullOrEmpty(skillName) && isBasicAttack)
-            {
-                sourceName = "Basic Attack";
-            }
         }
 
         if (isLocalPlayer && skill != null && !string.IsNullOrEmpty(skillName))
