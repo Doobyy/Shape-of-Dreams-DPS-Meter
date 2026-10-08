@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.75";
+    public const string DevelopmentVersion = "v5.76";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2106,6 +2106,58 @@ public sealed class DPSMeter : ModBehaviour
 
             Type currentType = pendingAttack.GetType();
             int hierarchyDepth = 0;
+
+            while (currentType != null && hierarchyDepth < 6)
+            {
+                FieldInfo[] identityFields = currentType.GetFields(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+
+                for (int i = 0; i < identityFields.Length; i++)
+                {
+                    FieldInfo field = identityFields[i];
+                    string fieldName = field.Name ?? string.Empty;
+                    bool interestingName =
+                        fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    if (!interestingName)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        object value = field.GetValue(pendingAttack);
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack identityField=" +
+                            field.Name + " type=" + field.FieldType.FullName +
+                            " value=[" + (value ?? "<null>") + "]");
+
+                        if (value != null &&
+                            !field.FieldType.IsPrimitive &&
+                            field.FieldType != typeof(string) &&
+                            !field.FieldType.IsEnum)
+                        {
+                            TracePrismaticObjectMembers(
+                                value,
+                                "[" + DevelopmentVersion + "] PRISMATIC pendingAttack " + field.Name);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack identityField=" +
+                            field.Name + " readError=" + ex.GetType().Name);
+                    }
+                }
+
+                currentType = currentType.BaseType;
+                hierarchyDepth++;
+            }
 
             while (currentType != null && hierarchyDepth < 4)
             {
