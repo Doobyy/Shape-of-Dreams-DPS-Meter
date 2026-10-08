@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.79";
+    public const string DevelopmentVersion = "v5.80";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2072,9 +2072,13 @@ public sealed class DPSMeter : ModBehaviour
                     continue;
                 }
 
-                TraceReadableIdentity(
-                    value,
-                    "[" + DevelopmentVersion + "] PRISMATIC abilityRef " + field.Name);
+                Actor abilityActor = value as Actor;
+                if (abilityActor != null)
+                {
+                    TraceReadableIdentity(
+                        abilityActor,
+                        "[" + DevelopmentVersion + "] PRISMATIC abilityRef " + field.Name);
+                }
 
                 TracePrismaticObjectMembers(
                     value,
