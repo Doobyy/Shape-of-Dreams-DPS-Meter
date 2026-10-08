@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.93";
+    public const string DevelopmentVersion = "v5.94";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
