@@ -64,6 +64,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private bool _settingsOpen;
     private bool _settingsDragging;
     private Vector2 _settingsDragOffset;
+    private Texture2D _contextMenuHighlightTexture;
     private Rect _contextMenuRect;
     private Rect _settingsRect = new Rect(0f, 0f, 230f, 150f);
 
@@ -259,7 +260,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             if (_windowRect.Contains(e.mousePosition))
             {
-                const float menuWidth = 118f;
+                const float menuWidth = 78f;
                 const float menuHeight = 92f;
                 const float menuGap = 4f;
 
@@ -289,15 +290,9 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (_settingsOpen)
         {
-            Rect settingsTitleRect = new Rect(
-                _settingsRect.x,
-                _settingsRect.y,
-                _settingsRect.width,
-                26f);
-
             if (e.type == EventType.MouseDown && e.button == 0)
             {
-                if (settingsTitleRect.Contains(e.mousePosition))
+                if (_settingsRect.Contains(e.mousePosition))
                 {
                     _settingsDragging = true;
                     _settingsDragOffset = e.mousePosition - _settingsRect.position;
@@ -650,7 +645,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
         const float padding = 4f;
         const float rowHeight = 28f;
-        const float rowWidth = 110f;
+        const float rowWidth = 70f;
 
         Rect settingsRect = new Rect(
             _contextMenuRect.x + padding,
@@ -672,9 +667,9 @@ public sealed class DpsOverlay : MonoBehaviour
 
         Event e = Event.current;
 
-        GUI.Label(settingsRect, "Settings");
-        GUI.Label(reloadRect, "Reload");
-        GUI.Label(exportRect, "Export");
+        DrawContextMenuRow(settingsRect, "Settings");
+        DrawContextMenuRow(reloadRect, "Reload");
+        DrawContextMenuRow(exportRect, "Export");
 
         if (e.type == EventType.MouseDown && e.button == 0)
         {
@@ -697,6 +692,23 @@ public sealed class DpsOverlay : MonoBehaviour
                 e.Use();
             }
         }
+    }
+
+    private void DrawContextMenuRow(Rect rect, string label)
+    {
+        if (rect.Contains(Event.current.mousePosition))
+        {
+            if (_contextMenuHighlightTexture == null)
+            {
+                _contextMenuHighlightTexture = new Texture2D(1, 1);
+                _contextMenuHighlightTexture.SetPixel(0, 0, new Color(1f, 1f, 1f, 0.10f));
+                _contextMenuHighlightTexture.Apply();
+            }
+
+            GUI.DrawTexture(rect, _contextMenuHighlightTexture);
+        }
+
+        GUI.Label(rect, label);
     }
 
     private void OpenSettingsWindow()
