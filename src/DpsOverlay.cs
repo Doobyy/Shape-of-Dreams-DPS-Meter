@@ -29,7 +29,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color AdScalingBarColor = new Color(0.996f, 0.631f, 0.416f, 1f);
     private static readonly Color ApScalingBarColor = new Color(0.365f, 0.906f, 0.996f, 1f);
     private static readonly Color HpScalingBarColor = new Color(0.549f, 0.996f, 0.345f, 1f);
-    private static readonly Color HealingBarColor = new Color(0.549f, 0.996f, 0.345f, 1f);
+    private static readonly Color HealingBarColor = new Color(0.400f, 0.820f, 0.290f, 1f);
     private static readonly Color SourceNameColor = Color.white;
     private static readonly Color BarTextStrokeColor = Color.black;
     private static readonly Color DefaultBarOutlineColor = new Color(0.212f, 0.208f, 0.200f, 1f);
@@ -769,14 +769,20 @@ public sealed class DpsOverlay : MonoBehaviour
             new Rect(barRect.x, barRect.y, barRect.width * ratio, barRect.height),
             _whiteTexture);
 
+        string valueText = FormatNumber(amount) + "  " + percent.ToString("0.0") + "%";
+        float valueWidth = _rowRight.CalcSize(new GUIContent(valueText)).x;
+        float valueRight = rowRect.xMax - 7f;
+        float valueLeft = Mathf.Max(barRect.x + 7f, valueRight - valueWidth);
+        float nameWidth = Mathf.Max(0f, valueLeft - (barRect.x + 7f) - _row.CalcSize(new GUIContent(" ")).x);
+
         GUI.color = SourceNameColor;
-        GUI.Label(
-            new Rect(barRect.x + 7f, rowRect.y, Mathf.Max(0f, barRect.width - 14f), rowRect.height),
-            StripRichTextTags(name),
+        DrawBarTextWithStroke(
+            new Rect(barRect.x + 7f, rowRect.y, nameWidth, rowRect.height),
+            TruncateTextToWidth(StripRichTextTags(name), nameWidth, _row),
             _row);
-        GUI.Label(
-            new Rect(rowRect.x + 7f, rowRect.y, rowRect.width - 14f, rowRect.height),
-            FormatNumber(amount) + "  " + percent.ToString("0.0") + "%",
+        DrawBarTextWithStroke(
+            new Rect(valueLeft, rowRect.y, Mathf.Max(0f, valueRight - valueLeft), rowRect.height),
+            valueText,
             _rowRight);
 
         GUI.color = Color.white;
