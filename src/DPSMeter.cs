@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.70";
+    public const string DevelopmentVersion = "v5.71";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -25,6 +25,7 @@ public sealed class DPSMeter : ModBehaviour
     private readonly HashSet<string> _essenceScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _chompScalingDiagnosticSeen = new HashSet<string>();
+    private static readonly HashSet<string> _prismaticVisionDiagnosticSeen = new HashSet<string>();
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -1405,6 +1406,7 @@ public sealed class DPSMeter : ModBehaviour
         TraceTargetEssenceScaling(info.actor, directGem);
         TraceTargetMemoryScaling(info.actor, skill);
         TraceTargetChompScaling(info.actor, skill);
+        TraceTargetPrismaticVisionDamage(info, skill);
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
         bool isDirectEssenceDamage = directGem != null;
         Actor skillSourceActor = info.actor;
@@ -1928,6 +1930,183 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return false;
+    }
+
+    private static void TraceTargetPrismaticVisionDamage(EventInfoDamage info, SkillTrigger directSkill)
+    {
+        if (info == null || info.actor == null)
+        {
+            return;
+        }
+
+        SkillTrigger skill = directSkill;
+        Actor skillSourceActor = info.actor;
+        if (skill == null)
+        {
+            skill = FindSkillTriggerInActorChain(info.actor, out skillSourceActor);
+        }
+
+        string skillName = null;
+        if (skill != null)
+        {
+            try
+            {
+                skillName = skill.GetFormattedSkillTitle();
+            }
+            catch (Exception)
+            {
+            }
+
+            if (string.IsNullOrEmpty(skillName))
+            {
+                try
+                {
+                    skillName = DewLocalization.GetSkillName(skill, 0);
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+        bool prismaticActor = false;
+        Actor current = info.actor;
+        int actorDepth = 0;
+        while (current != null && actorDepth < 8)
+        {
+            if (current.GetType().Name.IndexOf("PrismaticEyes", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (!string.IsNullOrEmpty(current.name) &&
+                 current.name.IndexOf("PrismaticEyes", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                prismaticActor = true;
+                break;
+            }
+
+            current = current.parentActor;
+            actorDepth++;
+        }
+
+        bool prismaticSkill = !string.IsNullOrEmpty(skillName) &&
+            skillName.IndexOf("Prismatic Vision", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        if (!prismaticActor && !prismaticSkill)
+        {
+            return;
+        }
+
+        string identity = GetSkillSlotIdentity(skillSourceActor, skill);
+        string traceKey = "prismatic:" +
+            (identity ?? skillName ?? "<null>") + ":" +
+            (info.damage == null ? "<null>" : info.damage.GetType().FullName);
+
+        if (!_prismaticVisionDiagnosticSeen.Add(traceKey))
+        {
+            return;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE trace skill=" +
+            (skillName ?? "<null>") + " identity=" + (identity ?? "<null>") +
+            " actor=" + info.actor.GetType().FullName +
+            " name=" + (info.actor.name ?? "<null>"));
+
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE values amount=" +
+            info.damage.amount + " discarded=" + info.damage.discardedAmount +
+            " elemental=" + info.damage.elemental);
+
+        TracePrismaticObjectMembers(info.damage, "[" + DevelopmentVersion + "] PRISMATIC damageData");
+        TracePrismaticObjectMembers(info, "[" + DevelopmentVersion + "] PRISMATIC eventInfo");
+
+        current = info.actor;
+        actorDepth = 0;
+        while (current != null && actorDepth < 8)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC actor[" + actorDepth +
+                "] type=" + current.GetType().FullName +
+                " name=" + (current.name ?? "<null>"));
+
+            TraceReadableIdentity(current, "[" + DevelopmentVersion + "] PRISMATIC actor[" + actorDepth + "]");
+            TracePrismaticObjectMembers(current, "[" + DevelopmentVersion + "] PRISMATIC actor[" + actorDepth + "]");
+
+            current = current.parentActor;
+            actorDepth++;
+        }
+    }
+
+    private static void TracePrismaticObjectMembers(object target, string label)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        Type currentType = target.GetType();
+        int hierarchyDepth = 0;
+        int logged = 0;
+
+        while (currentType != null && hierarchyDepth < 3 && logged < 24)
+        {
+            FieldInfo[] fields = currentType.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length && logged < 24; i++)
+            {
+                FieldInfo field = fields[i];
+
+                if (!IsPrismaticDiagnosticFieldType(field.FieldType))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(target);
+                    if (value == null)
+                    {
+                        continue;
+                    }
+
+                    string text = value.ToString();
+                    if (string.IsNullOrEmpty(text))
+                    {
+                        continue;
+                    }
+
+                    WriteDebugLog(label + " field=" + field.Name +
+                        " type=" + field.FieldType.Name +
+                        " value=[" + text + "]");
+                    logged++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            currentType = currentType.BaseType;
+            hierarchyDepth++;
+        }
+    }
+
+    private static bool IsPrismaticDiagnosticFieldType(Type type)
+    {
+        if (type == typeof(string) ||
+            type == typeof(bool) ||
+            type == typeof(int) ||
+            type == typeof(float) ||
+            type == typeof(double) ||
+            type == typeof(long) ||
+            type == typeof(short) ||
+            type == typeof(byte) ||
+            type.IsEnum)
+        {
+            return true;
+        }
+
+        string name = type.Name;
+        return name.IndexOf("Attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("Damage", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("Source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("Origin", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static bool ContainsTargetChompName(string value)
