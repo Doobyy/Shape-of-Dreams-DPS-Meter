@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.99";
+    public const string DevelopmentVersion = "v5.100";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -3237,7 +3237,6 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnDestroy()
     {
-        UnsubscribePrismaticAttackEvents();
         DetachFromClientEvents();
         DetachFromZoneManager();
 
