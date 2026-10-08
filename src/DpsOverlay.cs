@@ -62,6 +62,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private bool _manualResize;
     private bool _contextMenuOpen;
     private bool _settingsOpen;
+    private bool _settingsDragging;
+    private Vector2 _settingsDragOffset;
     private Rect _contextMenuRect;
     private Rect _settingsRect = new Rect(0f, 0f, 230f, 150f);
 
@@ -285,7 +287,55 @@ public sealed class DpsOverlay : MonoBehaviour
             }
         }
 
-        if (_settingsOpen || _contextMenuOpen)
+        if (_settingsOpen)
+        {
+            Rect settingsTitleRect = new Rect(
+                _settingsRect.x,
+                _settingsRect.y,
+                _settingsRect.width,
+                26f);
+
+            if (e.type == EventType.MouseDown && e.button == 0)
+            {
+                if (settingsTitleRect.Contains(e.mousePosition))
+                {
+                    _settingsDragging = true;
+                    _settingsDragOffset = e.mousePosition - _settingsRect.position;
+                    e.Use();
+                    return;
+                }
+
+                return;
+            }
+
+            if (e.type == EventType.MouseDrag && e.button == 0 && _settingsDragging)
+            {
+                Vector2 nextPosition = e.mousePosition - _settingsDragOffset;
+
+                _settingsRect.x = Mathf.Clamp(
+                    nextPosition.x,
+                    4f,
+                    Mathf.Max(4f, Screen.width - _settingsRect.width - 4f));
+
+                _settingsRect.y = Mathf.Clamp(
+                    nextPosition.y,
+                    4f,
+                    Mathf.Max(4f, Screen.height - _settingsRect.height - 4f));
+
+                e.Use();
+                return;
+            }
+
+            if (e.type == EventType.MouseUp && e.button == 0 && _settingsDragging)
+            {
+                _settingsDragging = false;
+                e.Use();
+            }
+
+            return;
+        }
+
+        if (_contextMenuOpen)
         {
             return;
         }
@@ -642,19 +692,32 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private void OpenSettingsWindow()
     {
+        const float gap = 8f;
+
+        float x = _windowRect.xMax + gap;
+        if (x + _settingsRect.width > Screen.width - 4f)
+        {
+            x = _windowRect.x - _settingsRect.width - gap;
+        }
+
+        x = Mathf.Clamp(
+            x,
+            4f,
+            Mathf.Max(4f, Screen.width - _settingsRect.width - 4f));
+
+        float y = Mathf.Clamp(
+            _windowRect.y,
+            4f,
+            Mathf.Max(4f, Screen.height - _settingsRect.height - 4f));
+
         _settingsRect = new Rect(
-            Mathf.Clamp(
-                _windowRect.x + 12f,
-                4f,
-                Mathf.Max(4f, Screen.width - _settingsRect.width - 4f)),
-            Mathf.Clamp(
-                _windowRect.y + 28f,
-                4f,
-                Mathf.Max(4f, Screen.height - _settingsRect.height - 4f)),
+            x,
+            y,
             _settingsRect.width,
             _settingsRect.height);
 
         _settingsOpen = true;
+        _settingsDragging = false;
     }
 
     private void DrawSettingsWindow()
