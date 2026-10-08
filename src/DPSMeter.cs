@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.87";
+    public const string DevelopmentVersion = "v5.88";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2006,6 +2006,11 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
+        // Probe the event objects on the actual damage actor chain. The
+        // pending AttackTrigger is not necessarily the object that invokes
+        // the attack/damage events.
+        SubscribePrismaticAttackEventsOnActorChain(info.actor);
+
         WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE trace skill=" +
             (skillName ?? "<null>") + " identity=" + (identity ?? "<null>") +
             " actor=" + info.actor.GetType().FullName +
@@ -2311,10 +2316,13 @@ private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
             int effectCount = actor.ActorEvent_OnAttackEffectTriggered != null
                 ? actor.ActorEvent_OnAttackEffectTriggered.Count
                 : -1;
+            int dealDamageCount = actor.ActorEvent_OnDealDamage != null
+                ? actor.ActorEvent_OnDealDamage.Count
+                : -1;
 
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent actor depth=" +
                 depth + " type=" + actor.GetType().Name + " hitCount=" + hitCount +
-                " effectCount=" + effectCount);
+                " effectCount=" + effectCount + " dealDamageCount=" + dealDamageCount);
 
             if (actor.ActorEvent_OnAttackHit != null)
             {
@@ -2326,8 +2334,14 @@ private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
                 actor.ActorEvent_OnAttackEffectTriggered.Add(OnPrismaticAttackEffectTriggered);
             }
 
+            if (actor.ActorEvent_OnDealDamage != null)
+            {
+                actor.ActorEvent_OnDealDamage.Add(OnPrismaticDealDamage);
+            }
+
             if (actor.ActorEvent_OnAttackHit != null ||
-                actor.ActorEvent_OnAttackEffectTriggered != null)
+                actor.ActorEvent_OnAttackEffectTriggered != null ||
+                actor.ActorEvent_OnDealDamage != null)
             {
                 _prismaticAttackEventSubscribed.Add(actor);
                 WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent subscribed actor=" +
@@ -2362,6 +2376,26 @@ private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
         TracePrismaticAttackEventActorChain(info.actor, "attackEffect.actor");
         TracePrismaticAttackEventActorChain(info.attacker as Actor, "attackEffect.attacker");
         TracePrismaticReactionChain(info.chain, "attackEffect.chain");
+    }
+
+    private static void OnPrismaticDealDamage(EventInfoDamage info)
+    {
+        if (info.actor == null)
+        {
+            return;
+        }
+
+        FinalDamageData damage = info.damage;
+
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DEAL DAMAGE actor=" +
+            DescribeActor(info.actor));
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DEAL DAMAGE values amount=" +
+            damage.amount + " discarded=" + damage.discardedAmount +
+            " type=" + damage.type + " elemental=" + damage.elemental +
+            " attackEffectType=" + damage.attackEffectType +
+            " attackEffectStrength=" + damage.attackEffectStrength);
+
+        TracePrismaticAttackEventActorChain(info.actor, "dealDamage.actor");
     }
 
     private static void TracePrismaticAttackEventActorChain(Actor actor, string label)
