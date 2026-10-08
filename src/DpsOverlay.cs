@@ -773,7 +773,7 @@ public sealed class DpsOverlay : MonoBehaviour
         float valueWidth = _rowRight.CalcSize(new GUIContent(valueText)).x;
         float valueRight = rowRect.xMax - 7f;
         float valueLeft = Mathf.Max(barRect.x + 7f, valueRight - valueWidth);
-        float nameWidth = Mathf.Max(0f, valueLeft - (barRect.x + 7f) - _row.CalcSize(new GUIContent(" ")).x);
+        float nameWidth = Mathf.Max(0f, valueLeft - (barRect.x + 7f) - 7f - _row.CalcSize(new GUIContent(" ")).x);
 
         GUI.color = SourceNameColor;
         DrawBarTextWithStroke(
@@ -862,7 +862,7 @@ public sealed class DpsOverlay : MonoBehaviour
         float valueWidth = _rowRight.CalcSize(new GUIContent(valueText)).x;
         float valueRight = rowRect.xMax - 7f;
         float valueLeft = Mathf.Max(barRect.x + 7f, valueRight - valueWidth);
-        float nameWidth = Mathf.Max(0f, valueLeft - (barRect.x + 7f) - 7f);
+        float nameWidth = Mathf.Max(0f, valueLeft - (barRect.x + 7f) - 7f - _row.CalcSize(new GUIContent(" ")).x);
 
         GUI.color = SourceNameColor;
         DrawBarTextWithStroke(
