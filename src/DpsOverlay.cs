@@ -668,12 +668,12 @@ public sealed class DpsOverlay : MonoBehaviour
         _showHealing = GUI.Toggle(
             new Rect(_settingsRect.x + left, _settingsRect.y + top, _settingsRect.width - 24f, rowHeight),
             _showHealing,
-            "Show Healing Breakdown");
+            "Expand Healing Breakdown");
 
         _showBarrier = GUI.Toggle(
             new Rect(_settingsRect.x + left, _settingsRect.y + top + rowHeight, _settingsRect.width - 24f, rowHeight),
             _showBarrier,
-            "Show Barrier Breakdown");
+            "Expand Barrier Breakdown");
 
         if (GUI.Button(
             new Rect(
