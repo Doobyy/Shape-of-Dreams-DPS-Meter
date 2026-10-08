@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.126";
+    public const string DevelopmentVersion = "v5.127";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2177,8 +2177,7 @@ public sealed class DPSMeter : ModBehaviour
                 ex.GetType().Name);
         }
     }
-
-    \nprivate static void TracePrismaticBasicAttackExecution(Actor source)
+    private static void TracePrismaticBasicAttackExecution(Actor source)
     {
         if (source == null)
             return;
