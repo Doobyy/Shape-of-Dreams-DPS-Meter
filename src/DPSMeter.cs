@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.121";
+    public const string DevelopmentVersion = "v5.122";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2035,7 +2035,7 @@ public sealed class DPSMeter : ModBehaviour
         WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingAttack readable=[" +
             (pendingAttack.GetActorReadableName() ?? "<null>") + "] original=[" +
             (pendingAttack.GetOriginalName() ?? "<null>") + "]");
-        TracePrismaticAttackHitRegistrationApi(pendingAttack);
+        TracePrismaticAttackHitRegistration(pendingAttack);
 
         AbilityTrigger trigger = pendingAttack.firstTrigger;
         if (trigger != null)
@@ -2095,7 +2095,7 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void TracePrismaticAttackHitRegistrationApi(Actor source)
+    private static void TracePrismaticAttackHitRegistration(Actor source)
     {
         if (source == null)
         {
@@ -2104,8 +2104,7 @@ public sealed class DPSMeter : ModBehaviour
 
         try
         {
-            Type actorType = source.GetType();
-            Type current = actorType;
+            Type current = source.GetType();
             FieldInfo attackHitField = null;
 
             while (current != null && attackHitField == null)
@@ -2122,149 +2121,185 @@ public sealed class DPSMeter : ModBehaviour
                 return;
             }
 
-            Type safeActionType = attackHitField.FieldType;
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG safeAction=" +
-                safeActionType.FullName);
+            object action = attackHitField.GetValue(source);
+            if (action == null)
+            {
+                action = Activator.CreateInstance(attackHitField.FieldType, true);
+                attackHitField.SetValue(source, action);
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG created type=" +
+                    attackHitField.FieldType.FullName);
+            }
 
-            Type safeActionCurrent = safeActionType;
-            ConstructorInfo[] constructors = safeActionType.GetConstructors(
+            MethodInfo addMethod = attackHitField.FieldType.GetMethod(
+                "Add",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-            for (int i = 0; i < constructors.Length; i++)
+            if (addMethod == null)
             {
-                ParameterInfo[] parameters = constructors[i].GetParameters();
-                string parameterText = string.Empty;
-
-                for (int p = 0; p < parameters.Length; p++)
-                {
-                    if (p > 0)
-                    {
-                        parameterText += ",";
-                    }
-
-                    parameterText += parameters[p].ParameterType.FullName;
-                }
-
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG ctor params=[" +
-                    parameterText + "]");
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG Add=<unavailable>");
+                return;
             }
 
-            while (safeActionCurrent != null)
+            ParameterInfo[] parameters = addMethod.GetParameters();
+            if (parameters.Length != 1 || !typeof(Delegate).IsAssignableFrom(parameters[0].ParameterType))
             {
-                PropertyInfo[] properties = safeActionCurrent.GetProperties(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-
-                for (int i = 0; i < properties.Length; i++)
-                {
-                    PropertyInfo property = properties[i];
-                    if (property.Name.IndexOf("AttackHit", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        property.Name.IndexOf("Event", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        property.Name.IndexOf("Action", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        continue;
-                    }
-
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG property=" +
-                        property.Name + " type=" + property.PropertyType.FullName);
-                }
-
-                MethodInfo[] methods = safeActionCurrent.GetMethods(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-
-                for (int i = 0; i < methods.Length; i++)
-                {
-                    MethodInfo method = methods[i];
-                    string name = method.Name ?? string.Empty;
-
-                    if (name.IndexOf("AttackHit", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("Event", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("Action", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        continue;
-                    }
-
-                    ParameterInfo[] parameters = method.GetParameters();
-                    string parameterText = string.Empty;
-
-                    for (int p = 0; p < parameters.Length; p++)
-                    {
-                        if (p > 0)
-                        {
-                            parameterText += ",";
-                        }
-
-                        parameterText += parameters[p].ParameterType.FullName;
-                    }
-
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG method=" +
-                        name + " return=" + method.ReturnType.FullName + " params=[" + parameterText + "]");
-                }
-
-                safeActionCurrent = safeActionCurrent.BaseType;
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG AddSignature=<unexpected>");
+                return;
             }
 
-            current = actorType;
-            while (current != null)
+            MethodInfo callbackMethod = typeof(DPSMeter).GetMethod(
+                "OnPrismaticAttackHit",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            if (callbackMethod == null)
             {
-                PropertyInfo[] actorProperties = current.GetProperties(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-
-                for (int i = 0; i < actorProperties.Length; i++)
-                {
-                    PropertyInfo property = actorProperties[i];
-                    if (property.Name.IndexOf("AttackHit", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        property.Name.IndexOf("Event", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        continue;
-                    }
-
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG actorProperty=" +
-                        property.Name + " type=" + property.PropertyType.FullName);
-                }
-
-                MethodInfo[] actorMethods = current.GetMethods(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-
-                for (int i = 0; i < actorMethods.Length; i++)
-                {
-                    MethodInfo method = actorMethods[i];
-                    string name = method.Name ?? string.Empty;
-
-                    if (name.IndexOf("AttackHit", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("Event", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        continue;
-                    }
-
-                    ParameterInfo[] parameters = method.GetParameters();
-                    string parameterText = string.Empty;
-
-                    for (int p = 0; p < parameters.Length; p++)
-                    {
-                        if (p > 0)
-                        {
-                            parameterText += ",";
-                        }
-
-                        parameterText += parameters[p].ParameterType.FullName;
-                    }
-
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG actorMethod=" +
-                        name + " return=" + method.ReturnType.FullName + " params=[" + parameterText + "]");
-                }
-
-                current = current.BaseType;
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG callback=<unavailable>");
+                return;
             }
+
+            Delegate callback = Delegate.CreateDelegate(
+                parameters[0].ParameterType,
+                callbackMethod);
+
+            addMethod.Invoke(action, new object[] { callback });
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG listener=added");
         }
         catch (Exception ex)
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT REG error=" +
                 ex.GetType().Name);
         }
+    }
+
+    private static void OnPrismaticAttackHit(EventInfoAttackHit info)
+    {
+        if (info == null)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT EVENT info=<null>");
+            return;
+        }
+
+        try
+        {
+            Type type = info.GetType();
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT EVENT type=" +
+                type.FullName);
+
+            TracePrismaticAttackHitMembers(info, type, "field");
+            TracePrismaticAttackHitProperties(info, type);
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT EVENT error=" +
+                ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticAttackHitMembers(object value, Type type, string memberKind)
+    {
+        Type current = type;
+        int logged = 0;
+
+        while (current != null && logged < 24)
+        {
+            FieldInfo[] fields = current.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length && logged < 24; i++)
+            {
+                FieldInfo field = fields[i];
+                string name = field.Name ?? string.Empty;
+
+                if (!IsPrismaticAttackHitMemberName(name))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object memberValue = field.GetValue(value);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT EVENT " +
+                        memberKind + "=" + name + " type=" + field.FieldType.FullName +
+                        " value=[" + FormatPrismaticAttackHitValue(memberValue) + "]");
+                    logged++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            current = current.BaseType;
+        }
+    }
+
+    private static void TracePrismaticAttackHitProperties(object value, Type type)
+    {
+        Type current = type;
+        int logged = 0;
+
+        while (current != null && logged < 24)
+        {
+            PropertyInfo[] properties = current.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < properties.Length && logged < 24; i++)
+            {
+                PropertyInfo property = properties[i];
+                string name = property.Name ?? string.Empty;
+
+                if (!IsPrismaticAttackHitMemberName(name) || property.GetIndexParameters().Length != 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object memberValue = property.GetValue(value, null);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT EVENT property=" +
+                        name + " type=" + property.PropertyType.FullName +
+                        " value=[" + FormatPrismaticAttackHitValue(memberValue) + "]");
+                    logged++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            current = current.BaseType;
+        }
+    }
+
+    private static bool IsPrismaticAttackHitMemberName(string name)
+    {
+        return name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("damage", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("identity", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("owner", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static string FormatPrismaticAttackHitValue(object value)
+    {
+        if (value == null)
+        {
+            return "<null>";
+        }
+
+        if (value is UnityEngine.Object unityObject)
+        {
+            return unityObject.GetType().Name + ":" + (unityObject.name ?? "<null>");
+        }
+
+        return value.ToString();
     }
 
     private static void TryPrismaticLocalizationLookup(object source, Type type)
