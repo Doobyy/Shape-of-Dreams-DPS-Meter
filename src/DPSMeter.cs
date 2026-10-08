@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.86";
+    public const string DevelopmentVersion = "v5.87";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -26,7 +26,7 @@ public sealed class DPSMeter : ModBehaviour
     private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _chompScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _prismaticVisionDiagnosticSeen = new HashSet<string>();
-    private static readonly HashSet<AttackTrigger> _prismaticAttackEventSubscribed = new HashSet<AttackTrigger>();
+    private static readonly HashSet<Actor> _prismaticAttackEventSubscribed = new HashSet<Actor>();
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -2069,7 +2069,7 @@ public sealed class DPSMeter : ModBehaviour
                 " value=[" + pendingAttack + "]");
 
             TracePrismaticAttackEventTypes(pendingAttack);
-            SubscribePrismaticAttackEvents(pendingAttack as AttackTrigger);
+            SubscribePrismaticAttackEventsOnActorChain(pendingAttack as Actor);
 
             FieldInfo configsField = pendingAttack.GetType().GetField(
                 "configs",
@@ -2283,40 +2283,61 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-private static void SubscribePrismaticAttackEvents(AttackTrigger pendingAttack)
+private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
     {
-        if (pendingAttack == null || _prismaticAttackEventSubscribed.Contains(pendingAttack))
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            SubscribePrismaticAttackEvents(current, depth);
+            current = current.parentActor;
+            depth++;
+        }
+    }
+
+    private static void SubscribePrismaticAttackEvents(Actor actor, int depth)
+    {
+        if (actor == null || _prismaticAttackEventSubscribed.Contains(actor))
         {
             return;
         }
 
         try
         {
-            if (pendingAttack.ActorEvent_OnAttackHit == null)
+            int hitCount = actor.ActorEvent_OnAttackHit != null
+                ? actor.ActorEvent_OnAttackHit.Count
+                : -1;
+            int effectCount = actor.ActorEvent_OnAttackEffectTriggered != null
+                ? actor.ActorEvent_OnAttackEffectTriggered.Count
+                : -1;
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent actor depth=" +
+                depth + " type=" + actor.GetType().Name + " hitCount=" + hitCount +
+                " effectCount=" + effectCount);
+
+            if (actor.ActorEvent_OnAttackHit != null)
             {
-                pendingAttack.ActorEvent_OnAttackHit = new SafeAction<EventInfoAttackHit>();
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent initialized=OnAttackHit");
+                actor.ActorEvent_OnAttackHit.Add(OnPrismaticAttackHit);
             }
 
-            if (pendingAttack.ActorEvent_OnAttackEffectTriggered == null)
+            if (actor.ActorEvent_OnAttackEffectTriggered != null)
             {
-                pendingAttack.ActorEvent_OnAttackEffectTriggered = new SafeAction<EventInfoAttackEffect>();
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent initialized=OnAttackEffectTriggered");
+                actor.ActorEvent_OnAttackEffectTriggered.Add(OnPrismaticAttackEffectTriggered);
             }
 
-            pendingAttack.ActorEvent_OnAttackHit.Add(OnPrismaticAttackHit);
-            pendingAttack.ActorEvent_OnAttackEffectTriggered.Add(OnPrismaticAttackEffectTriggered);
-            _prismaticAttackEventSubscribed.Add(pendingAttack);
-
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent subscribed type=" +
-                pendingAttack.GetType().FullName + " hitCount=" +
-                pendingAttack.ActorEvent_OnAttackHit.Count + " effectCount=" +
-                pendingAttack.ActorEvent_OnAttackEffectTriggered.Count);
+            if (actor.ActorEvent_OnAttackHit != null ||
+                actor.ActorEvent_OnAttackEffectTriggered != null)
+            {
+                _prismaticAttackEventSubscribed.Add(actor);
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent subscribed actor=" +
+                    actor.GetType().Name + " depth=" + depth);
+            }
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent subscribeError=" +
-                ex.GetType().Name);
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent subscribeError actor=" +
+                actor.GetType().Name + " depth=" + depth + " error=" + ex.GetType().Name);
         }
     }
 
