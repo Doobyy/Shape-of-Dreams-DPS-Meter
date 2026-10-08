@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.173";
+    public const string DevelopmentVersion = "v5.174";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1420,6 +1420,83 @@ public sealed class DPSMeter : ModBehaviour
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH method error=" +
                 label + " " + ex.GetType().Name + " " + ex.Message);
+        }
+    }
+
+    private static void TracePrismaticDealDamageActorStores()
+    {
+        try
+        {
+            MethodInfo dealDamage = typeof(Actor).GetMethod(
+                "DealDamage",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                new Type[] { typeof(DamageData), typeof(Entity), typeof(ReactionChain) },
+                null);
+
+            if (dealDamage == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage actor stores method=<null>");
+                return;
+            }
+
+            byte[] il = dealDamage.GetMethodBody()?.GetILAsByteArray();
+            if (il == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage actor stores il=<null>");
+                return;
+            }
+
+            int hits = 0;
+            for (int offset = 0; offset <= il.Length - 5; offset++)
+            {
+                if (il[offset] != 0x7D)
+                {
+                    continue;
+                }
+
+                int token = BitConverter.ToInt32(il, offset + 1);
+                MemberInfo member;
+                try
+                {
+                    member = dealDamage.Module.ResolveMember(token);
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                if (member == null || member.Name != "actor")
+                {
+                    continue;
+                }
+
+                hits++;
+                int start = Math.Max(0, offset - 8);
+                int end = Math.Min(il.Length, offset + 6);
+                StringBuilder bytes = new StringBuilder();
+                for (int i = start; i < end; i++)
+                {
+                    if (i > start)
+                    {
+                        bytes.Append(' ');
+                    }
+                    bytes.Append(il[i].ToString("X2"));
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage actor store #" +
+                    hits + " il=" + offset.ToString("X4") + " contextBytes=" + bytes);
+            }
+
+            if (hits == 0)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage actor stores=<none>");
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage actor stores error=" +
+                ex.GetType().Name + " " + ex.Message);
         }
     }
 
