@@ -20,17 +20,26 @@ public sealed class DpsOverlay : MonoBehaviour
         PartyTotal
     }
 
-    private static readonly Color DefaultBarColor = new Color(0.30f, 0.30f, 0.30f, 0.68f);
+    private static readonly Color DefaultBarColor = new Color(0.871f, 0.871f, 0.871f, 0.68f);
     private static readonly Color WindowFillColor = new Color(0f, 0f, 0f, 0.55f);
-    private static readonly Color FireBarColor = new Color(0.62f, 0.18f, 0.18f, 0.68f);
-    private static readonly Color IceBarColor = new Color(0.18f, 0.38f, 0.68f, 0.68f);
-    private static readonly Color LightBarColor = new Color(0.68f, 0.60f, 0.16f, 0.68f);
-    private static readonly Color DarkBarColor = new Color(0.40f, 0.18f, 0.52f, 0.68f);
-    private static readonly Color AdScalingBarColor = new Color(0.55f, 0.36f, 0.18f, 0.68f);
-    private static readonly Color ApScalingBarColor = new Color(0.18f, 0.50f, 0.55f, 0.68f);
+    private static readonly Color FireBarColor = new Color(1.00f, 0.396f, 0.224f, 0.68f);
+    private static readonly Color IceBarColor = new Color(0.851f, 0.929f, 1.00f, 0.68f);
+    private static readonly Color LightBarColor = new Color(1.00f, 0.918f, 0.655f, 0.68f);
+    private static readonly Color DarkBarColor = new Color(0.737f, 0.565f, 1.00f, 0.68f);
+    private static readonly Color AdScalingBarColor = new Color(1.00f, 0.624f, 0.412f, 0.68f);
+    private static readonly Color ApScalingBarColor = new Color(0.353f, 0.898f, 1.00f, 0.68f);
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
-    private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
+    private static readonly Color HealingBarColor = new Color(0.518f, 1.00f, 0.314f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
+    private static readonly Color DefaultBarOutlineColor = new Color(0.259f, 0.259f, 0.259f, 1f);
+    private static readonly Color FireBarOutlineColor = new Color(0.675f, 0.039f, 0.000f, 1f);
+    private static readonly Color IceBarOutlineColor = new Color(0.180f, 0.529f, 0.925f, 1f);
+    private static readonly Color LightBarOutlineColor = new Color(0.729f, 0.518f, 0.000f, 1f);
+    private static readonly Color DarkBarOutlineColor = new Color(0.200f, 0.000f, 0.631f, 1f);
+    private static readonly Color AdScalingBarOutlineColor = new Color(0.298f, 0.129f, 0.000f, 1f);
+    private static readonly Color ApScalingBarOutlineColor = new Color(0.000f, 0.282f, 0.667f, 1f);
+    private static readonly Color HpScalingBarOutlineColor = new Color(0.059f, 0.208f, 0.000f, 1f);
+    private static readonly Color HealingBarOutlineColor = new Color(0.059f, 0.208f, 0.000f, 1f);
 
 
     private DpsData _data;
@@ -840,10 +849,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.DrawTexture(barRect, _whiteTexture);
 
-        GUI.color = HealingBarColor;
-        GUI.DrawTexture(
-            new Rect(barRect.x, barRect.y, barRect.width * ratio, barRect.height),
-            _whiteTexture);
+        DrawBarWithOutline(barRect, ratio, HealingBarColor, HealingBarOutlineColor);
 
         string valueText = FormatNumber(amount) + "  " + percent.ToString("0.0") + "%";
         float valueWidth = _rowRight.CalcSize(new GUIContent(valueText)).x;
@@ -912,14 +918,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.DrawTexture(barRect, _whiteTexture);
 
-        GUI.color = GetBarColor(elemental, scaling);
-        GUI.DrawTexture(
-            new Rect(
-                barRect.x,
-                barRect.y,
-                barRect.width * ratio,
-                barRect.height),
-            _whiteTexture);
+        DrawBarWithOutline(barRect, ratio, GetBarColor(elemental, scaling), GetBarOutlineColor(elemental, scaling));
 
         GUI.color = SourceNameColor;
 
@@ -997,6 +996,53 @@ public sealed class DpsOverlay : MonoBehaviour
         return text.Replace("</color>", string.Empty);
     }
 
+    private static void DrawBarWithOutline(Rect barRect, float ratio, Color fillColor, Color outlineColor)
+    {
+        float fillWidth = barRect.width * ratio;
+        if (fillWidth <= 0f) return;
+
+        Rect fillRect = new Rect(barRect.x, barRect.y, fillWidth, barRect.height);
+        Rect outlineRect = new Rect(
+            Mathf.Max(barRect.x, fillRect.x - 1f),
+            Mathf.Max(barRect.y, fillRect.y - 1f),
+            Mathf.Min(barRect.xMax, fillRect.xMax + 1f) - Mathf.Max(barRect.x, fillRect.x - 1f),
+            Mathf.Min(barRect.yMax, fillRect.yMax + 1f) - Mathf.Max(barRect.y, fillRect.y - 1f));
+
+        GUI.color = outlineColor;
+        GUI.DrawTexture(outlineRect, _whiteTexture);
+        GUI.color = fillColor;
+        GUI.DrawTexture(fillRect, _whiteTexture);
+    }
+
+    private static Color GetBarOutlineColor(ElementalType? elemental, DpsData.DamageScalingType scaling)
+    {
+        if (!elemental.HasValue)
+        {
+            switch (scaling)
+            {
+                case DpsData.DamageScalingType.Ad: return AdScalingBarOutlineColor;
+                case DpsData.DamageScalingType.Ap: return ApScalingBarOutlineColor;
+                case DpsData.DamageScalingType.Hp: return HpScalingBarOutlineColor;
+                default: return DefaultBarOutlineColor;
+            }
+        }
+
+        switch (elemental.Value.ToString())
+        {
+            case "Fire": return FireBarOutlineColor;
+            case "Cold": return IceBarOutlineColor;
+            case "Light": return LightBarOutlineColor;
+            case "Dark": return DarkBarOutlineColor;
+            default:
+                switch (scaling)
+                {
+                    case DpsData.DamageScalingType.Ad: return AdScalingBarOutlineColor;
+                    case DpsData.DamageScalingType.Ap: return ApScalingBarOutlineColor;
+                    case DpsData.DamageScalingType.Hp: return HpScalingBarOutlineColor;
+                    default: return DefaultBarOutlineColor;
+                }
+        }
+    }
     private static Color GetBarColor(ElementalType? elemental, DpsData.DamageScalingType scaling)
     {
         if (!elemental.HasValue)
