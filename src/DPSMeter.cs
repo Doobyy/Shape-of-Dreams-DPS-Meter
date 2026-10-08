@@ -809,7 +809,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private static void TracePrismaticDamageEventInfo(EventInfoDamage info)
     {
-        if (info == null || info.actor == null ||
+        if (info.actor == null ||
             info.actor.GetType().Name.IndexOf("PrismaticEyes_Attack", StringComparison.OrdinalIgnoreCase) < 0 ||
             _prismaticDamageEventInfoTraceCount >= 6)
         {
