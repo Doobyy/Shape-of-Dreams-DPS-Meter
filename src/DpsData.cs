@@ -67,6 +67,10 @@ public sealed class DpsData
     private readonly Dictionary<string, string> _barrierDisplayNames = new Dictionary<string, string>();
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _currentPartyHealing = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _cumulativePartyHealing = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _currentPartyBarrier = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _cumulativePartyBarrier = new Dictionary<string, float>();
     private bool _pendingInstanceReset;
 
     public float CurrentInstancePersonalHealing { get; private set; }
@@ -115,6 +119,15 @@ public sealed class DpsData
     public float CurrentInstancePersonalOverkill { get; private set; }
     public float CumulativePersonalOverkill { get; private set; }
 
+    public float CurrentInstancePartyHealing { get; private set; }
+    public float CumulativePartyHealing { get; private set; }
+    public float CurrentInstancePartyBarrier { get; private set; }
+    public float CumulativePartyBarrier { get; private set; }
+    public float PartyHealingStartedAt { get; private set; }
+    public float LastPartyHealingAt { get; private set; }
+    public float PartyBarrierStartedAt { get; private set; }
+    public float LastPartyBarrierAt { get; private set; }
+
     public float CurrentInstancePartyDamage { get; private set; }
     public float CumulativePartyDamage { get; private set; }
     public float CurrentInstancePartyAppliedDamage { get; private set; }
@@ -139,6 +152,12 @@ public sealed class DpsData
         CurrentHitCount == 0 ? 0f : CurrentInstancePersonalAppliedDamage / CurrentDuration;
 
     public float CurrentPersonalOverkill => CurrentInstancePersonalOverkill;
+
+    public float CurrentPartyHps => CurrentHealCount == 0 ? 0f : CurrentInstancePartyHealing / Mathf.Max(0.001f, LastPartyHealingAt - HealingStartedAt);
+    public float TotalPartyHps => CumulativePartyHealing <= 0f || PartyHealingStartedAt <= 0f ? 0f : CumulativePartyHealing / Mathf.Max(0.001f, LastPartyHealingAt - PartyHealingStartedAt);
+    public float CurrentPartyBps => CurrentBarrierCount == 0 ? 0f : CurrentInstancePartyBarrier / Mathf.Max(0.001f, LastPartyBarrierAt - BarrierStartedAt);
+    public float TotalPartyBps => CumulativePartyBarrier <= 0f || PartyBarrierStartedAt <= 0f ? 0f : CumulativePartyBarrier / Mathf.Max(0.001f, LastPartyBarrierAt - PartyBarrierStartedAt);
+    public float CumulativePartyDps => CumulativePartyDamage <= 0f || StartedAt <= 0f ? 0f : CumulativePartyDamage / Mathf.Max(0.001f, LastHitAt - StartedAt);
 
     public float CurrentPartyAppliedDps =>
         CurrentHitCount == 0 ? 0f : CurrentInstancePartyAppliedDamage / CurrentDuration;
@@ -221,6 +240,11 @@ public sealed class DpsData
     public IReadOnlyList<KeyValuePair<string, float>> CumulativeParty =>
         _cumulativeParty.OrderByDescending(pair => pair.Value).ToList();
 
+    public IReadOnlyList<KeyValuePair<string, float>> CurrentPartyHealing => _currentPartyHealing.OrderByDescending(pair => pair.Value).ToList();
+    public IReadOnlyList<KeyValuePair<string, float>> CumulativePartyHealing => _cumulativePartyHealing.OrderByDescending(pair => pair.Value).ToList();
+    public IReadOnlyList<KeyValuePair<string, float>> CurrentPartyBarrier => _currentPartyBarrier.OrderByDescending(pair => pair.Value).ToList();
+    public IReadOnlyList<KeyValuePair<string, float>> CumulativePartyBarrier => _cumulativePartyBarrier.OrderByDescending(pair => pair.Value).ToList();
+
     public void AddBarrier(float barrier, string sourceIdentity, string sourceName, Sprite icon)
     {
         if (barrier <= 0f)
@@ -268,6 +292,29 @@ public sealed class DpsData
             _currentPersonalBarrierIcons[identity] = icon;
             _cumulativePersonalBarrierIcons[identity] = icon;
         }
+    }
+    public void AddPartyHealing(float healing, string playerName)
+    {
+        if (healing <= 0f || string.IsNullOrEmpty(playerName)) return;
+        float now = Time.time;
+        if (PartyHealingStartedAt <= 0f) PartyHealingStartedAt = now;
+        LastPartyHealingAt = now;
+        CurrentInstancePartyHealing += healing;
+        CumulativePartyHealing += healing;
+        Add(_currentPartyHealing, playerName, healing);
+        Add(_cumulativePartyHealing, playerName, healing);
+    }
+
+    public void AddPartyBarrier(float barrier, string playerName)
+    {
+        if (barrier <= 0f || string.IsNullOrEmpty(playerName)) return;
+        float now = Time.time;
+        if (PartyBarrierStartedAt <= 0f) PartyBarrierStartedAt = now;
+        LastPartyBarrierAt = now;
+        CurrentInstancePartyBarrier += barrier;
+        CumulativePartyBarrier += barrier;
+        Add(_currentPartyBarrier, playerName, barrier);
+        Add(_cumulativePartyBarrier, playerName, barrier);
     }
 
     public void AddHealing(float healing, string sourceIdentity, string sourceName, Sprite icon, string actorChain)
@@ -474,6 +521,12 @@ public sealed class DpsData
         CurrentInstancePersonalDamage = 0f;
         CurrentInstancePersonalAppliedDamage = 0f;
         CurrentInstancePersonalOverkill = 0f;
+        CurrentInstancePartyHealing = 0f;
+        CurrentInstancePartyBarrier = 0f;
+        PartyHealingStartedAt = 0f;
+        LastPartyHealingAt = 0f;
+        PartyBarrierStartedAt = 0f;
+        LastPartyBarrierAt = 0f;
         CurrentInstancePartyDamage = 0f;
         CurrentInstancePartyAppliedDamage = 0f;
         CurrentInstancePartyOverkill = 0f;
@@ -495,6 +548,8 @@ public sealed class DpsData
         _currentPersonalEssenceElements.Clear();
         _currentOtherPersonal.Clear();
         _currentParty.Clear();
+        _currentPartyHealing.Clear();
+        _currentPartyBarrier.Clear();
     }
 
     public void Reset()
@@ -511,6 +566,12 @@ public sealed class DpsData
         CumulativePersonalDamage = 0f;
         CumulativePersonalAppliedDamage = 0f;
         CumulativePersonalOverkill = 0f;
+        CumulativePartyHealing = 0f;
+        CumulativePartyBarrier = 0f;
+        PartyHealingStartedAt = 0f;
+        LastPartyHealingAt = 0f;
+        PartyBarrierStartedAt = 0f;
+        LastPartyBarrierAt = 0f;
         CumulativePartyDamage = 0f;
         CumulativePartyAppliedDamage = 0f;
         CumulativePartyOverkill = 0f;
@@ -533,6 +594,8 @@ public sealed class DpsData
         _cumulativePersonalEssenceElements.Clear();
         _cumulativeOtherPersonal.Clear();
         _cumulativeParty.Clear();
+        _cumulativePartyHealing.Clear();
+        _cumulativePartyBarrier.Clear();
     }
 
     private static void Add(Dictionary<string, float> map, string key, float amount)
