@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.114";
+    public const string DevelopmentVersion = "v5.115";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1933,6 +1933,40 @@ public sealed class DPSMeter : ModBehaviour
         return false;
     }
 
+    private static void TracePrismaticObjectMethods(object source, string label)
+    {
+        if (source == null) return;
+        try
+        {
+            MethodInfo[] methods = source.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            int logged = 0;
+            for (int i = 0; i < methods.Length && logged < 50; i++)
+            {
+                MethodInfo method = methods[i];
+                string name = method.Name ?? string.Empty;
+                if (method.IsSpecialName ||
+                    (name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     name.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     name.IndexOf("identity", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     name.IndexOf("effect", StringComparison.OrdinalIgnoreCase) < 0)) continue;
+                ParameterInfo[] p = method.GetParameters();
+                string parameters = string.Empty;
+                for (int j = 0; j < p.Length; j++) parameters += (j == 0 ? string.Empty : ",") + p[j].ParameterType.FullName;
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC METHOD object=" + label + " method=" + method.Name + " return=" + method.ReturnType.FullName + " params=[" + parameters + "]");
+                logged++;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC METHOD error=" + ex.GetType().Name);
+        }
+    }
+
     private static void TracePrismaticDamageEventData(EventInfoDamage info)
     {
         try
@@ -1941,6 +1975,7 @@ public sealed class DPSMeter : ModBehaviour
             TracePrismaticObjectMembers(info, "info", true);
             TracePrismaticObjectMembers(info.actor, "actor", false);
             TracePrismaticObjectMembers(info.damage, "damage", false);
+            TracePrismaticObjectMethods(info.damage, "damage");
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT end");
         }
         catch (Exception ex)
@@ -2150,6 +2185,7 @@ public sealed class DPSMeter : ModBehaviour
         WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingAttack readable=[" +
             (pendingAttack.GetActorReadableName() ?? "<null>") + "] original=[" +
             (pendingAttack.GetOriginalName() ?? "<null>") + "]");
+        TracePrismaticObjectMethods(pendingAttack, "pendingAttack");
 
         TracePrismaticNameSource(pendingAttack, "pendingAttack");
         TracePrismaticAttackIdentity(pendingAttack);
