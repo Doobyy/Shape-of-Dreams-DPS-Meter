@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.176";
+    public const string DevelopmentVersion = "v5.177";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1400,8 +1400,264 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         return FindSpriteInActorChain(source);
     }
 
+
+    private static bool _floatingDamageColorProbeRan;
+
+    private static void TraceFloatingDamageColors()
+    {
+        if (_floatingDamageColorProbeRan)
+        {
+            return;
+        }
+
+        _floatingDamageColorProbeRan = true;
+        WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE COLOR PROBE START");
+
+        Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+        for (int ai = 0; ai < assemblies.Length; ai++)
+        {
+            Assembly assembly = assemblies[ai];
+            Type[] types;
+
+            try
+            {
+                types = assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                types = ex.Types;
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            if (types == null)
+            {
+                continue;
+            }
+
+            for (int ti = 0; ti < types.Length; ti++)
+            {
+                Type type = types[ti];
+                if (type == null)
+                {
+                    continue;
+                }
+
+                string typeName = type.Name;
+                string fullName = type.FullName ?? typeName;
+
+                if (fullName.IndexOf("Damage", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE TYPE " +
+                    type.FullName + " assembly=" + assembly.GetName().Name);
+
+                FieldInfo[] fields;
+                try
+                {
+                    fields = type.GetFields(
+                        BindingFlags.Instance |
+                        BindingFlags.Static |
+                        BindingFlags.Public |
+                        BindingFlags.NonPublic);
+                }
+                catch (Exception)
+                {
+                    fields = new FieldInfo[0];
+                }
+
+                for (int fi = 0; fi < fields.Length; fi++)
+                {
+                    FieldInfo field = fields[fi];
+                    bool isColorType = field.FieldType == typeof(Color) ||
+                        field.FieldType == typeof(Color32);
+
+                    if (!isColorType &&
+                        field.Name.IndexOf("color", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE FIELD " +
+                        type.FullName + "." + field.Name +
+                        " type=" + field.FieldType.FullName +
+                        " static=" + field.IsStatic);
+
+                    if (field.IsStatic)
+                    {
+                        try
+                        {
+                            object value = field.GetValue(null);
+                            WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE FIELD VALUE " +
+                                type.FullName + "." + field.Name + " value=" + DescribeFloatingColorValue(value));
+                        }
+                        catch (Exception ex)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE FIELD READ ERROR " +
+                                type.FullName + "." + field.Name + " error=" + ex.GetType().Name);
+                        }
+                    }
+                }
+
+                PropertyInfo[] properties;
+                try
+                {
+                    properties = type.GetProperties(
+                        BindingFlags.Instance |
+                        BindingFlags.Static |
+                        BindingFlags.Public |
+                        BindingFlags.NonPublic);
+                }
+                catch (Exception)
+                {
+                    properties = new PropertyInfo[0];
+                }
+
+                for (int pi = 0; pi < properties.Length; pi++)
+                {
+                    PropertyInfo property = properties[pi];
+                    bool isColorType = property.PropertyType == typeof(Color) ||
+                        property.PropertyType == typeof(Color32);
+
+                    if (!isColorType &&
+                        property.Name.IndexOf("color", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE PROPERTY " +
+                        type.FullName + "." + property.Name +
+                        " type=" + property.PropertyType.FullName);
+                }
+
+                if (typeof(UnityEngine.Object).IsAssignableFrom(type))
+                {
+                    UnityEngine.Object[] objects;
+                    try
+                    {
+                        objects = Resources.FindObjectsOfTypeAll(type);
+                    }
+                    catch (Exception)
+                    {
+                        objects = new UnityEngine.Object[0];
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE OBJECT COUNT " +
+                        type.FullName + " count=" + objects.Length);
+
+                    for (int oi = 0; oi < objects.Length && oi < 32; oi++)
+                    {
+                        UnityEngine.Object instance = objects[oi];
+                        if (instance == null)
+                        {
+                            continue;
+                        }
+
+                        WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE OBJECT " +
+                            type.FullName + " name=" + (instance.name ?? "<null>"));
+
+                        for (int fi = 0; fi < fields.Length; fi++)
+                        {
+                            FieldInfo field = fields[fi];
+                            if (field.IsStatic)
+                            {
+                                continue;
+                            }
+
+                            bool isColorType = field.FieldType == typeof(Color) ||
+                                field.FieldType == typeof(Color32);
+
+                            if (!isColorType &&
+                                field.Name.IndexOf("color", StringComparison.OrdinalIgnoreCase) < 0)
+                            {
+                                continue;
+                            }
+
+                            try
+                            {
+                                object value = field.GetValue(instance);
+                                WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE OBJECT FIELD " +
+                                    type.FullName + "." + field.Name +
+                                    " value=" + DescribeFloatingColorValue(value));
+                            }
+                            catch (Exception ex)
+                            {
+                                WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE OBJECT FIELD READ ERROR " +
+                                    type.FullName + "." + field.Name +
+                                    " error=" + ex.GetType().Name);
+                            }
+                        }
+
+                        PropertyInfo[] instanceProperties = properties;
+                        for (int pi = 0; pi < instanceProperties.Length; pi++)
+                        {
+                            PropertyInfo property = instanceProperties[pi];
+                            if (property.PropertyType != typeof(Color) &&
+                                property.PropertyType != typeof(Color32))
+                            {
+                                continue;
+                            }
+
+                            if (property.GetIndexParameters().Length != 0 ||
+                                property.GetMethod == null ||
+                                property.GetMethod.IsStatic)
+                            {
+                                continue;
+                            }
+
+                            try
+                            {
+                                object value = property.GetValue(instance, null);
+                                WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE OBJECT PROPERTY " +
+                                    type.FullName + "." + property.Name +
+                                    " value=" + DescribeFloatingColorValue(value));
+                            }
+                            catch (Exception ex)
+                            {
+                                WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE OBJECT PROPERTY READ ERROR " +
+                                    type.FullName + "." + property.Name +
+                                    " error=" + ex.GetType().Name);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE COLOR PROBE END");
+    }
+
+    private static string DescribeFloatingColorValue(object value)
+    {
+        if (value == null)
+        {
+            return "<null>";
+        }
+
+        if (value is Color color)
+        {
+            return "Color(r=" + color.r + ",g=" + color.g + ",b=" + color.b + ",a=" + color.a +
+                ") hex=" + ColorUtility.ToHtmlStringRGBA(color);
+        }
+
+        if (value is Color32 color32)
+        {
+            Color color = color32;
+            return "Color32(r=" + color32.r + ",g=" + color32.g + ",b=" + color32.b + ",a=" + color32.a +
+                ") hex=" + ColorUtility.ToHtmlStringRGBA(color);
+        }
+
+        return value.ToString();
+    }
+
     private void OnTakeDamage(EventInfoDamage info)
     {
+        TraceFloatingDamageColors();
         if (info.actor == null || info.victim == null)
         {
             return;
