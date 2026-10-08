@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.131";
+    public const string DevelopmentVersion = "v5.132";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2097,141 +2097,7 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void TracePrismaticBasicAttackCaller(Actor source)
-    {
-        if (source == null)
-            return;
 
-        try
-        {
-            Type targetType = source.GetType();
-            MethodInfo basicAttackMethod = typeof(Actor).GetMethod(
-                "DoBasicAttackHit",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            if (basicAttackMethod == null)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER target=" +
-                    targetType.FullName + " basicMethod=<unavailable>");
-                return;
-            }
-
-            Type current = targetType;
-            while (current != null)
-            {
-                MethodInfo[] methods = current.GetMethods(
-                    BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public |
-                    BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-                for (int m = 0; m < methods.Length; m++)
-                {
-                    MethodInfo method = methods[m];
-
-                    if (method.IsAbstract || method.ContainsGenericParameters)
-                        continue;
-
-                    MethodBody body;
-                    byte[] il;
-
-                    try
-                    {
-                        body = method.GetMethodBody();
-                        il = body == null ? null : body.GetILAsByteArray();
-                    }
-                    catch (Exception)
-                    {
-                        continue;
-                    }
-
-                    if (il == null)
-                        continue;
-
-                    Module module = method.Module;
-                    bool callsBasicAttack = false;
-                    List<string> strings = new List<string>();
-
-                    for (int i = 0; i < il.Length;)
-                    {
-                        OpCode opcode;
-                        int operandSize;
-
-                        byte code = il[i++];
-                        if (code == 0xFE)
-                        {
-                            if (i >= il.Length)
-                                break;
-
-                            opcode = TwoByteOpCodes[il[i++]];
-                        }
-                        else
-                        {
-                            opcode = OneByteOpCodes[code];
-                        }
-
-                        operandSize = GetPrismaticIlOperandSize(opcode.OperandType);
-                        if (operandSize < 0 || i + operandSize > il.Length)
-                            break;
-
-                        if (opcode.OperandType == OperandType.InlineMethod ||
-                            opcode.OperandType == OperandType.InlineTok)
-                        {
-                            int token = BitConverter.ToInt32(il, i);
-                            try
-                            {
-                                MemberInfo member = module.ResolveMember(token);
-                                MethodBase resolvedMethod = member as MethodBase;
-                                if (resolvedMethod != null &&
-                                    resolvedMethod.Name == "DoBasicAttackHit")
-                                {
-                                    callsBasicAttack = true;
-                                }
-                            }
-                            catch (Exception)
-                            {
-                            }
-                        }
-                        else if (opcode.OperandType == OperandType.InlineString)
-                        {
-                            int token = BitConverter.ToInt32(il, i);
-                            try
-                            {
-                                string value = module.ResolveString(token);
-                                if (!string.IsNullOrEmpty(value) && strings.Count < 8)
-                                {
-                                    strings.Add(value);
-                                }
-                            }
-                            catch (Exception)
-                            {
-                            }
-                        }
-
-                        i += operandSize;
-                    }
-
-                    if (!callsBasicAttack)
-                        continue;
-
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER method=" +
-                        method.DeclaringType.FullName + "." + method.Name +
-                        " params=" + method.GetParameters().Length);
-
-                    for (int s = 0; s < strings.Count; s++)
-                    {
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER string=[" +
-                            strings[s] + "]");
-                    }
-                }
-
-                current = current.BaseType;
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER error=" +
-                ex.GetType().Name);
-        }
-    }
 
     private static void TraceElmFireSource(EventInfoDamage info, string sourceName)
     {
@@ -2241,30 +2107,20 @@ public sealed class DPSMeter : ModBehaviour
 
         try
         {
-            ElementalType? elemental = info.damage.elemental;
-            if (!elemental.HasValue)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE elemental=<null>");
-                return;
-            }
-
-            string elementalName = elemental.Value.ToString();
-            string key = "elm_" + elementalName.ToLowerInvariant();
-            string localized = null;
-            string localizedName = null;
-
+            string elmFireLocalized = null;
+            string elmFireName = null;
             try
             {
-                DewLocalization.TryGetUIValue(key, out localized);
-                DewLocalization.TryGetUIValue(key + "_Name", out localizedName);
+                DewLocalization.TryGetUIValue("elm_fire", out elmFireLocalized);
+                DewLocalization.TryGetUIValue("elm_fire_Name", out elmFireName);
             }
             catch (Exception)
             {
             }
 
-            WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE enum=" + elementalName +
-                " key=[" + key + "] value=[" + (localized ?? "<null>") +
-                "] name=[" + (localizedName ?? "<null>") + "]");
+            WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE key=[elm_fire] value=[" +
+                (elmFireLocalized ?? "<null>") + "] name=[" +
+                (elmFireName ?? "<null>") + "]");
 
             Actor current = info.actor;
             int depth = 0;
@@ -2277,31 +2133,34 @@ public sealed class DPSMeter : ModBehaviour
 
                 FieldInfo[] fields = current.GetType().GetFields(
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
                 for (int i = 0; i < fields.Length; i++)
                 {
                     FieldInfo field = fields[i];
-                    if (field.FieldType != typeof(string) &&
-                        field.FieldType != typeof(ElementalType) &&
-                        field.FieldType != typeof(Nullable<ElementalType>))
+                    string fieldName = field.Name ?? string.Empty;
+                    if (fieldName.IndexOf("elm", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        fieldName.IndexOf("element", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        fieldName.IndexOf("fire", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        fieldName.IndexOf("icon", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        fieldName.IndexOf("sprite", StringComparison.OrdinalIgnoreCase) < 0)
                         continue;
-
                     try
                     {
                         object value = field.GetValue(current);
-                        string text = value == null ? "<null>" : value.ToString();
-
-                        if (field.Name.IndexOf("element", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            text.IndexOf("fire", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            text.IndexOf("elm_", StringComparison.OrdinalIgnoreCase) >= 0)
+                        WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE field=" +
+                            fieldName + " type=" + field.FieldType.FullName +
+                            " value=[" + (value == null ? "<null>" : value.ToString()) + "]");
+                        Sprite sprite = value as Sprite;
+                        if (sprite != null)
                         {
-                            WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE field=" +
-                                field.Name + " type=" + field.FieldType.FullName +
-                                " value=[" + text + "]");
+                            WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE sprite=" +
+                                sprite.name + " texture=" +
+                                (sprite.texture == null ? "<null>" : sprite.texture.name));
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE field=" +
+                            fieldName + " readError=" + ex.GetType().Name);
                     }
                 }
 
@@ -2315,86 +2174,9 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void TracePrismaticDamageSourceType(Actor source)
-    {
-        if (source == null)
-            return;
 
-        try
-        {
-            Type damageDataType = typeof(DamageData);
-            FieldInfo sourceField = damageDataType.GetField(
-                "source",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-            if (sourceField == null)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE SOURCE field=<unavailable>");
-                return;
-            }
 
-            Type sourceType = sourceField.FieldType;
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE SOURCE type=" +
-                sourceType.FullName + " isEnum=" + sourceType.IsEnum);
-
-            if (sourceType.IsEnum)
-            {
-                Array values = Enum.GetValues(sourceType);
-                for (int i = 0; i < values.Length; i++)
-                {
-                    object value = values.GetValue(i);
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE SOURCE enum=" +
-                        value + " numeric=" + Convert.ToInt32(value));
-                }
-            }
-
-            PropertyInfo[] properties = damageDataType.GetProperties(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            for (int i = 0; i < properties.Length && i < 32; i++)
-            {
-                PropertyInfo property = properties[i];
-                string name = property.Name ?? string.Empty;
-
-                if (name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0)
-                {
-                    continue;
-                }
-
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE SOURCE property=" +
-                    name + " type=" + property.PropertyType.FullName);
-            }
-
-            MethodInfo[] methods = damageDataType.GetMethods(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            for (int i = 0; i < methods.Length && i < 48; i++)
-            {
-                MethodInfo method = methods[i];
-                string name = method.Name ?? string.Empty;
-
-                if (name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0)
-                {
-                    continue;
-                }
-
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE SOURCE method=" +
-                    name + " return=" + method.ReturnType.FullName +
-                    " params=" + method.GetParameters().Length);
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE SOURCE error=" +
-                ex.GetType().Name);
-        }
-    }
     private static void TracePrismaticBasicAttackExecution(Actor source)
     {
         if (source == null)
@@ -3007,19 +2789,33 @@ public sealed class DPSMeter : ModBehaviour
         try
         {
             Type type = source.GetType();
-
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER type=" +
                 type.FullName + " name=" + (source.name ?? "<null>") +
                 " original=" + (source.GetOriginalName() ?? "<null>"));
 
-            FieldInfo[] fields = type.GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            PropertyInfo currentConfigProperty = type.GetProperty(
+                "currentConfig", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (currentConfigProperty != null)
+            {
+                try
+                {
+                    object currentConfig = currentConfigProperty.GetValue(source, null);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER currentConfig type=" +
+                        (currentConfig == null ? "<null>" : currentConfig.GetType().FullName));
+                    TracePrismaticConfigObject(currentConfig, "currentConfig");
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER currentConfig readError=" +
+                        ex.GetType().Name);
+                }
+            }
 
+            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             for (int i = 0; i < fields.Length; i++)
             {
                 FieldInfo field = fields[i];
                 string name = field.Name ?? string.Empty;
-
                 if (name.IndexOf("config", StringComparison.OrdinalIgnoreCase) < 0 &&
                     name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0 &&
                     name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
@@ -3031,39 +2827,37 @@ public sealed class DPSMeter : ModBehaviour
                 try
                 {
                     object value = field.GetValue(source);
-
                     WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER field=" +
                         name + " type=" + field.FieldType.FullName + " value=[" +
                         (value == null ? "<null>" : value.ToString()) + "]");
 
-                    TracePrismaticConfigObject(value, name);
+                    if (field.FieldType.IsArray)
+                    {
+                        Array array = value as Array;
+                        if (array != null)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER array=" +
+                                name + " length=" + array.Length);
+                            for (int index = 0; index < array.Length && index < 8; index++)
+                            {
+                                object item = array.GetValue(index);
+                                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER array=" +
+                                    name + "[" + index + "] type=" +
+                                    (item == null ? "<null>" : item.GetType().FullName));
+                                TracePrismaticConfigObject(item, name + "[" + index + "]");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        TracePrismaticConfigObject(value, name);
+                    }
                 }
                 catch (Exception ex)
                 {
                     WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER field=" +
                         name + " readError=" + ex.GetType().Name);
                 }
-            }
-
-            MethodInfo[] methods = type.GetMethods(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-            for (int i = 0; i < methods.Length; i++)
-            {
-                MethodInfo method = methods[i];
-                string name = method.Name ?? string.Empty;
-
-                if (name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("execute", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("activate", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("cast", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("hit", StringComparison.OrdinalIgnoreCase) < 0)
-                    continue;
-
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER method=" +
-                    method.Name + " return=" + method.ReturnType.FullName +
-                    " params=" + method.GetParameters().Length);
             }
         }
         catch (Exception ex)
@@ -3072,6 +2866,44 @@ public sealed class DPSMeter : ModBehaviour
                 ex.GetType().Name);
         }
     }
+
+    private static void TracePrismaticConfigObject(object value, string label)
+    {
+        if (value == null)
+            return;
+
+        Type type = value.GetType();
+        if (type.IsPrimitive || value is string || value is Enum)
+            return;
+
+        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < fields.Length && i < 64; i++)
+        {
+            FieldInfo field = fields[i];
+            string name = field.Name ?? string.Empty;
+            if (name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("icon", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0)
+                continue;
+
+            try
+            {
+                object fieldValue = field.GetValue(value);
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG parent=" +
+                    label + " field=" + name + " type=" + field.FieldType.FullName +
+                    " value=[" + (fieldValue == null ? "<null>" : fieldValue.ToString()) + "]");
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
+
 
     private static void TracePrismaticConfigObject(object value, string label)
     {
