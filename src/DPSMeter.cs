@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.109";
+    public const string DevelopmentVersion = "v5.110";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2037,7 +2037,7 @@ public sealed class DPSMeter : ModBehaviour
         TracePrismaticUiLocalization(info.actor, prismaticEffect, pendingAttack);
         TracePrismaticSkillRegistry(pendingAttack, 63);
         TracePrismaticEquippedSkills(pendingAttack);
-        TracePrismaticSkillTriggerMetadata(pendingAttack);
+        TracePrismaticOriginChain(prismaticEffect);
 
         AbilityTrigger trigger = pendingAttack.firstTrigger;
         if (trigger != null)
@@ -2290,129 +2290,96 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void TracePrismaticSkillTriggerMetadata(object attackSource)
+    pri    private static void TracePrismaticOriginChain(Actor effect)
     {
         try
         {
-            Type type = attackSource == null ? null : attackSource.GetType();
-            int fieldCount = 0;
-            int propertyCount = 0;
-            int methodCount = 0;
-
-            while (type != null && type != typeof(object))
+            if (effect == null)
             {
-                FieldInfo[] fields = type.GetFields(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
+                return;
+            }
 
-                for (int i = 0; i < fields.Length && fieldCount < 48; i++)
+            Hero hero = effect.firstEntity as Hero;
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ORIGIN effect=" +
+                effect.GetType().Name + " readable=[" +
+                (effect.GetActorReadableName() ?? "<null>") + "]");
+
+            Actor current = effect;
+            int depth = 0;
+
+            while (current != null && depth < 8)
+            {
+                AbilityTrigger trigger = current.firstTrigger;
+                SkillTrigger skill = trigger as SkillTrigger;
+
+                string slot = null;
+                if (skill != null)
                 {
-                    FieldInfo field = fields[i];
-                    string name = field.Name;
-                    if (name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("parent", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("owner", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        continue;
-                    }
-
-                    object value = null;
-                    try { value = field.GetValue(attackSource); } catch (Exception) { }
-
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER field=" +
-                        field.Name + " declaringType=" + type.Name +
-                        " type=" + field.FieldType.FullName +
-                        " value=[" + (value == null ? "<null>" : value.ToString()) + "]");
-                    fieldCount++;
+                    slot = GetSkillSlotIdentity(current, skill);
                 }
 
-                PropertyInfo[] properties = type.GetProperties(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ORIGIN depth=" +
+                    depth + " actor=" + current.GetType().Name +
+                    " original=[" + (current.GetOriginalName() ?? "<null>") +
+                    "] trigger=" + (trigger == null ? "<null>" : trigger.GetType().Name));
 
-                for (int i = 0; i < properties.Length && propertyCount < 48; i++)
+                if (skill != null)
                 {
-                    PropertyInfo property = properties[i];
-                    if (property.GetIndexParameters().Length != 0)
-                    {
-                        continue;
-                    }
-
-                    string name = property.Name;
-                    if (name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("parent", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("owner", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        continue;
-                    }
-
-                    object value = null;
+                    string title = null;
                     try
                     {
-                        if (property.GetMethod != null)
-                        {
-                            value = property.GetValue(attackSource, null);
-                        }
+                        title = skill.GetFormattedSkillTitle();
                     }
                     catch (Exception)
                     {
                     }
 
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER property=" +
-                        property.Name + " declaringType=" + type.Name +
-                        " type=" + property.PropertyType.FullName +
-                        " value=[" + (value == null ? "<null>" : value.ToString()) + "]");
-                    propertyCount++;
-                }
-
-                MethodInfo[] methods = type.GetMethods(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-
-                for (int i = 0; i < methods.Length && methodCount < 72; i++)
-                {
-                    MethodInfo method = methods[i];
-                    string name = method.Name;
-                    if (name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("parent", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("owner", StringComparison.OrdinalIgnoreCase) < 0)
+                    string localized = null;
+                    try
                     {
-                        continue;
+                        localized = DewLocalization.GetSkillName(skill, 0);
+                    }
+                    catch (Exception)
+                    {
                     }
 
-                    ParameterInfo[] parameters = method.GetParameters();
-                    string parameterList = string.Empty;
-                    for (int p = 0; p < parameters.Length; p++)
-                    {
-                        if (p > 0) parameterList += ",";
-                        parameterList += parameters[p].ParameterType.Name;
-                    }
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ORIGIN depth=" +
+                        depth + " skill=" + skill.GetType().Name +
+                        " abilityIndex=" + skill.abilityIndex +
+                        " slot=[" + (slot ?? "<null>") +
+                        "] title=[" + (title ?? "<null>") +
+                        "] localized=[" + (localized ?? "<null>") + "]");
 
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER method=" +
-                        method.Name + " declaringType=" + type.Name +
-                        " return=" + method.ReturnType.FullName +
-                        " params=[" + parameterList + "]");
-                    methodCount++;
+                    if (hero != null && hero.Skill != null)
+                    {
+                        SkillTrigger identitySkill = null;
+                        try
+                        {
+                            identitySkill = hero.Skill.GetSkill(HeroSkillLocation.Identity);
+                        }
+                        catch (Exception)
+                        {
+                        }
+
+                        if (identitySkill != null)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ORIGIN depth=" +
+                                depth + " sameIdentity=" +
+                                object.ReferenceEquals(skill, identitySkill) +
+                                " identityType=" + identitySkill.GetType().Name +
+                                " identityOriginal=[" +
+                                (identitySkill.GetOriginalName() ?? "<null>") + "]");
+                        }
+                    }
                 }
 
-                type = type.BaseType;
+                current = current.parentActor;
+                depth++;
             }
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER error=" +
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ORIGIN error=" +
                 ex.GetType().Name);
         }
     }
