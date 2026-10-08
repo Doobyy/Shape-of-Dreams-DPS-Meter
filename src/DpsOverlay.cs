@@ -740,7 +740,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.DrawTexture(barRect, _whiteTexture);
 
-        GUI.color = new Color(0.784f, 0.784f, 0.784f, 1f);
+        GUI.color = new Color(0.824f, 0.831f, 0.827f, 1f);
         Rect fillRect = new Rect(
             barRect.x,
             barRect.y,
@@ -749,7 +749,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.DrawTexture(fillRect, _whiteTexture);
 
         const float barrierOutline = 2f;
-        GUI.color = new Color(0.541f, 0.541f, 0.541f, 1f);
+        GUI.color = new Color(0.655f, 0.659f, 0.663f, 1f);
         GUI.DrawTexture(new Rect(fillRect.x, fillRect.y, fillRect.width, barrierOutline), _whiteTexture);
         GUI.DrawTexture(new Rect(fillRect.x, fillRect.yMax - barrierOutline, fillRect.width, barrierOutline), _whiteTexture);
         GUI.DrawTexture(new Rect(fillRect.x, fillRect.y, barrierOutline, fillRect.height), _whiteTexture);
