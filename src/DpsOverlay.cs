@@ -31,7 +31,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.22f, 0.62f, 0.30f, 0.68f);
     private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
-    private const string DevelopmentVersion = "v5.57";
+
 
     private DpsData _data;
     private Vector2 _scroll;
@@ -520,7 +520,7 @@ public sealed class DpsOverlay : MonoBehaviour
                     _windowRect.yMax - 15f,
                     _windowRect.width - 25f,
                     11f),
-                DevelopmentVersion,
+                DPSMeter.DevelopmentVersion,
                 versionStyle);
         }
     }
