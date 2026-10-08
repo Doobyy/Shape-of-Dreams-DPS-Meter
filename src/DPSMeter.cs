@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.181";
+    public const string DevelopmentVersion = "v5.182";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1403,6 +1403,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
     private void OnTakeDamage(EventInfoDamage info)
     {
+        RunDamageNumberResolverProbe();
         RunCombatUiResolverProbe();
         if (info.actor == null || info.victim == null)
         {
@@ -3262,21 +3263,20 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         return null;
     }
 
-    private bool _combatUiResolverProbeDone;
+    private bool _damageNumberResolverProbeDone;
 
-    private void RunCombatUiResolverProbe()
+    private void RunDamageNumberResolverProbe()
     {
-        if (_combatUiResolverProbeDone)
+        if (_damageNumberResolverProbeDone)
         {
             return;
         }
 
-        _combatUiResolverProbeDone = true;
+        _damageNumberResolverProbeDone = true;
 
         try
         {
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
             for (int i = 0; i < assemblies.Length; i++)
             {
                 Assembly assembly = assemblies[i];
@@ -3285,147 +3285,116 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
                     continue;
                 }
 
-                string assemblyName;
-                try
-                {
-                    assemblyName = assembly.GetName().Name;
-                }
-                catch (Exception)
+                Type groupType = assembly.GetType("UI_DamageNumberGroup", false);
+                Type textType = assembly.GetType("UI_DamageNumberText", false);
+                if (groupType == null && textType == null)
                 {
                     continue;
                 }
 
-                if (string.IsNullOrEmpty(assemblyName) ||
-                    (assemblyName.IndexOf("Dew", StringComparison.OrdinalIgnoreCase) < 0 &&
-                     assemblyName.IndexOf("Assembly-CSharp", StringComparison.OrdinalIgnoreCase) < 0))
+                WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER RESOLVER assembly=" +
+                    assembly.GetName().Name);
+
+                if (groupType != null)
                 {
-                    continue;
+                    DescribeDamageNumberType(groupType);
                 }
 
-                Type[] types;
-                try
+                if (textType != null)
                 {
-                    types = assembly.GetTypes();
-                }
-                catch (ReflectionTypeLoadException ex)
-                {
-                    types = ex.Types;
-                }
-                catch (Exception)
-                {
-                    continue;
-                }
+                    DescribeDamageNumberType(textType);
 
-                if (types == null)
-                {
-                    continue;
-                }
+                    Type variantType = textType.GetNestedType(
+                        "VisualVariant",
+                        BindingFlags.Public | BindingFlags.NonPublic);
+                    if (variantType != null)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER VARIANT type=" +
+                            variantType.FullName);
 
-                for (int t = 0; t < types.Length; t++)
-                {
-                    Type type = types[t];
-                    if (type == null)
-                    {
-                        continue;
-                    }
-
-                    string typeName = type.FullName ?? type.Name;
-                    if (!ContainsCombatUiKeyword(typeName))
-                    {
-                        continue;
-                    }
-
-                    MethodInfo[] methods;
-                    try
-                    {
-                        methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static |
-                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-                    }
-                    catch (Exception)
-                    {
-                        continue;
-                    }
-
-                    for (int m = 0; m < methods.Length; m++)
-                    {
-                        MethodInfo method = methods[m];
-                        if (method == null)
+                        if (variantType.IsEnum)
                         {
-                            continue;
+                            string[] names = Enum.GetNames(variantType);
+                            for (int n = 0; n < names.Length; n++)
+                            {
+                                WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER VARIANT name=" +
+                                    names[n]);
+                            }
                         }
-
-                        string methodName = method.Name ?? string.Empty;
-                        string methodText = typeName + "." + methodName;
-
-                        if (!ContainsCombatUiKeyword(methodText))
-                        {
-                            continue;
-                        }
-
-                        WriteDebugLog("[" + DevelopmentVersion + "] COMBAT UI CANDIDATE assembly=" +
-                            assemblyName + " type=" + typeName + " method=" + methodName +
-                            " return=" + (method.ReturnType == null ? "<null>" : method.ReturnType.FullName) +
-                            " params=" + DescribeMethodParameters(method));
                     }
                 }
+
+                Type numberPoolType = groupType == null
+                    ? null
+                    : groupType.GetNestedType("NumberPool",
+                        BindingFlags.Public | BindingFlags.NonPublic);
+
+                if (numberPoolType != null)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER POOL type=" +
+                        numberPoolType.FullName);
+                    DescribeDamageNumberType(numberPoolType);
+                }
+
+                return;
             }
+
+            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER RESOLVER typesNotFound");
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] COMBAT UI resolverProbeError=" +
+            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER resolverProbeError=" +
                 ex.GetType().Name + " message=" + ex.Message);
         }
     }
 
-    private static bool ContainsCombatUiKeyword(string value)
+    private static void DescribeDamageNumberType(Type type)
     {
-        if (string.IsNullOrEmpty(value))
+        if (type == null)
         {
-            return false;
+            return;
         }
 
-        return value.IndexOf("damage", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               value.IndexOf("heal", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               value.IndexOf("floating", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               value.IndexOf("combattext", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               value.IndexOf("combat_text", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               value.IndexOf("combat text", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               value.IndexOf("popup", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               value.IndexOf("numberdisplay", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               value.IndexOf("number_display", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               value.IndexOf("damage number", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               value.IndexOf("heal number", StringComparison.OrdinalIgnoreCase) >= 0;
-    }
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Static |
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
 
-    private static string DescribeMethodParameters(MethodInfo method)
-    {
-        try
+        for (int i = 0; i < fields.Length; i++)
         {
-            ParameterInfo[] parameters = method.GetParameters();
-            if (parameters == null || parameters.Length == 0)
-            {
-                return "<none>";
-            }
-
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                if (i > 0)
-                {
-                    builder.Append(",");
-                }
-
-                ParameterInfo parameter = parameters[i];
-                builder.Append(parameter.ParameterType == null
-                    ? "<null>"
-                    : parameter.ParameterType.FullName);
-            }
-
-            return builder.ToString();
+            FieldInfo field = fields[i];
+            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER FIELD type=" +
+                type.FullName + " name=" + field.Name +
+                " fieldType=" + (field.FieldType == null ? "<null>" : field.FieldType.FullName));
         }
-        catch (Exception)
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Static |
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+
+        for (int i = 0; i < properties.Length; i++)
         {
-            return "<error>";
+            PropertyInfo property = properties[i];
+            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER PROPERTY type=" +
+                type.FullName + " name=" + property.Name +
+                " propertyType=" + (property.PropertyType == null ? "<null>" : property.PropertyType.FullName));
+        }
+
+        MethodInfo[] methods = type.GetMethods(
+            BindingFlags.Instance | BindingFlags.Static |
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+
+        for (int i = 0; i < methods.Length; i++)
+        {
+            MethodInfo method = methods[i];
+            if (method == null)
+            {
+                continue;
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER METHOD type=" +
+                type.FullName + " name=" + method.Name +
+                " return=" + (method.ReturnType == null ? "<null>" : method.ReturnType.FullName) +
+                " params=" + DescribeMethodParameters(method));
         }
     }
 
