@@ -210,7 +210,11 @@ public sealed class DpsOverlay : MonoBehaviour
             16f,
             16f);
 
-        if (e.type == EventType.MouseDown && e.button == 1)
+        bool rightClick =
+            e.type == EventType.ContextClick ||
+            (e.type == EventType.MouseDown && e.button == 1);
+
+        if (rightClick)
         {
             if (_settingsOpen && !_settingsRect.Contains(e.mousePosition))
             {
@@ -230,26 +234,18 @@ public sealed class DpsOverlay : MonoBehaviour
                 const float menuHeight = 92f;
                 const float menuGap = 4f;
 
-                // A manual resize can leave the left-button interaction state
-                // active if the drag ends outside the overlay. Reset those
-                // transient states before opening a fresh context menu so the
-                // resized window remains fully interactive.
                 _resizing = false;
                 _dragging = false;
                 _resizeMoved = false;
                 _headerMoved = false;
                 _contextMenuOpen = false;
 
-                float x = e.mousePosition.x + menuGap;
-                float y = e.mousePosition.y + menuGap;
-
-                x = Mathf.Clamp(
-                    x,
+                float x = Mathf.Clamp(
+                    e.mousePosition.x + menuGap,
                     4f,
                     Mathf.Max(4f, Screen.width - menuWidth - 4f));
-
-                y = Mathf.Clamp(
-                    y,
+                float y = Mathf.Clamp(
+                    e.mousePosition.y + menuGap,
                     4f,
                     Mathf.Max(4f, Screen.height - menuHeight - 4f));
 
@@ -261,7 +257,6 @@ public sealed class DpsOverlay : MonoBehaviour
 
             _contextMenuOpen = false;
         }
-
         if (_settingsOpen)
         {
             Rect healingToggleRect = new Rect(
