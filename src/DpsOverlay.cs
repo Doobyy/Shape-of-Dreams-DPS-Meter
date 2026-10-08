@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.IO;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -98,6 +99,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
         DrawHeader(headerRect);
         DrawDevelopmentReloadButton();
+        DrawDevelopmentExportButton();
 
         Rect contentRect = new Rect(
             _windowRect.x + 6f,
@@ -523,24 +525,34 @@ public sealed class DpsOverlay : MonoBehaviour
         }
     }
 
-    private Rect GetReloadButtonRect()
+    private Rect GetDevelopmentButtonRect(float yOffset)
     {
-        const float reloadWidth = 74f;
-        const float reloadHeight = 24f;
+        const float buttonWidth = 74f;
+        const float buttonHeight = 24f;
         const float gap = 6f;
 
         float x = _windowRect.xMax + gap;
-        if (x + reloadWidth > Screen.width - 4f)
+        if (x + buttonWidth > Screen.width - 4f)
         {
-            x = _windowRect.x - reloadWidth - gap;
+            x = _windowRect.x - buttonWidth - gap;
         }
 
-        x = Mathf.Clamp(x, 4f, Mathf.Max(4f, Screen.width - reloadWidth - 4f));
+        x = Mathf.Clamp(x, 4f, Mathf.Max(4f, Screen.width - buttonWidth - 4f));
 
-        float y = _windowRect.y + 4f;
-        y = Mathf.Clamp(y, 4f, Mathf.Max(4f, Screen.height - reloadHeight - 4f));
+        float y = _windowRect.y + 4f + yOffset;
+        y = Mathf.Clamp(y, 4f, Mathf.Max(4f, Screen.height - buttonHeight - 4f));
 
-        return new Rect(x, y, reloadWidth, reloadHeight);
+        return new Rect(x, y, buttonWidth, buttonHeight);
+    }
+
+    private Rect GetReloadButtonRect()
+    {
+        return GetDevelopmentButtonRect(0f);
+    }
+
+    private Rect GetExportButtonRect()
+    {
+        return GetDevelopmentButtonRect(30f);
     }
 
     private void DrawDevelopmentReloadButton()
@@ -550,6 +562,26 @@ public sealed class DpsOverlay : MonoBehaviour
         if (GUI.Button(reloadRect, "RELOAD"))
         {
             DewMod.ReloadFromActiveMods();
+        }
+    }
+
+    private void DrawDevelopmentExportButton()
+    {
+        Rect exportRect = GetExportButtonRect();
+
+        if (GUI.Button(exportRect, "EXPORT LOG"))
+        {
+            try
+            {
+                string path = Path.Combine(
+                    Application.persistentDataPath,
+                    "DPSMeter-healing-export.log");
+
+                File.WriteAllText(path, _data.ExportHealingLog());
+            }
+            catch (Exception)
+            {
+            }
         }
     }
 
