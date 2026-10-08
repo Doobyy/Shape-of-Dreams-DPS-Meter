@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.64";
+    public const string DevelopmentVersion = "v5.65";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -23,7 +23,7 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private readonly HashSet<string> _essenceScalingDiagnosticSeen = new HashSet<string>();
-    private readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
+    private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
