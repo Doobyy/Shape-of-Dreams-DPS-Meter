@@ -974,6 +974,7 @@ public sealed class DPSMeter : ModBehaviour
                 TraceReadableIdentity(current, "[v5.52] regen");
                 TracePickupMembers(current, "[v5.52] regen");
                 TracePickupLocalization(current, "[v5.52] regen");
+                TracePickupEffect(current, "[v5.52] regen");
                 WriteDebugLog("[v5.52] regen pickup end");
                 return;
             }
@@ -1067,6 +1068,139 @@ public sealed class DPSMeter : ModBehaviour
                     catch (Exception)
                     {
                     }
+                }
+            }
+
+            currentType = currentType.BaseType;
+            hierarchyDepth++;
+        }
+    }
+
+    private static void TracePickupEffect(Actor pickup, string label)
+    {
+        if (pickup == null)
+        {
+            return;
+        }
+
+        Type type = pickup.GetType();
+        FieldInfo field = null;
+
+        while (type != null && field == null)
+        {
+            field = type.GetField(
+                "pickupEffect",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            type = type.BaseType;
+        }
+
+        if (field == null || !typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType))
+        {
+            return;
+        }
+
+        UnityEngine.Object effect = null;
+
+        try
+        {
+            effect = field.GetValue(pickup) as UnityEngine.Object;
+        }
+        catch (Exception)
+        {
+        }
+
+        GameObject gameObject = effect as GameObject;
+        if (gameObject == null)
+        {
+            return;
+        }
+
+        WriteDebugLog(label + "   pickupEffect GameObject=[" + gameObject.name + "]");
+
+        Component[] components = gameObject.GetComponentsInChildren<Component>(true);
+        int logged = 0;
+
+        for (int i = 0; i < components.Length && logged < 32; i++)
+        {
+            Component component = components[i];
+            if (component == null)
+            {
+                continue;
+            }
+
+            Type componentType = component.GetType();
+            WriteDebugLog(label + "   pickupEffect component type=" +
+                componentType.Name + " name=[" + component.name + "]");
+
+            TraceComponentStringMembers(component, label + "   pickupEffect");
+            TraceComponentLocalization(componentType, label + "   pickupEffect");
+            logged++;
+        }
+    }
+
+    private static void TraceComponentLocalization(Type componentType, string label)
+    {
+        if (componentType == null)
+        {
+            return;
+        }
+
+        string[] keys = new string[]
+        {
+            componentType.Name + "_Name",
+            componentType.Name
+        };
+
+        for (int i = 0; i < keys.Length; i++)
+        {
+            try
+            {
+                string localized;
+                if (DewLocalization.TryGetUIValue(keys[i], out localized) &&
+                    !string.IsNullOrEmpty(localized))
+                {
+                    WriteDebugLog(label + "   uiKey=" + keys[i] + " value=[" + localized + "]");
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
+    private static void TraceComponentStringMembers(Component component, string label)
+    {
+        Type currentType = component.GetType();
+        int hierarchyDepth = 0;
+        int logged = 0;
+
+        while (currentType != null && hierarchyDepth < 4 && logged < 16)
+        {
+            FieldInfo[] fields = currentType.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length && logged < 16; i++)
+            {
+                FieldInfo field = fields[i];
+
+                if (field.FieldType != typeof(string))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(component);
+                    if (value is string text && !string.IsNullOrEmpty(text))
+                    {
+                        WriteDebugLog(label + "   field=" + field.Name + " value=[" + text + "]");
+                        logged++;
+                    }
+                }
+                catch (Exception)
+                {
                 }
             }
 
