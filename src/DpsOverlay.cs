@@ -20,27 +20,27 @@ public sealed class DpsOverlay : MonoBehaviour
         PartyTotal
     }
 
-    private static readonly Color DefaultBarColor = new Color(0.871f, 0.871f, 0.871f, 0.68f);
+    private static readonly Color DefaultBarColor = new Color(0.875f, 0.871f, 0.867f, 0.68f);
     private static readonly Color WindowFillColor = new Color(0f, 0f, 0f, 0.55f);
-    private static readonly Color FireBarColor = new Color(1.00f, 0.396f, 0.224f, 0.68f);
-    private static readonly Color IceBarColor = new Color(0.78f, 0.90f, 1.00f, 0.68f);
-    private static readonly Color LightBarColor = new Color(1.00f, 0.918f, 0.655f, 0.68f);
-    private static readonly Color DarkBarColor = new Color(0.737f, 0.565f, 1.00f, 0.68f);
-    private static readonly Color AdScalingBarColor = new Color(1.00f, 0.624f, 0.412f, 0.68f);
-    private static readonly Color ApScalingBarColor = new Color(0.353f, 0.898f, 1.00f, 0.68f);
-    private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
-    private static readonly Color HealingBarColor = new Color(0.518f, 1.00f, 0.314f, 0.68f);
+    private static readonly Color FireBarColor = new Color(0.996f, 0.404f, 0.224f, 0.68f);
+    private static readonly Color IceBarColor = new Color(0.855f, 0.937f, 0.996f, 0.68f);
+    private static readonly Color LightBarColor = new Color(0.996f, 0.929f, 0.667f, 0.68f);
+    private static readonly Color DarkBarColor = new Color(0.737f, 0.565f, 0.988f, 0.68f);
+    private static readonly Color AdScalingBarColor = new Color(0.996f, 0.631f, 0.416f, 0.68f);
+    private static readonly Color ApScalingBarColor = new Color(0.365f, 0.906f, 0.996f, 0.68f);
+    private static readonly Color HpScalingBarColor = new Color(0.549f, 0.996f, 0.345f, 0.68f);
+    private static readonly Color HealingBarColor = new Color(0.549f, 0.996f, 0.345f, 0.68f);
     private static readonly Color SourceNameColor = Color.white;
     private static readonly Color BarTextStrokeColor = Color.black;
-    private static readonly Color DefaultBarOutlineColor = new Color(0.259f, 0.259f, 0.259f, 1f);
-    private static readonly Color FireBarOutlineColor = new Color(0.675f, 0.039f, 0.000f, 1f);
-    private static readonly Color IceBarOutlineColor = new Color(0.184f, 0.420f, 0.694f, 1f);
-    private static readonly Color LightBarOutlineColor = new Color(0.729f, 0.518f, 0.000f, 1f);
-    private static readonly Color DarkBarOutlineColor = new Color(0.200f, 0.000f, 0.631f, 1f);
-    private static readonly Color AdScalingBarOutlineColor = new Color(0.298f, 0.129f, 0.000f, 1f);
-    private static readonly Color ApScalingBarOutlineColor = new Color(0.000f, 0.282f, 0.667f, 1f);
-    private static readonly Color HpScalingBarOutlineColor = new Color(0.059f, 0.208f, 0.000f, 1f);
-    private static readonly Color HealingBarOutlineColor = new Color(0.059f, 0.208f, 0.000f, 1f);
+    private static readonly Color DefaultBarOutlineColor = new Color(0.212f, 0.208f, 0.200f, 1f);
+    private static readonly Color FireBarOutlineColor = new Color(0.506f, 0.051f, 0.008f, 1f);
+    private static readonly Color IceBarOutlineColor = new Color(0.145f, 0.392f, 0.682f, 1f);
+    private static readonly Color LightBarOutlineColor = new Color(0.553f, 0.408f, 0.141f, 1f);
+    private static readonly Color DarkBarOutlineColor = new Color(0.173f, 0.020f, 0.459f, 1f);
+    private static readonly Color AdScalingBarOutlineColor = new Color(0.227f, 0.118f, 0.016f, 1f);
+    private static readonly Color ApScalingBarOutlineColor = new Color(0.086f, 0.231f, 0.498f, 1f);
+    private static readonly Color HpScalingBarOutlineColor = new Color(0.180f, 0.235f, 0.137f, 1f);
+    private static readonly Color HealingBarOutlineColor = new Color(0.180f, 0.235f, 0.137f, 1f);
 
 
     private DpsData _data;
