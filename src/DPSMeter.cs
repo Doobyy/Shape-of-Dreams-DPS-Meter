@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.IO;
+using System.Text;
 
 using UnityEngine;
 
@@ -242,7 +243,9 @@ public sealed class DPSMeter : ModBehaviour
 
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
         TraceHealthOrbSource(info.actor);
-        _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon);
+
+        string healingActorChain = BuildHealingExportActorChain(info.actor);
+        _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon, healingActorChain);
 
     }
 
@@ -637,14 +640,26 @@ public sealed class DPSMeter : ModBehaviour
         while (current != null && depth < 8)
         {
             string typeName = current.GetType().Name;
-            if (string.Equals(typeName, "Shrine_Guidance", StringComparison.OrdinalIgnoreCase))
+            string actorName = current.name;
+            int suffix = string.IsNullOrEmpty(actorName) ? -1 : actorName.IndexOf('(');
+            if (suffix > 0)
             {
-                sourceIdentity = typeName;
+                actorName = actorName.Substring(0, suffix).Trim();
+            }
+
+            bool isShrineGuidance =
+                string.Equals(typeName, "Shrine_Guidance", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(actorName, "Shrine_Guidance", StringComparison.OrdinalIgnoreCase);
+
+            if (isShrineGuidance)
+            {
+                const string shrineKey = "Shrine_Guidance";
+                sourceIdentity = shrineKey;
 
                 try
                 {
                     string localizedName;
-                    if (DewLocalization.TryGetUIValue(typeName + "_Name", out localizedName) &&
+                    if (DewLocalization.TryGetUIValue(shrineKey + "_Name", out localizedName) &&
                         !string.IsNullOrEmpty(localizedName))
                     {
                         return localizedName;
