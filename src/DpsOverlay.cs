@@ -850,7 +850,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.DrawTexture(barRect, _whiteTexture);
 
-        DrawBar(barRect, ratio, HealingBarColor);
+        DrawBar(barRect, ratio, HealingBarColor, null, DpsData.DamageScalingType.Hp);
 
         string valueText = FormatNumber(amount) + "  " + percent.ToString("0.0") + "%";
         float valueWidth = _rowRight.CalcSize(new GUIContent(valueText)).x;
@@ -919,7 +919,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.DrawTexture(barRect, _whiteTexture);
 
-        DrawBar(barRect, ratio, GetBarColor(elemental, scaling));
+        DrawBar(barRect, ratio, GetBarColor(elemental, scaling), elemental, scaling);
 
         GUI.color = SourceNameColor;
 
@@ -997,7 +997,7 @@ public sealed class DpsOverlay : MonoBehaviour
         return text.Replace("</color>", string.Empty);
     }
 
-    private void DrawBar(Rect barRect, float ratio, Color fillColor)
+    private void DrawBar(Rect barRect, float ratio, Color fillColor, ElementalType? elemental, DpsData.DamageScalingType scaling)
     {
         float fillWidth = barRect.width * ratio;
         if (fillWidth <= 0f)
@@ -1009,7 +1009,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = fillColor;
         GUI.DrawTexture(fillRect, _whiteTexture);
 
-        Color outlineColor = GetBarOutlineColor(fillColor);
+        Color outlineColor = GetBarOutlineColor(elemental, scaling);
         const float outline = 1f;
         GUI.color = outlineColor;
         GUI.DrawTexture(new Rect(fillRect.x, fillRect.y, fillRect.width, outline), _whiteTexture);
