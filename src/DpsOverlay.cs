@@ -221,13 +221,12 @@ public sealed class DpsOverlay : MonoBehaviour
 
             if (_contextMenuOpen)
             {
-                if (!_contextMenuRect.Contains(e.mousePosition))
+                if (_contextMenuRect.Contains(e.mousePosition))
                 {
-                    _contextMenuOpen = false;
-                    e.Use();
+                    return;
                 }
 
-                return;
+                _contextMenuOpen = false;
             }
 
             if (_windowRect.Contains(e.mousePosition))
@@ -325,7 +324,12 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (_contextMenuOpen)
         {
-            return;
+            if (_contextMenuRect.Contains(e.mousePosition))
+            {
+                return;
+            }
+
+            _contextMenuOpen = false;
         }
 
         if (e.type == EventType.MouseDown && e.button == 0)
