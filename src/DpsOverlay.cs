@@ -211,8 +211,7 @@ public sealed class DpsOverlay : MonoBehaviour
             16f);
 
         bool rightClick =
-            (e.type == EventType.MouseDown && e.button == 1) ||
-            (e.rawType == EventType.MouseDown && e.button == 1);
+            e.type == EventType.MouseDown && e.button == 1;
 
         if (rightClick)
         {
@@ -318,12 +317,19 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (_contextMenuOpen)
         {
-            if (_contextMenuRect.Contains(e.mousePosition))
-            {
-                return;
-            }
+            bool mouseEvent =
+                e.type == EventType.MouseDown ||
+                e.type == EventType.MouseUp;
 
-            _contextMenuOpen = false;
+            if (mouseEvent)
+            {
+                if (_contextMenuRect.Contains(e.mousePosition))
+                {
+                    return;
+                }
+
+                _contextMenuOpen = false;
+            }
         }
 
         if (e.type == EventType.MouseDown && e.button == 0)
