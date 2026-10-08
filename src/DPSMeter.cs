@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.111";
+    public const string DevelopmentVersion = "v5.112";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1933,6 +1933,123 @@ public sealed class DPSMeter : ModBehaviour
         return false;
     }
 
+    private static void TracePrismaticDamageEventData(EventInfoDamage info)
+    {
+        try
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT begin");
+            TracePrismaticObjectMembers(info, "info", true);
+            TracePrismaticObjectMembers(info == null ? null : info.actor, "actor", false);
+            TracePrismaticObjectMembers(info == null ? null : (object)info.damage, "damage", false);
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT end");
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT error=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticObjectMembers(object source, string label, bool includeAllSimple)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        Type type = source.GetType();
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT object=" + label + " type=" + type.FullName);
+
+        Type current = type;
+        int logged = 0;
+        while (current != null && current != typeof(object) && logged < 36)
+        {
+            FieldInfo[] fields = current.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length && logged < 36; i++)
+            {
+                FieldInfo field = fields[i];
+                string name = field.Name ?? string.Empty;
+                bool interesting = includeAllSimple ||
+                    name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("effect", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("id", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (!interesting)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(source);
+                    string valueText = value == null ? "<null>" : value.ToString();
+                    string objectType = value == null ? "" : " objectType=" + value.GetType().FullName;
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT " + label +
+                        " field=" + name + " type=" + field.FieldType.FullName +
+                        " value=[" + valueText + "]" + objectType);
+                    logged++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            PropertyInfo[] properties = current.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < properties.Length && logged < 36; i++)
+            {
+                PropertyInfo property = properties[i];
+                if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+                {
+                    continue;
+                }
+
+                string name = property.Name ?? string.Empty;
+                bool interesting = includeAllSimple ||
+                    name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("effect", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("id", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (!interesting)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = property.GetValue(source, null);
+                    string valueText = value == null ? "<null>" : value.ToString();
+                    string objectType = value == null ? "" : " objectType=" + value.GetType().FullName;
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT " + label +
+                        " property=" + name + " type=" + property.PropertyType.FullName +
+                        " value=[" + valueText + "]" + objectType);
+                    logged++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            current = current.BaseType;
+        }
+    }
+
     private static void TraceTargetPrismaticVisionDamage(EventInfoDamage info, SkillTrigger directSkill)
     {
         if (info.actor == null)
@@ -2002,7 +2119,7 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME target type=" +
+        TracePrismaticDamageEventData(info);\n\n        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME target type=" +
             info.actor.GetType().FullName + " name=" + (info.actor.name ?? "<null>"));
         WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME target readable=[" +
             (info.actor.GetActorReadableName() ?? "<null>") + "] original=[" +
