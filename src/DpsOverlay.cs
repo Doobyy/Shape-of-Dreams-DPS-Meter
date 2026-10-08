@@ -259,8 +259,8 @@ public sealed class DpsOverlay : MonoBehaviour
 
             if (_windowRect.Contains(e.mousePosition))
             {
-                const float menuWidth = 110f;
-                const float menuHeight = 96f;
+                const float menuWidth = 118f;
+                const float menuHeight = 92f;
                 const float menuGap = 4f;
 
                 float x = e.mousePosition.x;
@@ -648,45 +648,54 @@ public sealed class DpsOverlay : MonoBehaviour
     {
         GUI.Box(_contextMenuRect, GUIContent.none);
 
-        const float padding = 6f;
-        const float buttonHeight = 24f;
-        const float gap = 2f;
-        float buttonWidth = _contextMenuRect.width - (padding * 2f);
+        const float padding = 4f;
+        const float rowHeight = 28f;
+        const float rowWidth = 110f;
 
         Rect settingsRect = new Rect(
             _contextMenuRect.x + padding,
             _contextMenuRect.y + padding,
-            buttonWidth,
-            buttonHeight);
+            rowWidth,
+            rowHeight);
 
         Rect reloadRect = new Rect(
             settingsRect.x,
-            settingsRect.yMax + gap,
-            buttonWidth,
-            buttonHeight);
+            settingsRect.yMax,
+            rowWidth,
+            rowHeight);
 
         Rect exportRect = new Rect(
             reloadRect.x,
-            reloadRect.yMax + gap,
-            buttonWidth,
-            buttonHeight);
+            reloadRect.yMax,
+            rowWidth,
+            rowHeight);
 
-        if (GUI.Button(settingsRect, "Settings"))
-        {
-            _contextMenuOpen = false;
-            OpenSettingsWindow();
-        }
+        Event e = Event.current;
 
-        if (GUI.Button(reloadRect, "Reload"))
-        {
-            _contextMenuOpen = false;
-            DewMod.ReloadFromActiveMods();
-        }
+        GUI.Label(settingsRect, "Settings");
+        GUI.Label(reloadRect, "Reload");
+        GUI.Label(exportRect, "Export");
 
-        if (GUI.Button(exportRect, "Export"))
+        if (e.type == EventType.MouseDown && e.button == 0)
         {
-            _contextMenuOpen = false;
-            ExportHealingLog();
+            if (settingsRect.Contains(e.mousePosition))
+            {
+                _contextMenuOpen = false;
+                OpenSettingsWindow();
+                e.Use();
+            }
+            else if (reloadRect.Contains(e.mousePosition))
+            {
+                _contextMenuOpen = false;
+                DewMod.ReloadFromActiveMods();
+                e.Use();
+            }
+            else if (exportRect.Contains(e.mousePosition))
+            {
+                _contextMenuOpen = false;
+                ExportHealingLog();
+                e.Use();
+            }
         }
     }
 
