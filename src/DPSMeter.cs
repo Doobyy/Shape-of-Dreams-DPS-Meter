@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.141";
+    public const string DevelopmentVersion = "v5.142";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2171,7 +2171,7 @@ public sealed class DPSMeter : ModBehaviour
                     continue;
                 }
 
-                LocalVariableInfo[] locals = body.LocalVariables;
+                IList<LocalVariableInfo> locals = body.LocalVariables;
                 for (int i = 0; i < locals.Length; i++)
                 {
                     WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER DETAIL local=" +
