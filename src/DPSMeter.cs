@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.158";
+    public const string DevelopmentVersion = "v5.159";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2016,6 +2016,7 @@ public sealed class DPSMeter : ModBehaviour
             TracePrismaticDisplayIdentity(info.actor, prismaticEffect);
             TracePrismaticMeleeOnHitIL();
             TracePrismaticMeleeCallbackBodies();
+            TracePrismaticMeleeBeforeDispatch();
         }
     }
 
@@ -2141,38 +2142,28 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void TracePrismaticMeleeCallbackBodies()
+    private static void TracePrismaticMeleeBeforeDispatch()
     {
         try
         {
             Type meleeType = typeof(Actor).Assembly.GetType("MeleeAttackInstance");
             if (meleeType == null) return;
-            foreach (Type type in meleeType.Assembly.GetTypes())
+            MethodInfo target = meleeType.GetMethod("OnBeforeDispatchDamage", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new Type[] { typeof(DamageData).MakeByRefType(), typeof(Entity) }, null);
+            if (target == null) return;
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH method=" + target);
+            MethodBody body = target.GetMethodBody();
+            byte[] il = body == null ? null : body.GetILAsByteArray();
+            if (il == null) return;
+            for (int p=0;p<il.Length;)
             {
-                if (type.Name != "<>c__DisplayClass18_0") continue;
-                foreach (MethodInfo method in type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
-                {
-                    if (method.Name != "<OnHit>b__0" && method.Name != "<OnHit>b__1") continue;
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLBACK BODY method=" + method.Name + " declaring=" + method.DeclaringType.FullName);
-                MethodBody body = method.GetMethodBody();
-                byte[] il = body == null ? null : body.GetILAsByteArray();
-                if (il == null) continue;
-                for (int p = 0; p < il.Length; )
-                {
-                    int at=p; byte b=il[p++]; OpCode op=OpCodes.Nop;
-                    foreach(FieldInfo f in typeof(OpCodes).GetFields(BindingFlags.Public|BindingFlags.Static)){if(f.FieldType==typeof(OpCode)){OpCode x=(OpCode)f.GetValue(null);if(x.Value==b){op=x;break;}}}
-                    int size=0; switch(op.OperandType){case OperandType.InlineNone:size=0;break;case OperandType.ShortInlineI:case OperandType.ShortInlineBrTarget:case OperandType.ShortInlineVar:size=1;break;case OperandType.InlineVar:size=2;break;case OperandType.InlineI:case OperandType.InlineBrTarget:case OperandType.InlineField:case OperandType.InlineMethod:case OperandType.InlineSig:case OperandType.InlineString:case OperandType.InlineTok:case OperandType.InlineType:case OperandType.ShortInlineR:size=4;break;case OperandType.InlineI8:case OperandType.InlineR:size=8;break;case OperandType.InlineSwitch:if(p+4>il.Length)return;size=4+BitConverter.ToInt32(il,p)*4;break;default:return;}
-                    if(p+size>il.Length)return;
-                    if(op==OpCodes.Call||op==OpCodes.Callvirt||op==OpCodes.Ldftn||op==OpCodes.Ldvirtftn||op==OpCodes.Newobj||op==OpCodes.Ldfld||op==OpCodes.Ldsfld||op==OpCodes.Stfld||op==OpCodes.Ldflda)
-                    {
-                        int token=BitConverter.ToInt32(il,p); try{MemberInfo member=method.Module.ResolveMember(token);WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLBACK BODY il=" + at.ToString("X4") + " op=" + op.Name + " member=" + member);}catch(Exception){WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLBACK BODY il=" + at.ToString("X4") + " op=" + op.Name + " token=0x" + token.ToString("X8"));}
-                    }
-                    p+=size;
-                    }
-                }
+                int at=p; byte b=il[p++]; OpCode op=OpCodes.Nop;
+                foreach(FieldInfo f in typeof(OpCodes).GetFields(BindingFlags.Public|BindingFlags.Static)){if(f.FieldType==typeof(OpCode)){OpCode x=(OpCode)f.GetValue(null);if(x.Value==b){op=x;break;}}}
+                int size=0; switch(op.OperandType){case OperandType.InlineNone:size=0;break;case OperandType.ShortInlineI:case OperandType.ShortInlineBrTarget:case OperandType.ShortInlineVar:size=1;break;case OperandType.InlineVar:size=2;break;case OperandType.InlineI:case OperandType.InlineBrTarget:case OperandType.InlineField:case OperandType.InlineMethod:case OperandType.InlineSig:case OperandType.InlineString:case OperandType.InlineTok:case OperandType.InlineType:case OperandType.ShortInlineR:size=4;break;case OperandType.InlineI8:case OperandType.InlineR:size=8;break;case OperandType.InlineSwitch:if(p+4>il.Length)return;size=4+BitConverter.ToInt32(il,p)*4;break;default:return;}
+                if(p+size>il.Length)return;
+                if(op==OpCodes.Call||op==OpCodes.Callvirt||op==OpCodes.Ldftn||op==OpCodes.Ldvirtftn||op==OpCodes.Newobj||op==OpCodes.Ldfld||op==OpCodes.Ldsfld||op==OpCodes.Stfld||op==OpCodes.Ldflda){int token=BitConverter.ToInt32(il,p);try{MemberInfo member=target.Module.ResolveMember(token);WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH il=" + at.ToString("X4") + " op=" + op.Name + " member=" + member);}catch(Exception){WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH il=" + at.ToString("X4") + " op=" + op.Name + " token=0x" + token.ToString("X8"));}}
+                p+=size;
             }
-        }
-        catch(Exception ex){WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLBACK BODY error=" + ex.GetType().Name);}
+        } catch(Exception ex){WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BEFORE DISPATCH error=" + ex.GetType().Name);}
     }
 
     private static Actor GetPrismaticPendingAttack(Actor effect)
