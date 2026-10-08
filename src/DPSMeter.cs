@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.108";
+    public const string DevelopmentVersion = "v5.109";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2037,6 +2037,7 @@ public sealed class DPSMeter : ModBehaviour
         TracePrismaticUiLocalization(info.actor, prismaticEffect, pendingAttack);
         TracePrismaticSkillRegistry(pendingAttack, 63);
         TracePrismaticEquippedSkills(pendingAttack);
+        TracePrismaticSkillTriggerMetadata(pendingAttack);
 
         AbilityTrigger trigger = pendingAttack.firstTrigger;
         if (trigger != null)
@@ -2286,6 +2287,133 @@ public sealed class DPSMeter : ModBehaviour
         catch (Exception ex)
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity error=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticSkillTriggerMetadata(object attackSource)
+    {
+        try
+        {
+            Type type = attackSource == null ? null : attackSource.GetType();
+            int fieldCount = 0;
+            int propertyCount = 0;
+            int methodCount = 0;
+
+            while (type != null && type != typeof(object))
+            {
+                FieldInfo[] fields = type.GetFields(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+
+                for (int i = 0; i < fields.Length && fieldCount < 48; i++)
+                {
+                    FieldInfo field = fields[i];
+                    string name = field.Name;
+                    if (name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("parent", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("owner", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+
+                    object value = null;
+                    try { value = field.GetValue(attackSource); } catch (Exception) { }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER field=" +
+                        field.Name + " declaringType=" + type.Name +
+                        " type=" + field.FieldType.FullName +
+                        " value=[" + (value == null ? "<null>" : value.ToString()) + "]");
+                    fieldCount++;
+                }
+
+                PropertyInfo[] properties = type.GetProperties(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+
+                for (int i = 0; i < properties.Length && propertyCount < 48; i++)
+                {
+                    PropertyInfo property = properties[i];
+                    if (property.GetIndexParameters().Length != 0)
+                    {
+                        continue;
+                    }
+
+                    string name = property.Name;
+                    if (name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("parent", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("owner", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+
+                    object value = null;
+                    try
+                    {
+                        if (property.GetMethod != null)
+                        {
+                            value = property.GetValue(attackSource, null);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER property=" +
+                        property.Name + " declaringType=" + type.Name +
+                        " type=" + property.PropertyType.FullName +
+                        " value=[" + (value == null ? "<null>" : value.ToString()) + "]");
+                    propertyCount++;
+                }
+
+                MethodInfo[] methods = type.GetMethods(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+
+                for (int i = 0; i < methods.Length && methodCount < 72; i++)
+                {
+                    MethodInfo method = methods[i];
+                    string name = method.Name;
+                    if (name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("parent", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("owner", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+
+                    ParameterInfo[] parameters = method.GetParameters();
+                    string parameterList = string.Empty;
+                    for (int p = 0; p < parameters.Length; p++)
+                    {
+                        if (p > 0) parameterList += ",";
+                        parameterList += parameters[p].ParameterType.Name;
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER method=" +
+                        method.Name + " declaringType=" + type.Name +
+                        " return=" + method.ReturnType.FullName +
+                        " params=[" + parameterList + "]");
+                    methodCount++;
+                }
+
+                type = type.BaseType;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER error=" +
+                ex.GetType().Name);
         }
     }
 
