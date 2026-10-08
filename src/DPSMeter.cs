@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.150";
+    public const string DevelopmentVersion = "v5.151";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2010,71 +2010,10 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        TracePrismaticDisplayIdentity(info.actor, prismaticEffect);
-
-        string traceKey = "prismatic-name:" + info.actor.GetInstanceID();
-        if (!_prismaticVisionDiagnosticSeen.Add(traceKey))
+        string traceKey = "prismatic-display:" + info.actor.GetInstanceID();
+        if (_prismaticVisionDiagnosticSeen.Add(traceKey))
         {
-            return;
-        }
-
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME target type=" +
-            info.actor.GetType().FullName + " name=" + (info.actor.name ?? "<null>"));
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME target readable=[" +
-            (info.actor.GetActorReadableName() ?? "<null>") + "] original=[" +
-            (info.actor.GetOriginalName() ?? "<null>") + "]");
-
-        if (prismaticEffect == null)
-        {
-            return;
-        }
-
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME effect readable=[" +
-            (prismaticEffect.GetActorReadableName() ?? "<null>") + "] original=[" +
-            (prismaticEffect.GetOriginalName() ?? "<null>") + "]");
-
-        Actor pendingAttack = GetPrismaticPendingAttack(prismaticEffect);
-        if (pendingAttack == null)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingAttack=<null>");
-            return;
-        }
-
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingAttack type=" +
-            pendingAttack.GetType().FullName + " name=" + (pendingAttack.name ?? "<null>"));
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingAttack readable=[" +
-            (pendingAttack.GetActorReadableName() ?? "<null>") + "] original=[" +
-            (pendingAttack.GetOriginalName() ?? "<null>") + "]");
-
-        AbilityTrigger trigger = pendingAttack.firstTrigger;
-        if (trigger != null)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingTrigger type=" +
-                trigger.GetType().FullName + " name=" + (trigger.name ?? "<null>") +
-                " readable=[" + (trigger.GetActorReadableName() ?? "<null>") + "] original=[" +
-                (trigger.GetOriginalName() ?? "<null>") + "]");
-
-            SkillTrigger skillTrigger = trigger as SkillTrigger;
-            if (skillTrigger != null)
-            {
-                string localized = null;
-                try
-                {
-                    localized = DewLocalization.GetSkillName(skillTrigger, 0);
-                }
-                catch (Exception)
-                {
-                }
-
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingTrigger skillType=" +
-                    skillTrigger.skillType + " abilityIndex=" + skillTrigger.abilityIndex +
-                    " formatted=[" + (skillTrigger.GetFormattedSkillTitle() ?? "<null>") +
-                    "] localized=[" + (localized ?? "<null>") + "]");
-            }
-        }
-        else
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingTrigger=<null>");
+            TracePrismaticDisplayIdentity(info.actor, prismaticEffect);
         }
     }
 
