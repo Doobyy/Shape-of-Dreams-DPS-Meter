@@ -628,7 +628,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
         }
 
-        float metricWidth = headerRect.width * 0.35f;
+        float metricWidth = headerRect.width * 0.45f;
         float titleWidth = headerRect.width - metricWidth;
 
         GUI.Label(
