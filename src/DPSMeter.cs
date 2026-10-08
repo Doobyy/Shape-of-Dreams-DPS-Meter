@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.68";
+    public const string DevelopmentVersion = "v5.69";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2518,7 +2518,8 @@ public sealed class DPSMeter : ModBehaviour
                 }
 
                 if (preferredFieldName == null &&
-                    field.Name.IndexOf("damage", StringComparison.OrdinalIgnoreCase) < 0)
+                    field.Name.IndexOf("damage", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    !string.Equals(field.Name, "dmgFactor", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
