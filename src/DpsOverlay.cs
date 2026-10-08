@@ -857,7 +857,7 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         float maxAmount = rows[0].Amount;
-        bool cumulative = _mode == DisplayMode.DamageTotal || _mode == DisplayMode.BarrierTotal;
+        bool cumulative = _mode == DisplayMode.DamageTotal;
 
         for (int i = 0; i < rows.Count; i++)
         {
@@ -959,7 +959,7 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             DpsData.BreakdownRow row = rows[i];
-            Sprite icon = _mode == DisplayMode.TotalHps || _mode == DisplayMode.DamageTotal
+            Sprite icon = _mode == DisplayMode.DamageTotal
                 ? _data.GetCumulativeHealingIcon(row.Identity)
                 : _data.GetCurrentHealingIcon(row.Identity);
             DrawHealingRow(row.Name, row.Amount, total, maxAmount, icon);
