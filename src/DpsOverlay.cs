@@ -173,7 +173,10 @@ public sealed class DpsOverlay : MonoBehaviour
                     _mode == DisplayMode.PartyDps ? _data.CurrentPartyHealing : _data.CumulativePartyHealingRows,
                     _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyHealing : _data.CumulativePartyHealing,
                     _mode == DisplayMode.PartyDps ? _data.CurrentPartyHps : _data.TotalPartyHps,
-                    "HPS");
+                    "HPS",
+                    _mode == DisplayMode.PartyDps
+                        ? "HPS: " + FormatNumber(_data.CurrentPartyHps)
+                        : "HEAL: " + FormatNumber(_data.CumulativePartyHealing));
             }
             else
             {
@@ -191,7 +194,10 @@ public sealed class DpsOverlay : MonoBehaviour
                     _mode == DisplayMode.PartyDps ? _data.CurrentPartyBarrier : _data.CumulativePartyBarrierRows,
                     _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyBarrier : _data.CumulativePartyBarrier,
                     _mode == DisplayMode.PartyDps ? _data.CurrentPartyBps : _data.TotalPartyBps,
-                    "BPS");
+                    "BPS",
+                    _mode == DisplayMode.PartyDps
+                        ? "BPS: " + FormatNumber(_data.CurrentPartyBps)
+                        : "BARRIER: " + FormatNumber(_data.CumulativePartyBarrier));
             }
             else
             {
@@ -526,11 +532,13 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private float GetExpandedBreakdownHeight()
     {
-        if (_mode != DisplayMode.CurrentDps && _mode != DisplayMode.DamageTotal)
+        if (_mode != DisplayMode.CurrentDps && _mode != DisplayMode.DamageTotal &&
+            _mode != DisplayMode.PartyDps && _mode != DisplayMode.PartyTotal)
         {
             return 0f;
         }
 
+        bool partyMode = _mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal;
         float height = 0f;
 
         if (!_showHealing && !_showBarrier)
@@ -542,23 +550,37 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (_showHealing)
         {
-            IReadOnlyList<DpsData.BreakdownRow> rows =
-                _mode == DisplayMode.CurrentDps
-                    ? _data.CurrentPersonalHealingRows
-                    : _data.CumulativeHealingRows;
-
-            int rowCount = rows != null ? rows.Count : 0;
+            int rowCount;
+            if (partyMode)
+            {
+                IReadOnlyList<KeyValuePair<string, float>> rows =
+                    _mode == DisplayMode.PartyDps ? _data.CurrentPartyHealing : _data.CumulativePartyHealingRows;
+                rowCount = rows != null ? rows.Count : 0;
+            }
+            else
+            {
+                IReadOnlyList<DpsData.BreakdownRow> rows =
+                    _mode == DisplayMode.CurrentDps ? _data.CurrentPersonalHealingRows : _data.CumulativeHealingRows;
+                rowCount = rows != null ? rows.Count : 0;
+            }
             height += 22f + (Mathf.Max(1, rowCount) * 22f);
         }
 
         if (_showBarrier)
         {
-            IReadOnlyList<DpsData.BreakdownRow> rows =
-                _mode == DisplayMode.CurrentDps
-                    ? _data.CurrentPersonalBarrierRows
-                    : _data.CumulativeBarrierRows;
-
-            int rowCount = rows != null ? rows.Count : 0;
+            int rowCount;
+            if (partyMode)
+            {
+                IReadOnlyList<KeyValuePair<string, float>> rows =
+                    _mode == DisplayMode.PartyDps ? _data.CurrentPartyBarrier : _data.CumulativePartyBarrierRows;
+                rowCount = rows != null ? rows.Count : 0;
+            }
+            else
+            {
+                IReadOnlyList<DpsData.BreakdownRow> rows =
+                    _mode == DisplayMode.CurrentDps ? _data.CurrentPersonalBarrierRows : _data.CumulativeBarrierRows;
+                rowCount = rows != null ? rows.Count : 0;
+            }
             height += 22f + (Mathf.Max(1, rowCount) * 22f);
         }
 
@@ -582,7 +604,7 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             case DisplayMode.CurrentDps:
                 title = "CURRENT";
-                metric = FormatNumber(_data.CurrentPersonalDps) + " DPS";
+                metric = "DPS: " + FormatNumber(_data.CurrentPersonalDps);
                 break;
 
             case DisplayMode.DamageTotal:
@@ -592,7 +614,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             case DisplayMode.PartyDps:
                 title = "PARTY DPS";
-                metric = FormatNumber(_data.CurrentPartyDps) + " DPS";
+                metric = "DPS: " + FormatNumber(_data.CurrentPartyDps);
                 break;
 
             case DisplayMode.PartyTotal:
@@ -878,7 +900,7 @@ public sealed class DpsOverlay : MonoBehaviour
             : _data.CumulativePersonalBarrier;
 
         string barrierLabel = _mode == DisplayMode.CurrentDps
-            ? FormatNumber(bps) + " BPS"
+            ? "BPS: " + FormatNumber(bps)
             : "BARRIER: " + FormatNumber(_data.CumulativePersonalBarrier);
 
         GUILayout.Label(
@@ -981,7 +1003,7 @@ public sealed class DpsOverlay : MonoBehaviour
             : _data.TotalPersonalHps;
 
         string healingLabel = _mode == DisplayMode.CurrentDps
-            ? FormatNumber(hps) + " HPS"
+            ? "HPS: " + FormatNumber(hps)
             : "HEAL: " + FormatNumber(_data.CumulativePersonalHealing);
 
         GUILayout.Label(
@@ -1071,8 +1093,14 @@ public sealed class DpsOverlay : MonoBehaviour
         IReadOnlyList<KeyValuePair<string, float>> rows,
         float total,
         float rate,
-        string rateLabel)
+        string rateLabel,
+        string sectionLabel = null)
     {
+        if (!string.IsNullOrEmpty(sectionLabel))
+        {
+            GUILayout.Label(sectionLabel, _headerRight);
+        }
+
         if (rows == null || rows.Count == 0)
         {
             GUILayout.Label("No party data recorded yet.", _small);
