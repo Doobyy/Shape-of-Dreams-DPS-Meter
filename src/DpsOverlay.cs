@@ -171,7 +171,7 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 DrawParty(
                     _mode == DisplayMode.PartyDps ? _data.CurrentPartyHealing : _data.CumulativePartyHealingRows,
-                    _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyHealing : _data.CumulativePartyHealingRows,
+                    _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyHealing : _data.CumulativePartyHealing,
                     _mode == DisplayMode.PartyDps ? _data.CurrentPartyHps : _data.TotalPartyHps,
                     "HPS");
             }
@@ -189,7 +189,7 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 DrawParty(
                     _mode == DisplayMode.PartyDps ? _data.CurrentPartyBarrier : _data.CumulativePartyBarrierRows,
-                    _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyBarrier : _data.CumulativePartyBarrierRows,
+                    _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyBarrier : _data.CumulativePartyBarrier,
                     _mode == DisplayMode.PartyDps ? _data.CurrentPartyBps : _data.TotalPartyBps,
                     "BPS");
             }
