@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.102";
+    public const string DevelopmentVersion = "v5.103";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2307,6 +2307,10 @@ public sealed class DPSMeter : ModBehaviour
             MethodInfo getSkillNameString = typeof(DewLocalization).GetMethod(
                 "GetSkillName", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
                 null, new Type[] { typeof(string), typeof(int) }, null);
+            MethodInfo getSkillMemoryString = typeof(DewLocalization).GetMethod(
+                "GetSkillMemory", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new Type[] { typeof(string) }, null);
+
             MethodInfo getSkillNameKeyString = typeof(DewLocalization).GetMethod(
                 "GetSkillNameKey", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
                 null, new Type[] { typeof(SkillTrigger), typeof(int) }, null);
@@ -2333,8 +2337,34 @@ public sealed class DPSMeter : ModBehaviour
                     catch (Exception) { }
                 }
 
+                string memory = null;
+                if (getSkillMemoryString != null)
+                {
+                    try { memory = getSkillMemoryString.Invoke(null, new object[] { candidate }) as string; }
+                    catch (Exception) { }
+                }
+
                 WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME lookup candidate=[" + candidate +
-                    "] skillKey=[" + (key ?? "<null>") + "] skillName=[" + (name ?? "<null>") + "]");
+                    "] skillKey=[" + (key ?? "<null>") + "] skillName=[" + (name ?? "<null>") +
+                    "] skillMemory=[" + (memory ?? "<null>") + "]");
+
+                if (!string.IsNullOrEmpty(key) && !string.Equals(key, candidate, StringComparison.Ordinal))
+                {
+                    string keyedName = null;
+                    try { keyedName = getSkillNameString.Invoke(null, new object[] { key, 0 }) as string; }
+                    catch (Exception) { }
+
+                    string keyedMemory = null;
+                    if (getSkillMemoryString != null)
+                    {
+                        try { keyedMemory = getSkillMemoryString.Invoke(null, new object[] { key }) as string; }
+                        catch (Exception) { }
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME lookup key=[" + key +
+                        "] skillName=[" + (keyedName ?? "<null>") + "] skillMemory=[" +
+                        (keyedMemory ?? "<null>") + "]");
+                }
             }
 
             MethodInfo getSkillKeyType = typeof(DewLocalization).GetMethod(
