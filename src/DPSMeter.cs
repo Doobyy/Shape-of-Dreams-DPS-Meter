@@ -1404,7 +1404,6 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
     private void OnTakeDamage(EventInfoDamage info)
     {
         RunDamageNumberResolverProbe();
-        RunCombatUiResolverProbe();
         if (info.actor == null || info.victim == null)
         {
             return;
