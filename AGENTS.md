@@ -13,10 +13,10 @@ Before changing existing behavior, read this file and inspect the current source
 - Patches must be compile-ready. Do not remove helpers until all references have been checked.
 - Before pushing any patch, perform at least one independent compile-safety pass over the complete changed files: verify file structure/braces, method placement, signatures, references, and obvious syntax/type errors. This pass is mandatory even for small patches; do not rely solely on the edit operation succeeding. If practical, re-fetch the committed files and inspect them before asking the user to build.
 - Prefer the smallest targeted change over refactoring unrelated code.
-- If a patch fails, clean up/revert the failed approach before trying another approach. Do not stack bandaid patches.
+- **Failed-result rollback rule:** If a patch, experiment, diagnostic change, or attempted fix does not produce the intended result, stop and roll back/remove that approach before testing the next approach. Do not leave failed experiments, temporary fallbacks, speculative branches, or bandaid fixes in the code unless the user explicitly asks to keep them or the investigation produced a separately justified, verified improvement. The repository should return to the cleanest known-good state between failed approaches. Do not stack bandaid patches.
 - Do not spend time on unnecessary automated test benches or syntax checks unless specifically useful; manual in-game testing is the primary validation.
 - Do not change unrelated working systems while implementing a feature.
-- Every real feature patch increments the displayed version by 0.1. Compile-only fixes and diagnostics do not need a version bump unless explicitly intended.
+- **Every code patch/change increments the displayed version by 0.1**, including feature changes, fixes, cleanup/reverts, and diagnostic/investigation patches. Keep the version bump centralized at `DPSMeter.DevelopmentVersion`.
 - When behavior is confirmed working in-game, record the solution here so it is not accidentally lost later.
 
 ## Compile-Safety Rules
@@ -105,7 +105,7 @@ The healing toggle expands the outer overlay while preserving the user's configu
 
 ## Version / Current State
 
-Current displayed version: v4.32.
+Current displayed version: v5.61.
 
 Recent verified work includes:
 - Healing generated amount / overheal tracking.
