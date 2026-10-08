@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.72";
+    public const string DevelopmentVersion = "v5.73";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2027,12 +2027,108 @@ public sealed class DPSMeter : ModBehaviour
             TraceReadableIdentity(current, "[" + DevelopmentVersion + "] PRISMATIC actor[" + actorDepth + "]");
             TracePrismaticObjectMembers(current, "[" + DevelopmentVersion + "] PRISMATIC actor[" + actorDepth + "]");
 
+            if (current.GetType().Name.IndexOf("Se_D_PrismaticEyes", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                TracePrismaticPendingAttack(current);
+            }
+
             current = current.parentActor;
             actorDepth++;
         }
     }
 
-    private static void TracePrismaticObjectMembers(object target, string label)
+        private static void TracePrismaticPendingAttack(Actor actor)
+    {
+        if (actor == null)
+        {
+            return;
+        }
+
+        FieldInfo pendingField = actor.GetType().GetField(
+            "_pendingAttack",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        if (pendingField == null)
+        {
+            return;
+        }
+
+        try
+        {
+            object pendingAttack = pendingField.GetValue(actor);
+            if (pendingAttack == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack=<null>");
+                return;
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack type=" +
+                pendingAttack.GetType().FullName +
+                " value=[" + pendingAttack + "]");
+
+            Type currentType = pendingAttack.GetType();
+            int hierarchyDepth = 0;
+            int logged = 0;
+
+            while (currentType != null && hierarchyDepth < 3 && logged < 40)
+            {
+                FieldInfo[] fields = currentType.GetFields(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+
+                for (int i = 0; i < fields.Length && logged < 40; i++)
+                {
+                    FieldInfo field = fields[i];
+                    bool interestingType =
+                        field.FieldType == typeof(string) ||
+                        field.FieldType == typeof(bool) ||
+                        field.FieldType == typeof(int) ||
+                        field.FieldType == typeof(float) ||
+                        field.FieldType == typeof(double) ||
+                        field.FieldType == typeof(long) ||
+                        field.FieldType == typeof(short) ||
+                        field.FieldType == typeof(byte) ||
+                        field.FieldType.IsEnum ||
+                        field.FieldType.Name.IndexOf("Attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        field.FieldType.Name.IndexOf("Skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        field.FieldType.Name.IndexOf("Actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        field.FieldType.Name.IndexOf("Trigger", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    if (!interestingType)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        object value = field.GetValue(pendingAttack);
+                        if (value == null)
+                        {
+                            continue;
+                        }
+
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack field=" +
+                            field.Name + " type=" + field.FieldType.FullName +
+                            " value=[" + value + "]");
+                        logged++;
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                currentType = currentType.BaseType;
+                hierarchyDepth++;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack readError=" +
+                ex.GetType().Name);
+        }
+    }
+
+private static void TracePrismaticObjectMembers(object target, string label)
     {
         if (target == null)
         {
