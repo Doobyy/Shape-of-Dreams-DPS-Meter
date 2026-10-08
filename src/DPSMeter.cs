@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.122";
+    public const string DevelopmentVersion = "v5.123";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2174,12 +2174,6 @@ public sealed class DPSMeter : ModBehaviour
 
     private static void OnPrismaticAttackHit(EventInfoAttackHit info)
     {
-        if (info == null)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT EVENT info=<null>");
-            return;
-        }
-
         try
         {
             Type type = info.GetType();
