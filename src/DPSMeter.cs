@@ -2328,6 +2328,16 @@ public sealed class DPSMeter : ModBehaviour
             skillIdentity = isPrismaticPhysical
                 ? "Prismatic Vision|AD"
                 : "Prismatic Vision|AP";
+
+            Sprite prismaticIcon = skill != null
+                ? FindSkillIcon(skill)
+                : FindActorIcon(info.actor);
+
+            if (prismaticIcon != null)
+            {
+                _data.RegisterSkillIcon("Prismatic Vision|AD", prismaticIcon);
+                _data.RegisterSkillIcon("Prismatic Vision|AP", prismaticIcon);
+            }
         }
         DpsData.DamageScalingType scalingType = DpsData.DamageScalingType.None;
 
