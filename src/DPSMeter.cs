@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.134";
+    public const string DevelopmentVersion = "v5.135";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1947,81 +1947,113 @@ public sealed class DPSMeter : ModBehaviour
 
     private static void TracePrismaticDamageDataActor(EventInfoDamage info)
     {
-        if (info == null || info.actor == null || info.damage == null)
+        if (info.actor == null)
         {
             return;
         }
 
         try
         {
-            Actor damageActor = info.damage.actor;
+            object finalDamageData = info.damage;
+            Type type = finalDamageData.GetType();
 
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR eventActor=" +
-                DescribeActor(info.actor) + " damageActor=" + DescribeActor(damageActor) +
-                " sameReference=" + (ReferenceEquals(info.actor, damageActor)));
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC FINALDAMAGE type=" +
+                type.FullName + " eventActor=" + DescribeActor(info.actor));
 
-            if (damageActor == null)
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < fields.Length && i < 64; i++)
             {
-                return;
+                FieldInfo field = fields[i];
+                string fieldName = field.Name ?? string.Empty;
+
+                if (fieldName.IndexOf("actor", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(finalDamageData);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC FINALDAMAGE field=" +
+                        fieldName + " type=" + field.FieldType.FullName +
+                        " value=[" + (value == null ? "<null>" : value.ToString()) + "]");
+
+                    Actor actorValue = value as Actor;
+                    if (actorValue != null)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC FINALDAMAGE actorField=" +
+                            fieldName + " actor=" + DescribeActor(actorValue) +
+                            " readable=[" + (actorValue.GetActorReadableName() ?? "<null>") +
+                            "] original=[" + (actorValue.GetOriginalName() ?? "<null>") + "]");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC FINALDAMAGE field=" +
+                        fieldName + " readError=" + ex.GetType().Name);
+                }
             }
 
-            Actor current = damageActor;
-            int depth = 0;
-            while (current != null && depth < 8)
+            PropertyInfo[] properties = type.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < properties.Length && i < 64; i++)
             {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR depth=" +
-                    depth + " actor=" + DescribeActor(current) +
-                    " readable=[" + (current.GetActorReadableName() ?? "<null>") +
-                    "] original=[" + (current.GetOriginalName() ?? "<null>") + "]");
+                PropertyInfo property = properties[i];
+                string propertyName = property.Name ?? string.Empty;
 
-                FieldInfo[] fields = current.GetType().GetFields(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-                for (int i = 0; i < fields.Length; i++)
+                if (propertyName.IndexOf("actor", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    propertyName.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    propertyName.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    propertyName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    propertyName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    propertyName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    propertyName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    propertyName.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0)
                 {
-                    FieldInfo field = fields[i];
-                    string fieldName = field.Name ?? string.Empty;
+                    continue;
+                }
 
-                    if (fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        fieldName.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        fieldName.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        fieldName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        fieldName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0)
+                try
+                {
+                    if (property.GetIndexParameters().Length > 0)
                     {
                         continue;
                     }
 
-                    try
-                    {
-                        object value = field.GetValue(current);
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR field=" +
-                            fieldName + " type=" + field.FieldType.FullName +
-                            " value=[" + (value == null ? "<null>" : value.ToString()) + "]");
+                    object value = property.GetValue(finalDamageData, null);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC FINALDAMAGE property=" +
+                        propertyName + " type=" + property.PropertyType.FullName +
+                        " value=[" + (value == null ? "<null>" : value.ToString()) + "]");
 
-                        if (value is SkillTrigger skillTrigger)
-                        {
-                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR skillTrigger=" +
-                                skillTrigger.GetType().FullName +
-                                " formatted=[" + (skillTrigger.GetFormattedSkillTitle() ?? "<null>") +
-                                "] localized=[" + (DewLocalization.GetSkillName(skillTrigger, 0) ?? "<null>") + "]");
-                        }
-                    }
-                    catch (Exception ex)
+                    Actor actorValue = value as Actor;
+                    if (actorValue != null)
                     {
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR field=" +
-                            fieldName + " readError=" + ex.GetType().Name);
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC FINALDAMAGE actorProperty=" +
+                            propertyName + " actor=" + DescribeActor(actorValue) +
+                            " readable=[" + (actorValue.GetActorReadableName() ?? "<null>") +
+                            "] original=[" + (actorValue.GetOriginalName() ?? "<null>") + "]");
                     }
                 }
-
-                current = current.parentActor;
-                depth++;
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC FINALDAMAGE property=" +
+                        propertyName + " readError=" + ex.GetType().Name);
+                }
             }
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR error=" +
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC FINALDAMAGE error=" +
                 ex.GetType().Name);
         }
     }
