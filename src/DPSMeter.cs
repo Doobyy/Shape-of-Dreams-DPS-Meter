@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.66";
+    public const string DevelopmentVersion = "v5.67";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2376,50 +2376,103 @@ public sealed class DPSMeter : ModBehaviour
 
     private static DpsData.DamageScalingType FindDamageScalingType(Actor actor)
     {
+        bool traceBackstep = IsTargetBackstepActor(actor);
+
+        if (traceBackstep)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP scaling actor=" +
+                DescribeActor(actor));
+        }
+
         DamageInstance damageInstance = FindDamageInstance(actor);
+
+        if (traceBackstep)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP scaling damageInstance=" +
+                DescribeActor(damageInstance));
+        }
 
         if (damageInstance != null)
         {
             DpsData.DamageScalingType scaling = GetScalingType(damageInstance.dmgFactor);
+
+            if (traceBackstep)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP scaling damageInstance.dmgFactor=" +
+                    DescribeScaling(damageInstance.dmgFactor) + " result=" + scaling);
+            }
+
             if (scaling != DpsData.DamageScalingType.None)
             {
                 return scaling;
             }
         }
 
-        // Some runtime projectile/skill actors are not DamageInstance subclasses.
-        // Their actual damage scaling is exposed as a ScalingValue field on the
-        // actor itself (for example, a field named "damage"). Prefer that exact
-        // runtime damage field before broader damage fields such as normalDamage
-        // so a parent projectile's metadata does not win over the hit actor.
-        DpsData.DamageScalingType runtimeScaling = FindRuntimeDamageScaling(actor, "damage");
+        DpsData.DamageScalingType runtimeScaling = FindRuntimeDamageScaling(actor, "damage", traceBackstep);
+
         if (runtimeScaling != DpsData.DamageScalingType.None)
         {
+            if (traceBackstep)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP scaling stage=damage result=" +
+                    runtimeScaling);
+            }
+
             return runtimeScaling;
         }
 
-        runtimeScaling = FindRuntimeDamageScaling(actor, "normalDamage");
+        runtimeScaling = FindRuntimeDamageScaling(actor, "normalDamage", traceBackstep);
+
         if (runtimeScaling != DpsData.DamageScalingType.None)
         {
+            if (traceBackstep)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP scaling stage=normalDamage result=" +
+                    runtimeScaling);
+            }
+
             return runtimeScaling;
         }
 
-        return FindRuntimeDamageScaling(actor, null);
+        runtimeScaling = FindRuntimeDamageScaling(actor, null, traceBackstep);
+
+        if (traceBackstep)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP scaling stage=generic result=" +
+                runtimeScaling);
+        }
+
+        return runtimeScaling;
     }
 
-    private static DpsData.DamageScalingType FindRuntimeDamageScaling(Actor actor, string preferredFieldName)
+    private static DpsData.DamageScalingType FindRuntimeDamageScaling(
+        Actor actor,
+        string preferredFieldName,
+        bool traceBackstep)
     {
         Actor current = actor;
         int depth = 0;
 
         while (current != null && depth < 8)
         {
+            if (traceBackstep)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP runtime depth=" + depth +
+                    " actor=" + DescribeActor(current));
+            }
+
             FieldInfo[] fields = current.GetType().GetFields(
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             for (int i = 0; i < fields.Length; i++)
             {
                 FieldInfo field = fields[i];
+
+                if (traceBackstep)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP runtime depth=" + depth +
+                        " field=" + field.Name + " type=" + field.FieldType.FullName);
+                }
 
                 if (field.FieldType != typeof(ScalingValue))
                 {
@@ -2443,13 +2496,25 @@ public sealed class DPSMeter : ModBehaviour
                     ScalingValue scaling = (ScalingValue)field.GetValue(current);
                     DpsData.DamageScalingType result = GetScalingType(scaling);
 
+                    if (traceBackstep)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP runtime depth=" + depth +
+                            " scalingField=" + field.Name + " " + DescribeScaling(scaling) +
+                            " result=" + result);
+                    }
+
                     if (result != DpsData.DamageScalingType.None)
                     {
                         return result;
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    if (traceBackstep)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP runtime depth=" + depth +
+                            " field=" + field.Name + " readError=" + ex.GetType().Name);
+                    }
                 }
             }
 
@@ -2460,29 +2525,52 @@ public sealed class DPSMeter : ModBehaviour
         return DpsData.DamageScalingType.None;
     }
 
-    private static DamageInstance FindDamageInstance(Actor actor)
+    private static bool IsTargetBackstepActor(Actor actor)
     {
         if (actor == null)
         {
-            return null;
+            return false;
         }
 
-        Actor current = actor;
-        int depth = 0;
-
-        while (current != null && depth < 8)
+        try
         {
-            DamageInstance damageInstance = current as DamageInstance;
-            if (damageInstance != null)
-            {
-                return damageInstance;
-            }
+            Actor current = actor;
+            int depth = 0;
 
-            current = current.parentActor;
-            depth++;
+            while (current != null && depth < 8)
+            {
+                if (current.GetType().Name.IndexOf("BackStep", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (!string.IsNullOrEmpty(current.name) &&
+                     current.name.IndexOf("BackStep", StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    return true;
+                }
+
+                current = current.parentActor;
+                depth++;
+            }
+        }
+        catch (Exception)
+        {
         }
 
-        return null;
+        return false;
+    }
+
+    private static string DescribeActor(Actor actor)
+    {
+        if (actor == null)
+        {
+            return "<null>";
+        }
+
+        return "type=" + actor.GetType().Name + " name=" + (actor.name ?? "<null>");
+    }
+
+    private static string DescribeScaling(ScalingValue scaling)
+    {
+        return "ad=" + scaling.adFactor + " ap=" + scaling.apFactor +
+            " hp=" + scaling.addedHpFactor;
     }
 
     private static Sprite FindSpriteMember(object target)
