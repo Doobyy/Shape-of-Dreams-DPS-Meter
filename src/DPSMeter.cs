@@ -800,7 +800,6 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static int _basicAttackTraceCount;
     private static int _healthOrbTraceCount;
     private static int _bismuthHealTraceCount;
     private static int _bismuthBookDamageTraceCount;
@@ -815,8 +814,8 @@ public sealed class DPSMeter : ModBehaviour
         _bismuthBookDamageTraceCount++;
         FinalDamageData damage = info.damage;
 
-        WriteDebugLog("[v5.53] Bismuth Book damage trace " + _bismuthBookDamageTraceCount);
-        WriteDebugLog("[v5.53] book   amount=" + damage.amount
+        WriteDebugLog("[v5.54] Bismuth Book damage trace " + _bismuthBookDamageTraceCount);
+        WriteDebugLog("[v5.54] book   amount=" + damage.amount
             + " discarded=" + damage.discardedAmount
             + " source=" + damage.type
             + " elemental=" + damage.elemental
@@ -824,22 +823,14 @@ public sealed class DPSMeter : ModBehaviour
             + " attackEffectType=" + damage.attackEffectType
             + " attackEffectStrength=" + damage.attackEffectStrength);
 
-        WriteDebugLog("[v5.53] book   eventActor type=" + info.actor.GetType().Name
+        WriteDebugLog("[v5.54] book   eventActor type=" + info.actor.GetType().Name
             + " name=" + info.actor.name);
 
-        TraceSourceChain(info.actor, "[v5.53] book");
+        TraceSourceChain(info.actor, "[v5.54] book");
     }
 
     private static void TraceBasicAttackSource(Actor source)
     {
-        if (source == null || _basicAttackTraceCount >= 2)
-        {
-            return;
-        }
-
-        _basicAttackTraceCount++;
-        WriteDebugLog("[v5.53] Basic Attack trace " + _basicAttackTraceCount);
-        TraceSourceChain(source, "[v5.53] basic");
     }
 
     private static string BuildHealingExportActorChain(Actor source)
@@ -957,8 +948,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _healthOrbTraceCount++;
-        WriteDebugLog("[v5.53] Health Orb trace " + _healthOrbTraceCount);
-        TraceSourceChain(source, "[v5.53] orb");
+        WriteDebugLog("[v5.54] Health Orb trace " + _healthOrbTraceCount);
+        TraceSourceChain(source, "[v5.54] orb");
         TraceRegenOrbPickup(source);
     }
 
@@ -970,12 +961,11 @@ public sealed class DPSMeter : ModBehaviour
         {
             if (string.Equals(current.GetType().Name, "Pickup_RegenOrb", StringComparison.OrdinalIgnoreCase))
             {
-                WriteDebugLog("[v5.53] regen pickup begin");
-                TraceReadableIdentity(current, "[v5.53] regen");
-                TracePickupMembers(current, "[v5.53] regen");
-                TracePickupLocalization(current, "[v5.53] regen");
-                TracePickupEffect(current, "[v5.53] regen");
-                WriteDebugLog("[v5.53] regen pickup end");
+                WriteDebugLog("[v5.54] regen pickup begin");
+                TraceReadableIdentity(current, "[v5.54] regen");
+                TracePickupMembers(current, "[v5.54] regen");
+                TraceMainEffect(current, "[v5.54] regen");
+                WriteDebugLog("[v5.54] regen pickup end");
                 return;
             }
 
@@ -983,7 +973,6 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void TracePickupLocalization(Actor pickup, string label)
     {
         if (pickup == null)
         {
@@ -1076,7 +1065,8 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void TracePickupEffect(Actor pickup, string label)
+
+    private static void TraceMainEffect(Actor pickup, string label)
     {
         if (pickup == null)
         {
@@ -1089,7 +1079,7 @@ public sealed class DPSMeter : ModBehaviour
         while (type != null && field == null)
         {
             field = type.GetField(
-                "pickupEffect",
+                "mainEffect",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             type = type.BaseType;
@@ -1116,7 +1106,7 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        WriteDebugLog(label + "   pickupEffect GameObject=[" + gameObject.name + "]");
+        WriteDebugLog(label + "   mainEffect GameObject=[" + gameObject.name + "]");
 
         Component[] components = gameObject.GetComponentsInChildren<Component>(true);
         int logged = 0;
@@ -1130,14 +1120,15 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             Type componentType = component.GetType();
-            WriteDebugLog(label + "   pickupEffect component type=" +
+            WriteDebugLog(label + "   mainEffect component type=" +
                 componentType.Name + " name=[" + component.name + "]");
 
-            TraceComponentStringMembers(component, label + "   pickupEffect");
-            TraceComponentLocalization(componentType, label + "   pickupEffect");
+            TraceComponentStringMembers(component, label + "   mainEffect");
+            TraceComponentLocalization(componentType, label + "   mainEffect");
             logged++;
         }
     }
+
 
     private static void TraceComponentLocalization(Type componentType, string label)
     {
@@ -1236,8 +1227,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _bismuthHealTraceCount++;
-        WriteDebugLog("[v5.53] Bismuth heal trace " + _bismuthHealTraceCount);
-        TraceSourceChain(source, "[v5.53] bismuth");
+        WriteDebugLog("[v5.54] Bismuth heal trace " + _bismuthHealTraceCount);
+        TraceSourceChain(source, "[v5.54] bismuth");
     }
 
     private static void TraceSourceChain(Actor source, string label)
@@ -1473,11 +1464,6 @@ public sealed class DPSMeter : ModBehaviour
         string skillIdentity = null;
         string sourceName = ResolveLocalizedDamageSourceName(info.actor);
         bool isBasicAttack = !isDirectEssenceDamage && skill == null;
-
-        if (isLocalPlayer && isBasicAttack)
-        {
-            TraceBasicAttackSource(info.actor);
-        }
 
         if (isLocalPlayer && isBasicAttack && _overlay != null)
         {
