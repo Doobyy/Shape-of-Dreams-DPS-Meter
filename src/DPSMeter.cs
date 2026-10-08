@@ -3347,6 +3347,30 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         }
     }
 
+    private static string DescribeDamageNumberParameters(MethodInfo method)
+    {
+        ParameterInfo[] parameters = method.GetParameters();
+        if (parameters == null || parameters.Length == 0)
+        {
+            return "<none>";
+        }
+
+        string result = string.Empty;
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            ParameterInfo parameter = parameters[i];
+            result += parameter.ParameterType == null ? "<null>" : parameter.ParameterType.FullName;
+            result += " " + parameter.Name;
+        }
+
+        return result;
+    }
+
     private static void DescribeDamageNumberType(Type type)
     {
         if (type == null)
@@ -3393,7 +3417,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
             WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER METHOD type=" +
                 type.FullName + " name=" + method.Name +
                 " return=" + (method.ReturnType == null ? "<null>" : method.ReturnType.FullName) +
-                " params=" + DescribeMethodParameters(method));
+                " params=" + DescribeDamageNumberParameters(method));
         }
     }
 
