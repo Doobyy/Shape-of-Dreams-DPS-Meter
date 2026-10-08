@@ -25,9 +25,7 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private readonly HashSet<string> _essenceScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
-    private static readonly HashSet<string> _chompScalingDiagnosticSeen = new HashSet<string>();
-private static readonly HashSet<int> _prismaticAttackHitSubscribedIds = new HashSet<int>();
-    private static readonly Action<EventInfoAttackHit> _prismaticAttackHitHandler = OnPrismaticAttackHit;
+    private static readonly HashSet<string> _chompScalingDiagnosticSeen = new HashSet<string>();private static readonly Action<EventInfoAttackHit> _prismaticAttackHitHandler = OnPrismaticAttackHit;
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
