@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.74";
+    public const string DevelopmentVersion = "v5.75";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2106,6 +2106,66 @@ public sealed class DPSMeter : ModBehaviour
 
             Type currentType = pendingAttack.GetType();
             int hierarchyDepth = 0;
+
+            while (currentType != null && hierarchyDepth < 4)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack hierarchy[" +
+                    hierarchyDepth + "] type=" + currentType.FullName);
+
+                PropertyInfo[] properties = currentType.GetProperties(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+
+                for (int i = 0; i < properties.Length && i < 40; i++)
+                {
+                    PropertyInfo property = properties[i];
+                    bool interestingName =
+                        property.Name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        property.Name.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        property.Name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        property.Name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        property.Name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        property.Name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        property.Name.IndexOf("index", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    bool interestingType =
+                        property.PropertyType == typeof(string) ||
+                        property.PropertyType == typeof(int) ||
+                        property.PropertyType.IsEnum ||
+                        property.PropertyType.Name.IndexOf("Skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        property.PropertyType.Name.IndexOf("Ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        property.PropertyType.Name.IndexOf("Attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        property.PropertyType.Name.IndexOf("Actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        property.PropertyType.Name.IndexOf("Trigger", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    if (!interestingName && !interestingType)
+                    {
+                        continue;
+                    }
+
+                    if (property.GetIndexParameters().Length != 0 || !property.CanRead)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        object value = property.GetValue(pendingAttack, null);
+                        if (value != null)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack property=" +
+                                property.Name + " type=" + property.PropertyType.FullName +
+                                " value=[" + value + "]");
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                currentType = currentType.BaseType;
+                hierarchyDepth++;
+            }
             int logged = 0;
 
             while (currentType != null && hierarchyDepth < 3 && logged < 40)
