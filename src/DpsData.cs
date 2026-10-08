@@ -125,6 +125,8 @@ public sealed class DpsData
     public float CumulativePartyBarrier { get; private set; }
     public float PartyDamageStartedAt { get; private set; }
     public float LastPartyDamageAt { get; private set; }
+    public float CumulativePartyDamageStartedAt { get; private set; }
+    public float LastCumulativePartyDamageAt { get; private set; }
     public float PartyHealingStartedAt { get; private set; }
     public float LastPartyHealingAt { get; private set; }
     public float PartyBarrierStartedAt { get; private set; }
@@ -159,7 +161,10 @@ public sealed class DpsData
     public float TotalPartyHps => CumulativePartyHealing <= 0f || PartyHealingStartedAt <= 0f ? 0f : CumulativePartyHealing / Mathf.Max(0.001f, LastPartyHealingAt - PartyHealingStartedAt);
     public float CurrentPartyBps => CurrentBarrierCount == 0 ? 0f : CurrentInstancePartyBarrier / Mathf.Max(0.001f, LastPartyBarrierAt - BarrierStartedAt);
     public float TotalPartyBps => CumulativePartyBarrier <= 0f || PartyBarrierStartedAt <= 0f ? 0f : CumulativePartyBarrier / Mathf.Max(0.001f, LastPartyBarrierAt - PartyBarrierStartedAt);
-    public float CumulativePartyDps => CumulativePartyDamage <= 0f || StartedAt <= 0f ? 0f : CumulativePartyDamage / Mathf.Max(0.001f, LastHitAt - StartedAt);
+    public float CumulativePartyDps =>
+        CumulativePartyDamage <= 0f || CumulativePartyDamageStartedAt <= 0f
+            ? 0f
+            : CumulativePartyDamage / Mathf.Max(0.001f, LastCumulativePartyDamageAt - CumulativePartyDamageStartedAt);
 
     public float CurrentPartyAppliedDps =>
         CurrentHitCount == 0 ? 0f : CurrentInstancePartyAppliedDamage / CurrentDuration;
@@ -434,6 +439,13 @@ public sealed class DpsData
 
         LastPartyDamageAt = now;
 
+        if (CumulativePartyDamageStartedAt <= 0f)
+        {
+            CumulativePartyDamageStartedAt = now;
+        }
+
+        LastCumulativePartyDamageAt = now;
+
         if (CurrentHitCount == 0)
         {
             StartedAt = now;
@@ -586,6 +598,8 @@ public sealed class DpsData
         PartyBarrierStartedAt = 0f;
         LastPartyBarrierAt = 0f;
         CumulativePartyDamage = 0f;
+        CumulativePartyDamageStartedAt = 0f;
+        LastCumulativePartyDamageAt = 0f;
         CumulativePartyAppliedDamage = 0f;
         CumulativePartyOverkill = 0f;
 
