@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.60";
+    public const string DevelopmentVersion = "v5.61";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1955,45 +1955,21 @@ public sealed class DPSMeter : ModBehaviour
                 }
             }
 
-            // If the configured root is actually owned by this Gem, its
-            // direct scaler is authoritative.
-            if (configured.gem == gem)
-            {
-                DpsData.DamageScalingType directScaling =
-                    FindConfiguredAbilityScaling(configured, 0);
+            // Resolve the configured AbilityInstance that is actually owned by
+            // this Essence. This is the critical distinction from the host
+            // skill's root scaler: a socketed AP Essence must not inherit an
+            // unrelated AD scaler from its host Memory.
+            DpsData.DamageScalingType essenceScaling =
+                FindConfiguredGemAbilityScaling(configured, gem, 0);
 
-                if (directScaling != DpsData.DamageScalingType.None)
-                {
-                    return directScaling;
-                }
+            if (essenceScaling != DpsData.DamageScalingType.None)
+            {
+                return essenceScaling;
             }
 
-            // Some Essences expose their real scaler on a child
-            // DamageInstance/AbilityInstance without putting the Gem reference
-            // on that child. Search the configured children directly, but
-            // deliberately skip the configured root so the host Memory's own
-            // scaler cannot leak into the Essence result.
-            List<Actor> children = configured.children;
-            if (children != null)
-            {
-                for (int i = 0; i < children.Count; i++)
-                {
-                    AbilityInstance child = children[i] as AbilityInstance;
-                    if (child == null)
-                    {
-                        continue;
-                    }
-
-                    DpsData.DamageScalingType childScaling =
-                        FindConfiguredAbilityScaling(child, 0);
-
-                    if (childScaling != DpsData.DamageScalingType.None)
-                    {
-                        return childScaling;
-                    }
-                }
-            }
-
+            // Never fall back to the host skill's scaler here. If the Essence
+            // has no identifiable configured scaler, leave it unresolved
+            // rather than inventing one.
             return DpsData.DamageScalingType.None;
         }
         catch (Exception)
