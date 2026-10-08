@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.73";
+    public const string DevelopmentVersion = "v5.74";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2065,6 +2065,44 @@ public sealed class DPSMeter : ModBehaviour
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack type=" +
                 pendingAttack.GetType().FullName +
                 " value=[" + pendingAttack + "]");
+
+            FieldInfo configsField = pendingAttack.GetType().GetField(
+                "configs",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (configsField != null && configsField.FieldType.IsArray)
+            {
+                try
+                {
+                    Array configs = configsField.GetValue(pendingAttack) as Array;
+                    if (configs != null)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack configs length=" +
+                            configs.Length);
+
+                        for (int i = 0; i < configs.Length && i < 8; i++)
+                        {
+                            object config = configs.GetValue(i);
+                            if (config == null)
+                            {
+                                continue;
+                            }
+
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack config[" + i +
+                                "] type=" + config.GetType().FullName +
+                                " value=[" + config + "]");
+                            TracePrismaticObjectMembers(
+                                config,
+                                "[" + DevelopmentVersion + "] PRISMATIC pendingAttack config[" + i + "]");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC pendingAttack configs readError=" +
+                        ex.GetType().Name);
+                }
+            }
 
             Type currentType = pendingAttack.GetType();
             int hierarchyDepth = 0;
