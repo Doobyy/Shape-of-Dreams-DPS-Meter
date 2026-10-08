@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.89";
+    public const string DevelopmentVersion = "v5.90";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2073,6 +2073,8 @@ public sealed class DPSMeter : ModBehaviour
                 pendingAttack.GetType().FullName +
                 " value=[" + pendingAttack + "]");
 
+            TracePrismaticTypeMembers(pendingAttack, "PRISMATIC pendingAttack typeMembers");
+
             TracePrismaticAttackEventTypes(pendingAttack);
             SubscribePrismaticAttackEventsOnActorChain(pendingAttack as Actor);
 
@@ -2772,6 +2774,50 @@ private static void TracePrismaticObjectMembers(object target, string label)
             hierarchyDepth++;
         }
     }
+
+    private static void TracePrismaticTypeMembers(object target, string label)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        Type type = target.GetType();
+        int logged = 0;
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length && logged < 40; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property.GetIndexParameters().Length != 0)
+            {
+                continue;
+            }
+
+            WriteDebugLog(label + " property=" + property.Name +
+                " type=" + property.PropertyType.FullName);
+            logged++;
+        }
+
+        MethodInfo[] methods = type.GetMethods(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < methods.Length && logged < 80; i++)
+        {
+            MethodInfo method = methods[i];
+            if (method.GetParameters().Length > 0)
+            {
+                continue;
+            }
+
+            WriteDebugLog(label + " method=" + method.Name +
+                " return=" + method.ReturnType.FullName);
+            logged++;
+        }
+    }
+
 
     private static bool IsPrismaticDiagnosticFieldType(Type type)
     {
