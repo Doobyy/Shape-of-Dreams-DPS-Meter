@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.71";
+    public const string DevelopmentVersion = "v5.72";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1934,7 +1934,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private static void TraceTargetPrismaticVisionDamage(EventInfoDamage info, SkillTrigger directSkill)
     {
-        if (info == null || info.actor == null)
+        if (info.actor == null)
         {
             return;
         }
@@ -1997,7 +1997,7 @@ public sealed class DPSMeter : ModBehaviour
         string identity = GetSkillSlotIdentity(skillSourceActor, skill);
         string traceKey = "prismatic:" +
             (identity ?? skillName ?? "<null>") + ":" +
-            (info.damage == null ? "<null>" : info.damage.GetType().FullName);
+            info.damage.GetType().FullName;
 
         if (!_prismaticVisionDiagnosticSeen.Add(traceKey))
         {
