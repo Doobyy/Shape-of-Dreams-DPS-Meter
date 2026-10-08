@@ -1223,7 +1223,7 @@ public sealed class DPSMeter : ModBehaviour
 
         string skillName = null;
         string skillIdentity = null;
-        string sourceName = "Other";
+        string sourceName = ResolveLocalizedDamageSourceName(info.actor);
         bool isBasicAttack = !isDirectEssenceDamage && skill == null;
 
         if (isLocalPlayer && isBasicAttack)
@@ -1482,6 +1482,69 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return FindRuntimeEssenceScaling(actor.parentActor, gem, depth + 1);
+    }
+
+
+    private static string ResolveLocalizedDamageSourceName(Actor source)
+    {
+        if (source == null)
+        {
+            return null;
+        }
+
+        Actor current = source;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            string key = current.name;
+            if (!string.IsNullOrEmpty(key))
+            {
+                int suffix = key.IndexOf('(');
+                if (suffix > 0)
+                {
+                    key = key.Substring(0, suffix).Trim();
+                }
+
+                if (!string.IsNullOrEmpty(key))
+                {
+                    try
+                    {
+                        string localizedName;
+                        if (DewLocalization.TryGetUIValue(key + "_Name", out localizedName) &&
+                            !string.IsNullOrEmpty(localizedName))
+                        {
+                            return localizedName;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+            }
+
+            string typeName = current.GetType().Name;
+            if (!string.IsNullOrEmpty(typeName))
+            {
+                try
+                {
+                    string localizedName;
+                    if (DewLocalization.TryGetUIValue(typeName + "_Name", out localizedName) &&
+                        !string.IsNullOrEmpty(localizedName))
+                    {
+                        return localizedName;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
     }
 
 
