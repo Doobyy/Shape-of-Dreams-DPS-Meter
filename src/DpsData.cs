@@ -243,9 +243,9 @@ public sealed class DpsData
         _cumulativeParty.OrderByDescending(pair => pair.Value).ToList();
 
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPartyHealing => _currentPartyHealing.OrderByDescending(pair => pair.Value).ToList();
-    public IReadOnlyList<KeyValuePair<string, float>> CumulativePartyHealing => _cumulativePartyHealing.OrderByDescending(pair => pair.Value).ToList();
+    public IReadOnlyList<KeyValuePair<string, float>> CumulativePartyHealingRows => _cumulativePartyHealing.OrderByDescending(pair => pair.Value).ToList();
     public IReadOnlyList<KeyValuePair<string, float>> CurrentPartyBarrier => _currentPartyBarrier.OrderByDescending(pair => pair.Value).ToList();
-    public IReadOnlyList<KeyValuePair<string, float>> CumulativePartyBarrier => _cumulativePartyBarrier.OrderByDescending(pair => pair.Value).ToList();
+    public IReadOnlyList<KeyValuePair<string, float>> CumulativePartyBarrierRows => _cumulativePartyBarrier.OrderByDescending(pair => pair.Value).ToList();
 
     public void AddBarrier(float barrier, string sourceIdentity, string sourceName, Sprite icon)
     {
