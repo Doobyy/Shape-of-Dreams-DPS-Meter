@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v7.800";
+    public const string DevelopmentVersion = "v7.900";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -164,7 +164,7 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        if (info.target != local.hero)
+        if (info.actor.firstEntity as Hero == null)
         {
             return;
         }
@@ -248,7 +248,16 @@ public sealed class DPSMeter : ModBehaviour
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
 
         string healingActorChain = BuildHealingExportActorChain(info.actor);
-        _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon, healingActorChain);
+        DewPlayer sourcePlayer = FindPlayer(info.actor.firstEntity as Hero);
+        if (sourcePlayer != null && sourcePlayer.isHumanPlayer)
+        {
+            _data.AddPartyHealing(healing, sourcePlayer == DewPlayer.local ? "You" : sourcePlayer.playerName);
+        }
+
+        if (info.target == local.hero)
+        {
+            _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon, healingActorChain);
+        }
 
     }
 
@@ -262,10 +271,6 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        if (info.target != local.hero)
-        {
-            return;
-        }
 
         float barrier = Mathf.Max(0f, info.finalAmount);
         if (barrier <= 0f)
@@ -278,7 +283,18 @@ public sealed class DPSMeter : ModBehaviour
         Sprite icon;
         ResolveBarrierSource(info.statusEffect, out sourceIdentity, out sourceName, out icon);
 
-        _data.AddBarrier(barrier, sourceIdentity, sourceName, icon);
+        Actor barrierActor = info.statusEffect as Actor;
+        Hero barrierHero = barrierActor == null ? null : barrierActor.firstEntity as Hero;
+        DewPlayer barrierPlayer = FindPlayer(barrierHero);
+        if (barrierPlayer != null && barrierPlayer.isHumanPlayer)
+        {
+            _data.AddPartyBarrier(barrier, barrierPlayer == DewPlayer.local ? "You" : barrierPlayer.playerName);
+        }
+
+        if (info.target == local.hero)
+        {
+            _data.AddBarrier(barrier, sourceIdentity, sourceName, icon);
+        }
     }
 
 
