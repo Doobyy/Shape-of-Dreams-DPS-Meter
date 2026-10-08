@@ -20,16 +20,16 @@ public sealed class DpsOverlay : MonoBehaviour
         PartyTotal
     }
 
-    private static readonly Color DefaultBarColor = new Color(1.00f, 1.00f, 1.00f, 0.68f);
+    private static readonly Color DefaultBarColor = new Color(0.875f, 0.871f, 0.867f, 1f);
     private static readonly Color WindowFillColor = new Color(0f, 0f, 0f, 0.55f);
-    private static readonly Color FireBarColor = new Color(1.00f, 0.545f, 0.278f, 0.68f);
-    private static readonly Color IceBarColor = new Color(1.00f, 1.00f, 1.00f, 0.68f);
-    private static readonly Color LightBarColor = new Color(1.00f, 1.00f, 0.929f, 0.68f);
-    private static readonly Color DarkBarColor = new Color(1.00f, 0.782f, 1.00f, 0.68f);
-    private static readonly Color AdScalingBarColor = new Color(1.00f, 0.880f, 0.561f, 0.68f);
-    private static readonly Color ApScalingBarColor = new Color(0.492f, 1.00f, 1.00f, 0.68f);
-    private static readonly Color HpScalingBarColor = new Color(0.763f, 1.00f, 0.455f, 0.68f);
-    private static readonly Color HealingBarColor = new Color(0.763f, 1.00f, 0.455f, 0.68f);
+    private static readonly Color FireBarColor = new Color(0.996f, 0.404f, 0.224f, 1f);
+    private static readonly Color IceBarColor = new Color(0.855f, 0.937f, 0.996f, 1f);
+    private static readonly Color LightBarColor = new Color(0.996f, 0.929f, 0.667f, 1f);
+    private static readonly Color DarkBarColor = new Color(0.737f, 0.565f, 0.988f, 1f);
+    private static readonly Color AdScalingBarColor = new Color(0.996f, 0.631f, 0.416f, 1f);
+    private static readonly Color ApScalingBarColor = new Color(0.365f, 0.906f, 0.996f, 1f);
+    private static readonly Color HpScalingBarColor = new Color(0.549f, 0.996f, 0.345f, 1f);
+    private static readonly Color HealingBarColor = new Color(0.549f, 0.996f, 0.345f, 1f);
     private static readonly Color SourceNameColor = Color.white;
     private static readonly Color BarTextStrokeColor = Color.black;
     private static readonly Color DefaultBarOutlineColor = new Color(0.212f, 0.208f, 0.200f, 1f);
