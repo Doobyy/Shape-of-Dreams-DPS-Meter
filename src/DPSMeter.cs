@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.179";
+    public const string DevelopmentVersion = "v5.180";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -3263,17 +3263,50 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
     }
 
     private bool _floatingDamageUiProbePending;
-    private readonly Dictionary<int, string> _floatingDamageUiProbeSeen = new Dictionary<int, string>();
+    private readonly Dictionary<int, string> _floatingDamageUiProbeSnapshot =
+        new Dictionary<int, string>();
 
     private void QueueFloatingDamageUiProbe()
     {
-        if (_floatingDamageUiProbePending)
+        try
         {
-            return;
-        }
+            _floatingDamageUiProbeSnapshot.Clear();
 
-        _floatingDamageUiProbePending = true;
-        Invoke(nameof(TraceFloatingDamageUi), 0.05f);
+            Component[] components = UnityEngine.Object.FindObjectsOfType<Component>();
+            for (int i = 0; i < components.Length; i++)
+            {
+                Component component = components[i];
+                if (component == null || component.gameObject == null)
+                {
+                    continue;
+                }
+
+                Type componentType = component.GetType();
+                if (!IsTextMeshProComponent(componentType))
+                {
+                    continue;
+                }
+
+                string state = DescribeFloatingTextState(component);
+                if (state != null)
+                {
+                    _floatingDamageUiProbeSnapshot[component.GetInstanceID()] = state;
+                }
+            }
+
+            if (_floatingDamageUiProbePending)
+            {
+                return;
+            }
+
+            _floatingDamageUiProbePending = true;
+            Invoke(nameof(TraceFloatingDamageUi), 0.05f);
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE UI snapshotError=" +
+                ex.GetType().Name + " message=" + ex.Message);
+        }
     }
 
     private void TraceFloatingDamageUi()
@@ -3293,115 +3326,161 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
                 }
 
                 Type componentType = component.GetType();
-                string typeName = componentType.FullName ?? componentType.Name;
-                if (typeName.IndexOf("TextMeshPro", StringComparison.OrdinalIgnoreCase) < 0)
+                if (!IsTextMeshProComponent(componentType))
                 {
                     continue;
                 }
 
-                PropertyInfo textProperty = componentType.GetProperty(
-                    "text", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if (textProperty == null || textProperty.PropertyType != typeof(string))
+                string state = DescribeFloatingTextState(component);
+                if (state == null)
                 {
                     continue;
                 }
 
-                string textValue;
-                try
-                {
-                    textValue = textProperty.GetValue(component, null) as string;
-                }
-                catch (Exception)
-                {
-                    continue;
-                }
-
-                if (!IsLikelyFloatingDamageText(textValue))
-                {
-                    continue;
-                }
-
-                PropertyInfo colorProperty = componentType.GetProperty(
-                    "color", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                string colorText = "<none>";
-                if (colorProperty != null && colorProperty.PropertyType == typeof(Color))
-                {
-                    try
-                    {
-                        Color color = (Color)colorProperty.GetValue(component, null);
-                        colorText = FormatColorHex(color);
-                    }
-                    catch (Exception)
-                    {
-                        colorText = "<read-error>";
-                    }
-                }
-
-                PropertyInfo gradientEnabledProperty = componentType.GetProperty(
-                    "enableVertexGradient", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                bool gradientEnabled = false;
-                if (gradientEnabledProperty != null && gradientEnabledProperty.PropertyType == typeof(bool))
-                {
-                    try
-                    {
-                        gradientEnabled = (bool)gradientEnabledProperty.GetValue(component, null);
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-
-                string key = textValue + "|" + colorText + "|" + gradientEnabled;
                 int instanceId = component.GetInstanceID();
-                string previous;
-                if (_floatingDamageUiProbeSeen.TryGetValue(instanceId, out previous) && previous == key)
+                string before;
+                bool wasPresent = _floatingDamageUiProbeSnapshot.TryGetValue(instanceId, out before);
+
+                if (wasPresent && before == state)
                 {
                     continue;
                 }
 
-                _floatingDamageUiProbeSeen[instanceId] = key;
-
+                string changeKind = wasPresent ? "changed" : "new";
                 WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE UI " +
-                    "object=" + component.gameObject.name +
-                    " type=" + typeName +
-                    " text=" + textValue +
-                    " color=" + colorText +
-                    " vertexGradient=" + gradientEnabled);
+                    changeKind + " object=" + component.gameObject.name +
+                    " type=" + (componentType.FullName ?? componentType.Name) +
+                    " " + state +
+                    " hierarchy=" + BuildTransformHierarchy(component.transform));
             }
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE UI probeError=" + ex.GetType().Name +
-                " message=" + ex.Message);
+            WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE UI probeError=" +
+                ex.GetType().Name + " message=" + ex.Message);
         }
     }
 
-    private static bool IsLikelyFloatingDamageText(string value)
+    private static bool IsTextMeshProComponent(Type componentType)
     {
-        if (string.IsNullOrEmpty(value))
+        if (componentType == null)
         {
             return false;
         }
 
-        bool hasDigit = false;
-        for (int i = 0; i < value.Length; i++)
+        string typeName = componentType.FullName ?? componentType.Name;
+        return typeName.IndexOf("TextMeshPro", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static string DescribeFloatingTextState(Component component)
+    {
+        if (component == null)
         {
-            char c = value[i];
-            if (c >= '0' && c <= '9')
-            {
-                hasDigit = true;
-                continue;
-            }
-
-            if (char.IsWhiteSpace(c) || c == ',' || c == '.' || c == '-' || c == '+' || c == '%')
-            {
-                continue;
-            }
-
-            return false;
+            return null;
         }
 
-        return hasDigit;
+        Type componentType = component.GetType();
+
+        PropertyInfo textProperty = componentType.GetProperty(
+            "text", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (textProperty == null || textProperty.PropertyType != typeof(string))
+        {
+            return null;
+        }
+
+        string textValue;
+        try
+        {
+            textValue = textProperty.GetValue(component, null) as string;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrEmpty(textValue))
+        {
+            return null;
+        }
+
+        string colorText = "<none>";
+        PropertyInfo colorProperty = componentType.GetProperty(
+            "color", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (colorProperty != null && colorProperty.PropertyType == typeof(Color))
+        {
+            try
+            {
+                colorText = FormatColorHex((Color)colorProperty.GetValue(component, null));
+            }
+            catch (Exception)
+            {
+                colorText = "<read-error>";
+            }
+        }
+
+        string materialColorText = "<none>";
+        PropertyInfo fontMaterialProperty = componentType.GetProperty(
+            "fontSharedMaterial", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (fontMaterialProperty != null)
+        {
+            try
+            {
+                Material material = fontMaterialProperty.GetValue(component, null) as Material;
+                if (material != null && material.HasProperty("_FaceColor"))
+                {
+                    materialColorText = FormatColorHex(material.GetColor("_FaceColor"));
+                }
+            }
+            catch (Exception)
+            {
+                materialColorText = "<read-error>";
+            }
+        }
+
+        string gradientText = "<none>";
+        PropertyInfo gradientEnabledProperty = componentType.GetProperty(
+            "enableVertexGradient", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (gradientEnabledProperty != null && gradientEnabledProperty.PropertyType == typeof(bool))
+        {
+            try
+            {
+                gradientText = ((bool)gradientEnabledProperty.GetValue(component, null)).ToString();
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        return "text=" + textValue +
+            " color=" + colorText +
+            " faceColor=" + materialColorText +
+            " vertexGradient=" + gradientText;
+    }
+
+    private static string BuildTransformHierarchy(Transform transform)
+    {
+        if (transform == null)
+        {
+            return "<null>";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        Transform current = transform;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            if (depth > 0)
+            {
+                builder.Insert(0, " > ");
+            }
+
+            builder.Insert(0, current.name);
+            current = current.parent;
+            depth++;
+        }
+
+        return builder.ToString();
     }
 
     private static string FormatColorHex(Color color)
