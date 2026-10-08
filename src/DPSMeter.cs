@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.65";
+    public const string DevelopmentVersion = "v5.66";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1510,7 +1510,20 @@ public sealed class DPSMeter : ModBehaviour
         DpsData.DamageScalingType cached;
         if (_skillScalingCache.TryGetValue(skillIdentity, out cached))
         {
+            if (IsTargetBackstepSkill(skill))
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP resolver cache=HIT identity=" +
+                    (skillIdentity ?? "<null>") + " value=" + cached);
+            }
+
             return cached;
+        }
+
+        bool traceBackstep = IsTargetBackstepSkill(skill);
+        if (traceBackstep)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP resolver cache=MISS identity=" +
+                (skillIdentity ?? "<null>"));
         }
 
         // Some Memories, such as Mystic Dagger, are configured by an
@@ -1524,7 +1537,18 @@ public sealed class DPSMeter : ModBehaviour
             sourceGem = FindGemOnSkillTrigger(skill, actor);
         }
 
+        if (traceBackstep)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP resolver sourceGem=" +
+                DescribeGem(sourceGem));
+        }
+
         DpsData.DamageScalingType scaling = FindConfiguredGemScaling(sourceGem);
+
+        if (traceBackstep)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP resolver configuredGem=" + scaling);
+        }
 
         // Character abilities such as Bismuth's Valiant Heart can carry their
         // scaling on the skill's configured AbilityInstance rather than on a
@@ -1535,21 +1559,68 @@ public sealed class DPSMeter : ModBehaviour
             skill.currentConfig != null)
         {
             scaling = FindConfiguredAbilityScaling(skill.currentConfig.spawnedInstance, 0);
+
+            if (traceBackstep)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP resolver configuredAbility=" + scaling);
+            }
         }
 
         if (scaling == DpsData.DamageScalingType.None)
         {
             scaling = FindDamageScalingType(actor);
+
+            if (traceBackstep)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP resolver runtimeFallback=" + scaling);
+            }
         }
 
         if (scaling != DpsData.DamageScalingType.None)
         {
             _skillScalingCache[skillIdentity] = scaling;
+
+            if (traceBackstep)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP resolver FINAL=" +
+                    scaling + " cached=YES");
+            }
+        }
+        else if (traceBackstep)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] BACKSTEP resolver FINAL=None cached=NO");
         }
 
         return scaling;
     }
 
+    private static bool IsTargetBackstepSkill(SkillTrigger skill)
+    {
+        if (skill == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            if (ContainsTargetMemoryName(skill.GetFormattedSkillTitle()))
+            {
+                return true;
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        try
+        {
+            return ContainsTargetMemoryName(DewLocalization.GetSkillName(skill, 0));
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
     private static Gem FindGemOnSkillTrigger(SkillTrigger skill, Actor actor)
     {
         if (skill == null || actor == null)
