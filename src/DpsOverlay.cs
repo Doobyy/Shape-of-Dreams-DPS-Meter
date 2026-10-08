@@ -564,13 +564,13 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
 
             case DisplayMode.DamageTotal:
-                title = "DAMAGE TOTAL";
-                metric = FormatNumber(_data.CumulativePersonalDamage);
+                title = "TOTAL";
+                metric = string.Empty;
                 break;
 
             default:
-                title = "DAMAGE TOTAL";
-                metric = FormatNumber(_data.CumulativePersonalDamage);
+                title = "TOTAL";
+                metric = string.Empty;
                 break;
         }
 
@@ -582,14 +582,55 @@ public sealed class DpsOverlay : MonoBehaviour
             title,
             _header);
 
-        GUI.Label(
-            new Rect(
-                headerRect.x + titleWidth,
-                headerRect.y,
-                metricWidth,
-                headerRect.height),
-            metric,
-            _headerRight);
+        if (_mode == DisplayMode.DamageTotal)
+        {
+            GUIStyle totalSummaryStyle = new GUIStyle(_headerRight)
+            {
+                fontSize = 8,
+                fontStyle = FontStyle.Normal,
+                alignment = TextAnchor.MiddleRight
+            };
+
+            float lineHeight = headerRect.height / 3f;
+
+            GUI.Label(
+                new Rect(
+                    headerRect.x + titleWidth,
+                    headerRect.y,
+                    metricWidth,
+                    lineHeight),
+                "DMG: " + FormatNumber(_data.CumulativePersonalDamage),
+                totalSummaryStyle);
+
+            GUI.Label(
+                new Rect(
+                    headerRect.x + titleWidth,
+                    headerRect.y + lineHeight,
+                    metricWidth,
+                    lineHeight),
+                "HEAL: " + FormatNumber(_data.CumulativePersonalHealing),
+                totalSummaryStyle);
+
+            GUI.Label(
+                new Rect(
+                    headerRect.x + titleWidth,
+                    headerRect.y + (lineHeight * 2f),
+                    metricWidth,
+                    lineHeight),
+                "BARRIER: " + FormatNumber(_data.CumulativePersonalBarrier),
+                totalSummaryStyle);
+        }
+        else
+        {
+            GUI.Label(
+                new Rect(
+                    headerRect.x + titleWidth,
+                    headerRect.y,
+                    metricWidth,
+                    headerRect.height),
+                metric,
+                _headerRight);
+        }
 
         if (_mode == DisplayMode.CurrentDps)
         {
