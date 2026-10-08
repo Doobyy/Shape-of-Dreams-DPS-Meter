@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.128";
+    public const string DevelopmentVersion = "v5.129";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1430,6 +1430,7 @@ public sealed class DPSMeter : ModBehaviour
         string skillIdentity = null;
         string sourceName = ResolveLocalizedDamageSourceName(info.actor);
         bool isBasicAttack = !isDirectEssenceDamage && skill == null;
+        TraceFireIconAssets(info, sourceName);
 
         if (isLocalPlayer && isBasicAttack && _overlay != null)
         {
@@ -2039,7 +2040,6 @@ public sealed class DPSMeter : ModBehaviour
         TracePrismaticDamageSourceType(pendingAttack);
         TracePrismaticBasicAttackExecution(pendingAttack);
         TracePrismaticBasicAttackCaller(pendingAttack);
-        TraceFireIconAssets(info, sourceName);
 
         AbilityTrigger trigger = pendingAttack.firstTrigger;
         if (trigger != null)
