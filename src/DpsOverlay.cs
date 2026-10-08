@@ -29,7 +29,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color AdScalingBarColor = new Color(0.996f, 0.631f, 0.416f, 1f);
     private static readonly Color ApScalingBarColor = new Color(0.365f, 0.906f, 0.996f, 1f);
     private static readonly Color HpScalingBarColor = new Color(0.549f, 0.996f, 0.345f, 1f);
-    private static readonly Color HealingBarColor = new Color(0.400f, 0.820f, 0.290f, 1f);
+    private static readonly Color HealingBarColor = new Color(0.357f, 0.686f, 0.271f, 1f);
     private static readonly Color SourceNameColor = Color.white;
     private static readonly Color BarTextStrokeColor = Color.black;
     private static readonly Color DefaultBarOutlineColor = new Color(0.212f, 0.208f, 0.200f, 1f);
