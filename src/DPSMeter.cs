@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.106";
+    public const string DevelopmentVersion = "v5.107";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2035,6 +2035,7 @@ public sealed class DPSMeter : ModBehaviour
         TracePrismaticNameSource(pendingAttack, "pendingAttack");
         TracePrismaticAttackIdentity(pendingAttack);
         TracePrismaticUiLocalization(info.actor, prismaticEffect, pendingAttack);
+        TracePrismaticSkillRegistry(pendingAttack, 63);
 
         AbilityTrigger trigger = pendingAttack.firstTrigger;
         if (trigger != null)
@@ -2284,6 +2285,125 @@ public sealed class DPSMeter : ModBehaviour
         catch (Exception ex)
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity error=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticSkillRegistry(object attackSource, int abilityIndex)
+    {
+        try
+        {
+            PropertyInfo ownerProperty = attackSource.GetType().GetProperty(
+                "owner",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (ownerProperty == null || ownerProperty.GetMethod == null)
+            {
+                return;
+            }
+
+            object owner = ownerProperty.GetValue(attackSource, null);
+            if (owner == null)
+            {
+                return;
+            }
+
+            FieldInfo skillField = owner.GetType().GetField(
+                "Skill",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            PropertyInfo skillProperty = owner.GetType().GetProperty(
+                "Skill",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            object skillSystem = null;
+            if (skillProperty != null && skillProperty.GetMethod != null)
+            {
+                skillSystem = skillProperty.GetValue(owner, null);
+            }
+            if (skillSystem == null && skillField != null)
+            {
+                skillSystem = skillField.GetValue(owner);
+            }
+            if (skillSystem == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC REGISTRY Skill=<null>");
+                return;
+            }
+
+            Type skillType = skillSystem.GetType();
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC REGISTRY SkillType=" +
+                skillType.FullName + " abilityIndex=" + abilityIndex);
+
+            int logged = 0;
+            for (Type cursor = skillType; cursor != null && logged < 36; cursor = cursor.BaseType)
+            {
+                FieldInfo[] fields = cursor.GetFields(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+                for (int i = 0; i < fields.Length && logged < 36; i++)
+                {
+                    string name = fields[i].Name ?? string.Empty;
+                    if (name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("index", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("slot", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        object value = fields[i].GetValue(skillSystem);
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC REGISTRY field=" +
+                            name + " declaringType=" + cursor.FullName +
+                            " type=" + fields[i].FieldType.FullName +
+                            " value=[" + (value == null ? "<null>" : value.ToString()) + "]");
+                        logged++;
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+            }
+
+            for (Type cursor = skillType; cursor != null && logged < 52; cursor = cursor.BaseType)
+            {
+                MethodInfo[] methods = cursor.GetMethods(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+                for (int i = 0; i < methods.Length && logged < 52; i++)
+                {
+                    MethodInfo method = methods[i];
+                    string name = method.Name ?? string.Empty;
+                    if (name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("index", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        name.IndexOf("slot", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+
+                    ParameterInfo[] parameters = method.GetParameters();
+                    string parameterText = string.Empty;
+                    for (int p = 0; p < parameters.Length; p++)
+                    {
+                        if (p > 0)
+                        {
+                            parameterText += ",";
+                        }
+                        parameterText += parameters[p].ParameterType.FullName;
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC REGISTRY method=" +
+                        name + " declaringType=" + cursor.FullName +
+                        " return=" + method.ReturnType.FullName +
+                        " params=[" + parameterText + "]");
+                    logged++;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC REGISTRY error=" +
+                ex.GetType().Name);
         }
     }
 
