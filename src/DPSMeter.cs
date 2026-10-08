@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.130";
+    public const string DevelopmentVersion = "v5.131";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2235,13 +2235,13 @@ public sealed class DPSMeter : ModBehaviour
 
     private static void TraceElmFireSource(EventInfoDamage info, string sourceName)
     {
-        if (info == null || info.actor == null ||
+        if (info.actor == null ||
             !string.Equals(sourceName, "Fire", StringComparison.OrdinalIgnoreCase))
             return;
 
         try
         {
-            ElementalType? elemental = info.damage == null ? (ElementalType?)null : info.damage.elemental;
+            ElementalType? elemental = info.damage.elemental;
             if (!elemental.HasValue)
             {
                 WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE elemental=<null>");
