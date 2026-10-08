@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.129";
+    public const string DevelopmentVersion = "v5.130";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1430,7 +1430,7 @@ public sealed class DPSMeter : ModBehaviour
         string skillIdentity = null;
         string sourceName = ResolveLocalizedDamageSourceName(info.actor);
         bool isBasicAttack = !isDirectEssenceDamage && skill == null;
-        TraceFireIconAssets(info, sourceName);
+        TraceElmFireSource(info, sourceName);
 
         if (isLocalPlayer && isBasicAttack && _overlay != null)
         {
@@ -2037,9 +2037,7 @@ public sealed class DPSMeter : ModBehaviour
         WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME pendingAttack readable=[" +
             (pendingAttack.GetActorReadableName() ?? "<null>") + "] original=[" +
             (pendingAttack.GetOriginalName() ?? "<null>") + "]");
-        TracePrismaticDamageSourceType(pendingAttack);
-        TracePrismaticBasicAttackExecution(pendingAttack);
-        TracePrismaticBasicAttackCaller(pendingAttack);
+        TracePrismaticAttackTriggerPath(pendingAttack);
 
         AbilityTrigger trigger = pendingAttack.firstTrigger;
         if (trigger != null)
@@ -2235,42 +2233,85 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    private static void TraceFireIconAssets(EventInfoDamage info, string sourceName)
+    private static void TraceElmFireSource(EventInfoDamage info, string sourceName)
     {
-        if (info.actor == null || !string.Equals(sourceName, "Fire", StringComparison.OrdinalIgnoreCase))
+        if (info == null || info.actor == null ||
+            !string.Equals(sourceName, "Fire", StringComparison.OrdinalIgnoreCase))
             return;
 
         try
         {
-            Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
-            int matches = 0;
-
-            for (int i = 0; i < sprites.Length && matches < 16; i++)
+            ElementalType? elemental = info.damage == null ? (ElementalType?)null : info.damage.elemental;
+            if (!elemental.HasValue)
             {
-                Sprite sprite = sprites[i];
-                if (sprite == null)
-                    continue;
-
-                string name = sprite.name ?? string.Empty;
-                if (name.IndexOf("elm_fire", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    name.IndexOf("fire", StringComparison.OrdinalIgnoreCase) < 0)
-                {
-                    continue;
-                }
-
-                WriteDebugLog("[" + DevelopmentVersion + "] FIRE ICON sprite=[" +
-                    name + "] texture=[" +
-                    (sprite.texture == null ? "<null>" : sprite.texture.name) + "]");
-                matches++;
+                WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE elemental=<null>");
+                return;
             }
 
-            WriteDebugLog("[" + DevelopmentVersion + "] FIRE ICON matches=" + matches +
-                " loadedSprites=" + sprites.Length);
+            string elementalName = elemental.Value.ToString();
+            string key = "elm_" + elementalName.ToLowerInvariant();
+            string localized = null;
+            string localizedName = null;
+
+            try
+            {
+                DewLocalization.TryGetUIValue(key, out localized);
+                DewLocalization.TryGetUIValue(key + "_Name", out localizedName);
+            }
+            catch (Exception)
+            {
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE enum=" + elementalName +
+                " key=[" + key + "] value=[" + (localized ?? "<null>") +
+                "] name=[" + (localizedName ?? "<null>") + "]");
+
+            Actor current = info.actor;
+            int depth = 0;
+            while (current != null && depth < 8)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE actor depth=" + depth +
+                    " type=" + current.GetType().FullName +
+                    " name=" + (current.name ?? "<null>") +
+                    " original=" + (current.GetOriginalName() ?? "<null>"));
+
+                FieldInfo[] fields = current.GetType().GetFields(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    FieldInfo field = fields[i];
+                    if (field.FieldType != typeof(string) &&
+                        field.FieldType != typeof(ElementalType) &&
+                        field.FieldType != typeof(Nullable<ElementalType>))
+                        continue;
+
+                    try
+                    {
+                        object value = field.GetValue(current);
+                        string text = value == null ? "<null>" : value.ToString();
+
+                        if (field.Name.IndexOf("element", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            text.IndexOf("fire", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            text.IndexOf("elm_", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE field=" +
+                                field.Name + " type=" + field.FieldType.FullName +
+                                " value=[" + text + "]");
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                current = current.parentActor;
+                depth++;
+            }
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] FIRE ICON error=" +
-                ex.GetType().Name);
+            WriteDebugLog("[" + DevelopmentVersion + "] ELM_FIRE error=" + ex.GetType().Name);
         }
     }
 
@@ -2957,6 +2998,121 @@ public sealed class DPSMeter : ModBehaviour
         return FindRuntimeEssenceScaling(actor.parentActor, gem, depth + 1);
     }
 
+
+    private static void TracePrismaticAttackTriggerPath(Actor source)
+    {
+        if (source == null)
+            return;
+
+        try
+        {
+            Type type = source.GetType();
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER type=" +
+                type.FullName + " name=" + (source.name ?? "<null>") +
+                " original=" + (source.GetOriginalName() ?? "<null>"));
+
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                string name = field.Name ?? string.Empty;
+
+                if (name.IndexOf("config", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
+                try
+                {
+                    object value = field.GetValue(source);
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER field=" +
+                        name + " type=" + field.FieldType.FullName + " value=[" +
+                        (value == null ? "<null>" : value.ToString()) + "]");
+
+                    TracePrismaticConfigObject(value, name);
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER field=" +
+                        name + " readError=" + ex.GetType().Name);
+                }
+            }
+
+            MethodInfo[] methods = type.GetMethods(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < methods.Length; i++)
+            {
+                MethodInfo method = methods[i];
+                string name = method.Name ?? string.Empty;
+
+                if (name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("execute", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("activate", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("cast", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("hit", StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER method=" +
+                    method.Name + " return=" + method.ReturnType.FullName +
+                    " params=" + method.GetParameters().Length);
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER error=" +
+                ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticConfigObject(object value, string label)
+    {
+        if (value == null)
+            return;
+
+        Type type = value.GetType();
+
+        if (type.IsPrimitive || value is string || value is Enum)
+            return;
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length && i < 48; i++)
+        {
+            FieldInfo field = fields[i];
+            string name = field.Name ?? string.Empty;
+
+            if (name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("icon", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0)
+                continue;
+
+            try
+            {
+                object fieldValue = field.GetValue(value);
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG parent=" +
+                    label + " field=" + name + " type=" + field.FieldType.FullName +
+                    " value=[" + (fieldValue == null ? "<null>" : fieldValue.ToString()) + "]");
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
 
     private static string ResolveLocalizedDamageSourceName(Actor source)
     {
