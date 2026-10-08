@@ -1017,15 +1017,15 @@ public sealed class DpsOverlay : MonoBehaviour
             return;
         }
 
-        GUIStyle strokeStyle = CreateBarTextStyle(style, BarTextStrokeColor);
+        GUIStyle shadowStyle = CreateBarTextStyle(style, BarTextStrokeColor);
         GUIStyle textStyle = CreateBarTextStyle(style, Color.white);
-        const float stroke = 1f;
+        const float offset = 1f;
         GUI.color = Color.white;
 
-        GUI.Label(new Rect(textRect.x - stroke, textRect.y, textRect.width, textRect.height), text, strokeStyle);
-        GUI.Label(new Rect(textRect.x + stroke, textRect.y, textRect.width, textRect.height), text, strokeStyle);
-        GUI.Label(new Rect(textRect.x, textRect.y - stroke, textRect.width, textRect.height), text, strokeStyle);
-        GUI.Label(new Rect(textRect.x, textRect.y + stroke, textRect.width, textRect.height), text, strokeStyle);
+        GUI.Label(
+            new Rect(textRect.x + offset, textRect.y + offset, textRect.width, textRect.height),
+            text,
+            shadowStyle);
         GUI.Label(textRect, text, textStyle);
     }
 
