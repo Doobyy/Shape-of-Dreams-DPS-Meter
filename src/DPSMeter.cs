@@ -814,8 +814,8 @@ public sealed class DPSMeter : ModBehaviour
         _bismuthBookDamageTraceCount++;
         FinalDamageData damage = info.damage;
 
-        WriteDebugLog("[v5.55] Bismuth Book damage trace " + _bismuthBookDamageTraceCount);
-        WriteDebugLog("[v5.55] book   amount=" + damage.amount
+        WriteDebugLog("[v5.56] Bismuth Book damage trace " + _bismuthBookDamageTraceCount);
+        WriteDebugLog("[v5.56] book   amount=" + damage.amount
             + " discarded=" + damage.discardedAmount
             + " source=" + damage.type
             + " elemental=" + damage.elemental
@@ -823,10 +823,10 @@ public sealed class DPSMeter : ModBehaviour
             + " attackEffectType=" + damage.attackEffectType
             + " attackEffectStrength=" + damage.attackEffectStrength);
 
-        WriteDebugLog("[v5.55] book   eventActor type=" + info.actor.GetType().Name
+        WriteDebugLog("[v5.56] book   eventActor type=" + info.actor.GetType().Name
             + " name=" + info.actor.name);
 
-        TraceSourceChain(info.actor, "[v5.55] book");
+        TraceSourceChain(info.actor, "[v5.56] book");
     }
 
 
@@ -945,8 +945,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _healthOrbTraceCount++;
-        WriteDebugLog("[v5.55] Health Orb trace " + _healthOrbTraceCount);
-        TraceSourceChain(source, "[v5.55] orb");
+        WriteDebugLog("[v5.56] Health Orb trace " + _healthOrbTraceCount);
+        TraceSourceChain(source, "[v5.56] orb");
         TraceRegenOrbPickup(source);
     }
 
@@ -958,110 +958,16 @@ public sealed class DPSMeter : ModBehaviour
         {
             if (string.Equals(current.GetType().Name, "Pickup_RegenOrb", StringComparison.OrdinalIgnoreCase))
             {
-                WriteDebugLog("[v5.55] regen pickup begin");
-                TraceReadableIdentity(current, "[v5.55] regen");
-                TracePickupMembers(current, "[v5.55] regen");
-                TraceMainEffect(current, "[v5.55] regen");
-                WriteDebugLog("[v5.55] regen pickup end");
+                WriteDebugLog("[v5.56] regen pickup begin");
+                TraceReadableIdentity(current, "[v5.56] regen");
+                TraceMainEffect(current, "[v5.56] regen");
+                WriteDebugLog("[v5.56] regen pickup end");
                 return;
             }
 
             current = current.parentActor;
         }
     }
-
-    {
-        if (pickup == null)
-        {
-            return;
-        }
-
-        string[] keys = new string[]
-        {
-            pickup.GetType().Name + "_Name",
-            pickup.GetOriginalName() + "_Name"
-        };
-
-        for (int i = 0; i < keys.Length; i++)
-        {
-            string key = keys[i];
-            if (string.IsNullOrEmpty(key) || i > 0 && string.Equals(key, keys[0], StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            try
-            {
-                string localized;
-                if (DewLocalization.TryGetUIValue(key, out localized) &&
-                    !string.IsNullOrEmpty(localized))
-                {
-                    WriteDebugLog(label + "   uiKey=" + key + " value=[" + localized + "]");
-                }
-            }
-            catch (Exception)
-            {
-            }
-        }
-    }
-
-    private static void TracePickupMembers(Actor pickup, string label)
-    {
-        Type currentType = pickup.GetType();
-        int hierarchyDepth = 0;
-        int logged = 0;
-
-        while (currentType != null && hierarchyDepth < 4 && logged < 24)
-        {
-            FieldInfo[] fields = currentType.GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                BindingFlags.DeclaredOnly);
-
-            for (int i = 0; i < fields.Length && logged < 24; i++)
-            {
-                FieldInfo field = fields[i];
-
-                if (field.FieldType == typeof(string))
-                {
-                    try
-                    {
-                        object value = field.GetValue(pickup);
-                        if (value is string text && !string.IsNullOrEmpty(text))
-                        {
-                            WriteDebugLog(label + "   field=" + field.Name + " value=[" + text + "]");
-                            logged++;
-                        }
-                    }
-                    catch (Exception)
-                    {
-                    }
-
-                    continue;
-                }
-
-                if (typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType))
-                {
-                    try
-                    {
-                        UnityEngine.Object value = field.GetValue(pickup) as UnityEngine.Object;
-                        if (value != null)
-                        {
-                            WriteDebugLog(label + "   object=" + field.Name + " type=" +
-                                value.GetType().Name + " name=[" + value.name + "]");
-                            logged++;
-                        }
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-            }
-
-            currentType = currentType.BaseType;
-            hierarchyDepth++;
-        }
-    }
-
 
     private static void TraceMainEffect(Actor pickup, string label)
     {
@@ -1224,8 +1130,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _bismuthHealTraceCount++;
-        WriteDebugLog("[v5.55] Bismuth heal trace " + _bismuthHealTraceCount);
-        TraceSourceChain(source, "[v5.55] bismuth");
+        WriteDebugLog("[v5.56] Bismuth heal trace " + _bismuthHealTraceCount);
+        TraceSourceChain(source, "[v5.56] bismuth");
     }
 
     private static void TraceSourceChain(Actor source, string label)
