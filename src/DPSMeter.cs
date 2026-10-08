@@ -1181,18 +1181,27 @@ public sealed class DPSMeter : ModBehaviour
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH BEGIN");
 
-            ConstructorInfo damageConstructor = typeof(DamageData).GetConstructor(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                null,
-                new Type[]
+            ConstructorInfo damageConstructor = null;
+            ConstructorInfo[] constructors = typeof(DamageData).GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < constructors.Length; i++)
+            {
+                ParameterInfo[] parameters = constructors[i].GetParameters();
+                if (parameters.Length != 5)
                 {
-                    typeof(SourceType),
-                    typeof(ScalingValue),
-                    typeof(Entity),
-                    typeof(int),
-                    typeof(float)
-                },
-                null);
+                    continue;
+                }
+
+                if (parameters[1].ParameterType != typeof(ScalingValue) ||
+                    parameters[2].ParameterType != typeof(Entity) ||
+                    parameters[3].ParameterType != typeof(int) ||
+                    parameters[4].ParameterType != typeof(float))
+                {
+                    continue;
+                }
+
+                damageConstructor = constructors[i];
+                break;
+            }
 
             if (damageConstructor == null)
             {
