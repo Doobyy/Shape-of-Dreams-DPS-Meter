@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -12,6 +13,20 @@ public sealed class DpsData
         public string Name;
         public float Amount;
     }
+
+    public sealed class HealingRecord
+    {
+        public int Index;
+        public float Time;
+        public float Amount;
+        public string Identity;
+        public string SourceName;
+        public string ActorChain;
+    }
+
+    private readonly List<HealingRecord> _healingRecords = new List<HealingRecord>();
+    private const int MaxHealingRecords = 10000;
+    private int _nextHealingRecordIndex = 1;
 
     public enum DamageScalingType
     {
@@ -255,7 +270,7 @@ public sealed class DpsData
         }
     }
 
-    public void AddHealing(float healing, string sourceIdentity, string sourceName, Sprite icon)
+    public void AddHealing(float healing, string sourceIdentity, string sourceName, Sprite icon, string actorChain)
     {
         if (healing <= 0f)
         {
@@ -295,6 +310,45 @@ public sealed class DpsData
             _currentPersonalHealingIcons[sourceName] = icon;
             _cumulativePersonalHealingIcons[sourceName] = icon;
         }
+
+        if (_healingRecords.Count >= MaxHealingRecords)
+        {
+            _healingRecords.RemoveAt(0);
+        }
+
+        _healingRecords.Add(new HealingRecord
+        {
+            Index = _nextHealingRecordIndex++,
+            Time = now,
+            Amount = healing,
+            Identity = sourceIdentity,
+            SourceName = sourceName,
+            ActorChain = actorChain
+        });
+    }
+
+    public string ExportHealingLog()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.AppendLine("Shape of Dreams DPS Meter - Healing Diagnostic Export");
+        builder.AppendLine("Version: v5.52");
+        builder.AppendLine("Records retained: " + _healingRecords.Count);
+        builder.AppendLine();
+
+        for (int i = 0; i < _healingRecords.Count; i++)
+        {
+            HealingRecord record = _healingRecords[i];
+            builder.AppendLine("=== Healing Event " + record.Index + " ===");
+            builder.AppendLine("Time: " + record.Time.ToString("0.000"));
+            builder.AppendLine("Amount: " + record.Amount.ToString("0.######"));
+            builder.AppendLine("Identity: " + (record.Identity ?? "<null>"));
+            builder.AppendLine("SourceName: " + (record.SourceName ?? "<null>"));
+            builder.AppendLine("Actor chain:");
+            builder.AppendLine(string.IsNullOrEmpty(record.ActorChain) ? "  <none>" : record.ActorChain);
+            builder.AppendLine();
+        }
+
+        return builder.ToString();
     }
 
     public void AddDamage(
