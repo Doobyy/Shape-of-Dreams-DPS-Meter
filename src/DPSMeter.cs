@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.118";
+    public const string DevelopmentVersion = "v5.119";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1877,6 +1877,12 @@ public sealed class DPSMeter : ModBehaviour
                 TraceConfiguredAbilityTree(child, depth + 1);
             }
         }
+    }
+
+    private static bool ContainsTargetChompName(string value)
+    {
+        return !string.IsNullOrEmpty(value) &&
+            value.IndexOf("Chomp", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static bool IsTargetChompSkill(SkillTrigger skill)
