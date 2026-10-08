@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.164";
+    public const string DevelopmentVersion = "v5.165";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -834,6 +834,11 @@ public sealed class DPSMeter : ModBehaviour
                     WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE EVENT field=" +
                         field.Name + " type=" + field.FieldType.FullName +
                         " value=" + DescribePrismaticDiagnosticValue(value));
+
+                    if (field.Name == "damage" || field.Name == "chain")
+                    {
+                        TracePrismaticObjectMembers(value, "PRISMATIC DAMAGE EVENT " + field.Name);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -871,6 +876,62 @@ public sealed class DPSMeter : ModBehaviour
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE EVENT error=" +
                 ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticObjectMembers(object value, string label)
+    {
+        if (value == null)
+        {
+            return;
+        }
+
+        Type type = value.GetType();
+        WriteDebugLog("[" + DevelopmentVersion + "] " + label + " objectType=" + type.FullName);
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            try
+            {
+                object memberValue = field.GetValue(value);
+                WriteDebugLog("[" + DevelopmentVersion + "] " + label + " field=" +
+                    field.Name + " type=" + field.FieldType.FullName +
+                    " value=" + DescribePrismaticDiagnosticValue(memberValue));
+            }
+            catch (Exception ex)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] " + label + " field=" +
+                    field.Name + " readError=" + ex.GetType().Name);
+            }
+        }
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+            {
+                continue;
+            }
+
+            try
+            {
+                object memberValue = property.GetValue(value, null);
+                WriteDebugLog("[" + DevelopmentVersion + "] " + label + " property=" +
+                    property.Name + " type=" + property.PropertyType.FullName +
+                    " value=" + DescribePrismaticDiagnosticValue(memberValue));
+            }
+            catch (Exception ex)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] " + label + " property=" +
+                    property.Name + " readError=" + ex.GetType().Name);
+            }
         }
     }
 
