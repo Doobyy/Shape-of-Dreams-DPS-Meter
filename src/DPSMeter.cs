@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.178";
+    public const string DevelopmentVersion = "v5.179";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1403,6 +1403,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
     private void OnTakeDamage(EventInfoDamage info)
     {
+        QueueFloatingDamageUiProbe();
         if (info.actor == null || info.victim == null)
         {
             return;
@@ -3261,6 +3262,157 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         return null;
     }
 
+    private bool _floatingDamageUiProbePending;
+    private readonly Dictionary<int, string> _floatingDamageUiProbeSeen = new Dictionary<int, string>();
+
+    private void QueueFloatingDamageUiProbe()
+    {
+        if (_floatingDamageUiProbePending)
+        {
+            return;
+        }
+
+        _floatingDamageUiProbePending = true;
+        Invoke(nameof(TraceFloatingDamageUi), 0.05f);
+    }
+
+    private void TraceFloatingDamageUi()
+    {
+        _floatingDamageUiProbePending = false;
+
+        try
+        {
+            Component[] components = UnityEngine.Object.FindObjectsOfType<Component>();
+
+            for (int i = 0; i < components.Length; i++)
+            {
+                Component component = components[i];
+                if (component == null || component.gameObject == null)
+                {
+                    continue;
+                }
+
+                Type componentType = component.GetType();
+                string typeName = componentType.FullName ?? componentType.Name;
+                if (typeName.IndexOf("TextMeshPro", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                PropertyInfo textProperty = componentType.GetProperty(
+                    "text", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (textProperty == null || textProperty.PropertyType != typeof(string))
+                {
+                    continue;
+                }
+
+                string textValue;
+                try
+                {
+                    textValue = textProperty.GetValue(component, null) as string;
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                if (!IsLikelyFloatingDamageText(textValue))
+                {
+                    continue;
+                }
+
+                PropertyInfo colorProperty = componentType.GetProperty(
+                    "color", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                string colorText = "<none>";
+                if (colorProperty != null && colorProperty.PropertyType == typeof(Color))
+                {
+                    try
+                    {
+                        Color color = (Color)colorProperty.GetValue(component, null);
+                        colorText = FormatColorHex(color);
+                    }
+                    catch (Exception)
+                    {
+                        colorText = "<read-error>";
+                    }
+                }
+
+                PropertyInfo gradientEnabledProperty = componentType.GetProperty(
+                    "enableVertexGradient", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                bool gradientEnabled = false;
+                if (gradientEnabledProperty != null && gradientEnabledProperty.PropertyType == typeof(bool))
+                {
+                    try
+                    {
+                        gradientEnabled = (bool)gradientEnabledProperty.GetValue(component, null);
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                string key = textValue + "|" + colorText + "|" + gradientEnabled;
+                int instanceId = component.GetInstanceID();
+                string previous;
+                if (_floatingDamageUiProbeSeen.TryGetValue(instanceId, out previous) && previous == key)
+                {
+                    continue;
+                }
+
+                _floatingDamageUiProbeSeen[instanceId] = key;
+
+                WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE UI " +
+                    "object=" + component.gameObject.name +
+                    " type=" + typeName +
+                    " text=" + textValue +
+                    " color=" + colorText +
+                    " vertexGradient=" + gradientEnabled);
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE UI probeError=" + ex.GetType().Name +
+                " message=" + ex.Message);
+        }
+    }
+
+    private static bool IsLikelyFloatingDamageText(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return false;
+        }
+
+        bool hasDigit = false;
+        for (int i = 0; i < value.Length; i++)
+        {
+            char c = value[i];
+            if (c >= '0' && c <= '9')
+            {
+                hasDigit = true;
+                continue;
+            }
+
+            if (char.IsWhiteSpace(c) || c == ',' || c == '.' || c == '-' || c == '+' || c == '%')
+            {
+                continue;
+            }
+
+            return false;
+        }
+
+        return hasDigit;
+    }
+
+    private static string FormatColorHex(Color color)
+    {
+        int r = Mathf.Clamp(Mathf.RoundToInt(color.r * 255f), 0, 255);
+        int g = Mathf.Clamp(Mathf.RoundToInt(color.g * 255f), 0, 255);
+        int b = Mathf.Clamp(Mathf.RoundToInt(color.b * 255f), 0, 255);
+        int a = Mathf.Clamp(Mathf.RoundToInt(color.a * 255f), 0, 255);
+        return "#" + r.ToString("X2") + g.ToString("X2") + b.ToString("X2") + a.ToString("X2");
+    }
+
     [ModBehaviour.ConsoleCommand("Toggle the DPS meter overlay.", "dps_meter")]
     private void ToggleMeter()
     {
@@ -3281,6 +3433,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
     private void OnDestroy()
     {
+        CancelInvoke(nameof(TraceFloatingDamageUi));
         DetachFromClientEvents();
         DetachFromZoneManager();
 
