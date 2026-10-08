@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.143";
+    public const string DevelopmentVersion = "v5.144";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2011,6 +2011,7 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         TracePrismaticBasicAttackCallerDetails();
+        TracePrismaticBasicAttackIdentityMembers();
 
         string traceKey = "prismatic-name:" + info.actor.GetInstanceID();
         if (!_prismaticVisionDiagnosticSeen.Add(traceKey))
@@ -2106,6 +2107,102 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
+
+    private static void TracePrismaticBasicAttackIdentityMembers()
+    {
+        try
+        {
+            Assembly assembly = typeof(Hero).Assembly;
+            string[] targetTypes = new string[] { "AttackProjectile", "MeleeAttackInstance" };
+
+            for (int typeIndex = 0; typeIndex < targetTypes.Length; typeIndex++)
+            {
+                Type type = assembly.GetType(targetTypes[typeIndex], false);
+                if (type == null)
+                {
+                    Type[] types = assembly.GetTypes();
+                    for (int i = 0; i < types.Length; i++)
+                    {
+                        if (types[i] != null && string.Equals(types[i].Name, targetTypes[typeIndex], StringComparison.Ordinal))
+                        {
+                            type = types[i];
+                            break;
+                        }
+                    }
+                }
+
+                if (type == null)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC IDENTITY type=" + targetTypes[typeIndex] + " found=False");
+                    continue;
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC IDENTITY type=" + type.FullName + " base=" +
+                    (type.BaseType != null ? type.BaseType.FullName : "<null>"));
+
+                FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    string fieldName = fields[i].Name ?? string.Empty;
+                    string fieldType = fields[i].FieldType != null ? fields[i].FieldType.FullName : "<null>";
+                    if (fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("cast", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("owner", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("actor", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC IDENTITY field=" + fieldName + " type=" + fieldType);
+                    }
+                }
+
+                PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                for (int i = 0; i < properties.Length; i++)
+                {
+                    string propertyName = properties[i].Name ?? string.Empty;
+                    string propertyType = properties[i].PropertyType != null ? properties[i].PropertyType.FullName : "<null>";
+                    if (propertyName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("cast", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("owner", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        propertyName.IndexOf("actor", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC IDENTITY property=" + propertyName + " type=" + propertyType);
+                    }
+                }
+            }
+
+            Type castInfoType = assembly.GetType("CastInfo", false);
+            if (castInfoType != null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC IDENTITY CastInfo type=" + castInfoType.FullName);
+                FieldInfo[] fields = castInfoType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    string fieldName = fields[i].Name ?? string.Empty;
+                    if (fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        fieldName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC IDENTITY CastInfo field=" + fieldName + " type=" +
+                            (fields[i].FieldType != null ? fields[i].FieldType.FullName : "<null>"));
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC IDENTITY error=" + ex.GetType().Name);
+        }
+    }
 
     private static void TracePrismaticBasicAttackCallerDetails()
     {
