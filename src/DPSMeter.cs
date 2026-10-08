@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.171";
+    public const string DevelopmentVersion = "v5.172";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1381,12 +1381,12 @@ public sealed class DPSMeter : ModBehaviour
                     }
                 }
 
-                bool relevant = IsPrismaticRelevantILReference(operandText);
+                bool relevant = IsPrismaticReadableNameILReference(operandText);
 
                 if (relevant)
                 {
                     foundRelevant = true;
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH label=" +
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC READABLE NAME SITE label=" +
                         label + " il=" + instructionOffset.ToString("X4") +
                         " op=" + opcode +
                         (operandText == null ? "" : " operand=" + operandText));
@@ -1406,6 +1406,12 @@ public sealed class DPSMeter : ModBehaviour
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH method error=" +
                 label + " " + ex.GetType().Name + " " + ex.Message);
         }
+    }
+
+    private static bool IsPrismaticReadableNameILReference(string operandText)
+    {
+        return !string.IsNullOrEmpty(operandText) &&
+            operandText.IndexOf("GetActorReadableName", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static bool IsPrismaticRelevantILReference(string operandText)
