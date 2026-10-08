@@ -30,7 +30,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color ApScalingBarColor = new Color(0.353f, 0.898f, 1.00f, 0.68f);
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.518f, 1.00f, 0.314f, 0.68f);
-    private static readonly Color SourceNameColor = new Color(0.97f, 0.97f, 0.97f, 1f);
+    private static readonly Color SourceNameColor = new Color(0.0f, 0.0f, 0.0f, 1f);
     private static readonly Color DefaultBarOutlineColor = new Color(0.259f, 0.259f, 0.259f, 1f);
     private static readonly Color FireBarOutlineColor = new Color(0.675f, 0.039f, 0.000f, 1f);
     private static readonly Color IceBarOutlineColor = new Color(0.180f, 0.529f, 0.925f, 1f);
@@ -935,8 +935,8 @@ public sealed class DpsOverlay : MonoBehaviour
             rowRect.width - 14f,
             rowRect.height);
 
-        GUI.Label(nameRect, name, _row);
-        GUI.Label(valueRect, FormatNumber(amount) + "  " + percent.ToString("0.0") + "%", _rowRight);
+        DrawReadableLabel(nameRect, name, _row);
+        DrawReadableLabel(valueRect, FormatNumber(amount) + "  " + percent.ToString("0.0") + "%", _rowRight);
 
         GUI.color = Color.white;
     }
@@ -1001,17 +1001,52 @@ public sealed class DpsOverlay : MonoBehaviour
         float fillWidth = barRect.width * ratio;
         if (fillWidth <= 0f) return;
 
+        const float outlineThickness = 2f;
         Rect fillRect = new Rect(barRect.x, barRect.y, fillWidth, barRect.height);
-        Rect outlineRect = new Rect(
-            Mathf.Max(barRect.x, fillRect.x - 1f),
-            Mathf.Max(barRect.y, fillRect.y - 1f),
-            Mathf.Min(barRect.xMax, fillRect.xMax + 1f) - Mathf.Max(barRect.x, fillRect.x - 1f),
-            Mathf.Min(barRect.yMax, fillRect.yMax + 1f) - Mathf.Max(barRect.y, fillRect.y - 1f));
 
+        // Keep the outline entirely inside the original bar bounds.
         GUI.color = outlineColor;
-        GUI.DrawTexture(outlineRect, _whiteTexture);
-        GUI.color = fillColor;
         GUI.DrawTexture(fillRect, _whiteTexture);
+
+        float innerWidth = fillWidth - (outlineThickness * 2f);
+        float innerHeight = barRect.height - (outlineThickness * 2f);
+        if (innerWidth <= 0f || innerHeight <= 0f)
+        {
+            return;
+        }
+
+        Rect innerRect = new Rect(
+            fillRect.x + outlineThickness,
+            fillRect.y + outlineThickness,
+            innerWidth,
+            innerHeight);
+
+        GUI.color = fillColor;
+        GUI.DrawTexture(innerRect, _whiteTexture);
+    }
+
+    private void DrawReadableLabel(Rect rect, string text, GUIStyle style)
+    {
+        if (style == null || string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        Color previousColor = GUI.color;
+        GUIStyle outlineStyle = new GUIStyle(style)
+        {
+            alignment = style.alignment
+        };
+
+        GUI.color = Color.white;
+        GUI.Label(new Rect(rect.x - 1f, rect.y, rect.width, rect.height), text, outlineStyle);
+        GUI.Label(new Rect(rect.x + 1f, rect.y, rect.width, rect.height), text, outlineStyle);
+        GUI.Label(new Rect(rect.x, rect.y - 1f, rect.width, rect.height), text, outlineStyle);
+        GUI.Label(new Rect(rect.x, rect.y + 1f, rect.width, rect.height), text, outlineStyle);
+
+        GUI.color = Color.black;
+        GUI.Label(rect, text, style);
+        GUI.color = previousColor;
     }
 
     private static Color GetBarOutlineColor(ElementalType? elemental, DpsData.DamageScalingType scaling)
