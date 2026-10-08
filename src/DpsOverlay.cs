@@ -1010,7 +1010,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.DrawTexture(fillRect, _whiteTexture);
 
         Color outlineColor = GetBarOutlineColor(elemental, scaling);
-        const float outline = 1f;
+        const float outline = 2f;
         GUI.color = outlineColor;
         GUI.DrawTexture(new Rect(fillRect.x, fillRect.y, fillRect.width, outline), _whiteTexture);
         GUI.DrawTexture(new Rect(fillRect.x, fillRect.yMax - outline, fillRect.width, outline), _whiteTexture);
