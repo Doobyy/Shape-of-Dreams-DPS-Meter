@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.180";
+    public const string DevelopmentVersion = "v5.181";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1403,6 +1403,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
     private void OnTakeDamage(EventInfoDamage info)
     {
+        RunCombatUiResolverProbe();
         QueueFloatingDamageUiProbe();
         if (info.actor == null || info.victim == null)
         {
@@ -3262,234 +3263,171 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         return null;
     }
 
-    private bool _floatingDamageUiProbePending;
-    private readonly Dictionary<int, string> _floatingDamageUiProbeSnapshot =
-        new Dictionary<int, string>();
+    private bool _combatUiResolverProbeDone;
 
-    private void QueueFloatingDamageUiProbe()
+    private void RunCombatUiResolverProbe()
     {
+        if (_combatUiResolverProbeDone)
+        {
+            return;
+        }
+
+        _combatUiResolverProbeDone = true;
+
         try
         {
-            _floatingDamageUiProbeSnapshot.Clear();
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
-            Component[] components = UnityEngine.Object.FindObjectsOfType<Component>();
-            for (int i = 0; i < components.Length; i++)
+            for (int i = 0; i < assemblies.Length; i++)
             {
-                Component component = components[i];
-                if (component == null || component.gameObject == null)
+                Assembly assembly = assemblies[i];
+                if (assembly == null)
                 {
                     continue;
                 }
 
-                Type componentType = component.GetType();
-                if (!IsTextMeshProComponent(componentType))
+                string assemblyName;
+                try
+                {
+                    assemblyName = assembly.GetName().Name;
+                }
+                catch (Exception)
                 {
                     continue;
                 }
 
-                string state = DescribeFloatingTextState(component);
-                if (state != null)
+                if (string.IsNullOrEmpty(assemblyName) ||
+                    (assemblyName.IndexOf("Dew", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     assemblyName.IndexOf("Assembly-CSharp", StringComparison.OrdinalIgnoreCase) < 0))
                 {
-                    _floatingDamageUiProbeSnapshot[component.GetInstanceID()] = state;
+                    continue;
+                }
+
+                Type[] types;
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    types = ex.Types;
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                if (types == null)
+                {
+                    continue;
+                }
+
+                for (int t = 0; t < types.Length; t++)
+                {
+                    Type type = types[t];
+                    if (type == null)
+                    {
+                        continue;
+                    }
+
+                    string typeName = type.FullName ?? type.Name;
+                    if (!ContainsCombatUiKeyword(typeName))
+                    {
+                        continue;
+                    }
+
+                    MethodInfo[] methods;
+                    try
+                    {
+                        methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static |
+                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
+                    for (int m = 0; m < methods.Length; m++)
+                    {
+                        MethodInfo method = methods[m];
+                        if (method == null)
+                        {
+                            continue;
+                        }
+
+                        string methodName = method.Name ?? string.Empty;
+                        string methodText = typeName + "." + methodName;
+
+                        if (!ContainsCombatUiKeyword(methodText))
+                        {
+                            continue;
+                        }
+
+                        WriteDebugLog("[" + DevelopmentVersion + "] COMBAT UI CANDIDATE assembly=" +
+                            assemblyName + " type=" + typeName + " method=" + methodName +
+                            " return=" + (method.ReturnType == null ? "<null>" : method.ReturnType.FullName) +
+                            " params=" + DescribeMethodParameters(method));
+                    }
                 }
             }
-
-            if (_floatingDamageUiProbePending)
-            {
-                return;
-            }
-
-            _floatingDamageUiProbePending = true;
-            Invoke(nameof(TraceFloatingDamageUi), 0.05f);
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE UI snapshotError=" +
+            WriteDebugLog("[" + DevelopmentVersion + "] COMBAT UI resolverProbeError=" +
                 ex.GetType().Name + " message=" + ex.Message);
         }
     }
 
-    private void TraceFloatingDamageUi()
+    private static bool ContainsCombatUiKeyword(string value)
     {
-        _floatingDamageUiProbePending = false;
-
-        try
-        {
-            Component[] components = UnityEngine.Object.FindObjectsOfType<Component>();
-
-            for (int i = 0; i < components.Length; i++)
-            {
-                Component component = components[i];
-                if (component == null || component.gameObject == null)
-                {
-                    continue;
-                }
-
-                Type componentType = component.GetType();
-                if (!IsTextMeshProComponent(componentType))
-                {
-                    continue;
-                }
-
-                string state = DescribeFloatingTextState(component);
-                if (state == null)
-                {
-                    continue;
-                }
-
-                int instanceId = component.GetInstanceID();
-                string before;
-                bool wasPresent = _floatingDamageUiProbeSnapshot.TryGetValue(instanceId, out before);
-
-                if (wasPresent && before == state)
-                {
-                    continue;
-                }
-
-                string changeKind = wasPresent ? "changed" : "new";
-                WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE UI " +
-                    changeKind + " object=" + component.gameObject.name +
-                    " type=" + (componentType.FullName ?? componentType.Name) +
-                    " " + state +
-                    " hierarchy=" + BuildTransformHierarchy(component.transform));
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] FLOATING DAMAGE UI probeError=" +
-                ex.GetType().Name + " message=" + ex.Message);
-        }
-    }
-
-    private static bool IsTextMeshProComponent(Type componentType)
-    {
-        if (componentType == null)
+        if (string.IsNullOrEmpty(value))
         {
             return false;
         }
 
-        string typeName = componentType.FullName ?? componentType.Name;
-        return typeName.IndexOf("TextMeshPro", StringComparison.OrdinalIgnoreCase) >= 0;
+        return value.IndexOf("damage", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               value.IndexOf("heal", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               value.IndexOf("floating", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               value.IndexOf("combattext", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               value.IndexOf("combat_text", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               value.IndexOf("combat text", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               value.IndexOf("popup", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               value.IndexOf("numberdisplay", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               value.IndexOf("number_display", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               value.IndexOf("damage number", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               value.IndexOf("heal number", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
-    private static string DescribeFloatingTextState(Component component)
+    private static string DescribeMethodParameters(MethodInfo method)
     {
-        if (component == null)
-        {
-            return null;
-        }
-
-        Type componentType = component.GetType();
-
-        PropertyInfo textProperty = componentType.GetProperty(
-            "text", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (textProperty == null || textProperty.PropertyType != typeof(string))
-        {
-            return null;
-        }
-
-        string textValue;
         try
         {
-            textValue = textProperty.GetValue(component, null) as string;
+            ParameterInfo[] parameters = method.GetParameters();
+            if (parameters == null || parameters.Length == 0)
+            {
+                return "<none>";
+            }
+
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(",");
+                }
+
+                ParameterInfo parameter = parameters[i];
+                builder.Append(parameter.ParameterType == null
+                    ? "<null>"
+                    : parameter.ParameterType.FullName);
+            }
+
+            return builder.ToString();
         }
         catch (Exception)
         {
-            return null;
+            return "<error>";
         }
-
-        if (string.IsNullOrEmpty(textValue))
-        {
-            return null;
-        }
-
-        string colorText = "<none>";
-        PropertyInfo colorProperty = componentType.GetProperty(
-            "color", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (colorProperty != null && colorProperty.PropertyType == typeof(Color))
-        {
-            try
-            {
-                colorText = FormatColorHex((Color)colorProperty.GetValue(component, null));
-            }
-            catch (Exception)
-            {
-                colorText = "<read-error>";
-            }
-        }
-
-        string materialColorText = "<none>";
-        PropertyInfo fontMaterialProperty = componentType.GetProperty(
-            "fontSharedMaterial", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (fontMaterialProperty != null)
-        {
-            try
-            {
-                Material material = fontMaterialProperty.GetValue(component, null) as Material;
-                if (material != null && material.HasProperty("_FaceColor"))
-                {
-                    materialColorText = FormatColorHex(material.GetColor("_FaceColor"));
-                }
-            }
-            catch (Exception)
-            {
-                materialColorText = "<read-error>";
-            }
-        }
-
-        string gradientText = "<none>";
-        PropertyInfo gradientEnabledProperty = componentType.GetProperty(
-            "enableVertexGradient", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (gradientEnabledProperty != null && gradientEnabledProperty.PropertyType == typeof(bool))
-        {
-            try
-            {
-                gradientText = ((bool)gradientEnabledProperty.GetValue(component, null)).ToString();
-            }
-            catch (Exception)
-            {
-            }
-        }
-
-        return "text=" + textValue +
-            " color=" + colorText +
-            " faceColor=" + materialColorText +
-            " vertexGradient=" + gradientText;
-    }
-
-    private static string BuildTransformHierarchy(Transform transform)
-    {
-        if (transform == null)
-        {
-            return "<null>";
-        }
-
-        StringBuilder builder = new StringBuilder();
-        Transform current = transform;
-        int depth = 0;
-
-        while (current != null && depth < 8)
-        {
-            if (depth > 0)
-            {
-                builder.Insert(0, " > ");
-            }
-
-            builder.Insert(0, current.name);
-            current = current.parent;
-            depth++;
-        }
-
-        return builder.ToString();
-    }
-
-    private static string FormatColorHex(Color color)
-    {
-        int r = Mathf.Clamp(Mathf.RoundToInt(color.r * 255f), 0, 255);
-        int g = Mathf.Clamp(Mathf.RoundToInt(color.g * 255f), 0, 255);
-        int b = Mathf.Clamp(Mathf.RoundToInt(color.b * 255f), 0, 255);
-        int a = Mathf.Clamp(Mathf.RoundToInt(color.a * 255f), 0, 255);
-        return "#" + r.ToString("X2") + g.ToString("X2") + b.ToString("X2") + a.ToString("X2");
     }
 
     [ModBehaviour.ConsoleCommand("Toggle the DPS meter overlay.", "dps_meter")]
@@ -3512,7 +3450,6 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
     private void OnDestroy()
     {
-        CancelInvoke(nameof(TraceFloatingDamageUi));
         DetachFromClientEvents();
         DetachFromZoneManager();
 
