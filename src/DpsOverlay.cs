@@ -11,13 +11,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private enum DisplayMode
     {
         CurrentDps,
-        DamageTotal,
-        CurrentHps,
-        TotalHps,
-        CurrentBps,
-        BarrierTotal,
-        PartyDps,
-        PartyTotal
+        DamageTotal
     }
 
     private static readonly Color DefaultBarColor = new Color(0.875f, 0.871f, 0.867f, 1f);
@@ -146,29 +140,7 @@ public sealed class DpsOverlay : MonoBehaviour
                     true);
                 break;
 
-            case DisplayMode.CurrentHps:
-                DrawHealingSources(_data.CurrentPersonalHealingRows, _data.CurrentInstancePersonalHealing);
-                break;
 
-            case DisplayMode.TotalHps:
-                DrawHealingSources(_data.CumulativeHealingRows, _data.CumulativePersonalHealing);
-                break;
-
-            case DisplayMode.CurrentBps:
-                DrawBarrierBreakdown(_data.CurrentPersonalBarrierRows, _data.CurrentInstancePersonalBarrier);
-                break;
-
-            case DisplayMode.BarrierTotal:
-                DrawBarrierBreakdown(_data.CumulativeBarrierRows, _data.CumulativePersonalBarrier);
-                break;
-
-            case DisplayMode.PartyDps:
-                DrawParty(_data.CurrentParty, _data.CurrentInstancePartyDamage);
-                break;
-
-            case DisplayMode.PartyTotal:
-                DrawParty(_data.CumulativeParty, _data.CumulativePartyDamage);
-                break;
         }
 
         GUILayout.EndScrollView();
@@ -462,7 +434,7 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 if (!_headerMoved)
                 {
-                    _mode = (DisplayMode)(((int)_mode + 1) % 8);
+                    _mode = (DisplayMode)(((int)_mode + 1) % 2);
                 }
 
                 _dragging = false;
@@ -592,34 +564,9 @@ public sealed class DpsOverlay : MonoBehaviour
                 metric = FormatNumber(_data.CumulativePersonalDamage);
                 break;
 
-            case DisplayMode.CurrentHps:
-                title = "CURRENT";
-                metric = FormatNumber(_data.CurrentPersonalHps) + " HPS";
-                break;
-
-            case DisplayMode.TotalHps:
-                title = "HEALS TOTAL";
-                metric = FormatNumber(_data.TotalPersonalHps);
-                break;
-
-            case DisplayMode.CurrentBps:
-                title = "CURRENT";
-                metric = FormatNumber(_data.CurrentPersonalBps) + " BPS";
-                break;
-
-            case DisplayMode.BarrierTotal:
-                title = "BARRIER TOTAL";
-                metric = FormatNumber(_data.CumulativePersonalBarrier);
-                break;
-
-            case DisplayMode.PartyDps:
-                title = "PARTY DPS";
-                metric = FormatNumber(_data.CurrentPartyDps) + " DPS";
-                break;
-
             default:
-                title = "PARTY TOTAL";
-                metric = FormatNumber(_data.CumulativePartyDamage);
+                title = "DAMAGE TOTAL";
+                metric = FormatNumber(_data.CumulativePersonalDamage);
                 break;
         }
 
