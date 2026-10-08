@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.146";
+    public const string DevelopmentVersion = "v5.147";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2295,6 +2295,26 @@ public sealed class DPSMeter : ModBehaviour
             name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
             name.IndexOf("cast", StringComparison.OrdinalIgnoreCase) >= 0;
     }
+
+    private static Sprite FindElmFireIcon(Actor actor)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            if (string.Equals(current.GetType().Name, "Se_Elm_Fire", StringComparison.Ordinal))
+            {
+                return FindSpriteMember(current);
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
 
     private static int GetPrismaticIlOperandSize(OperandType operandType)
     {
