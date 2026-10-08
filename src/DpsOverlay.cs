@@ -1025,7 +1025,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.DrawTexture(innerRect, _whiteTexture);
     }
 
-    private void DrawAdaptiveBarText(Rect textRect, string text, GUIStyle style, Rect barRect, float ratio)
+    private static void DrawAdaptiveBarText(Rect textRect, string text, GUIStyle style, Rect barRect, float ratio)
     {
         if (style == null || string.IsNullOrEmpty(text) || textRect.width <= 0f)
         {
@@ -1033,32 +1033,18 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         float fillRight = barRect.x + (barRect.width * ratio);
-        float left = textRect.x;
-        float right = textRect.xMax;
+        float textCenter = textRect.x + (textRect.width * 0.5f);
+        Color textColor = textCenter <= fillRight ? Color.black : Color.white;
 
-        // Draw the same text in two clipped regions so it stays readable without a halo.
+        GUIStyle textStyle = CreateBarTextStyle(style, textColor);
         GUI.color = Color.white;
-        if (left < fillRight)
-        {
-            Rect filledRect = new Rect(left, textRect.y, Mathf.Min(right, fillRight) - left, textRect.height);
-            GUI.Label(filledRect, text, style);
-        }
-
-        if (right > fillRight)
-        {
-            Rect emptyRect = new Rect(Mathf.Max(left, fillRight), textRect.y, right - Mathf.Max(left, fillRight), textRect.height);
-            GUI.Label(emptyRect, text, style);
-        }
-
-        GUI.color = Color.white;
+        GUI.Label(textRect, text, textStyle);
     }
 
     private static GUIStyle CreateBarTextStyle(GUIStyle source, Color color)
     {
-        GUIStyle style = new GUIStyle(source)
-        {
-            normal = { textColor = color }
-        };
+        GUIStyle style = new GUIStyle(source);
+        style.normal.textColor = color;
         return style;
     }
 
