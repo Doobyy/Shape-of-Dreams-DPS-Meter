@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.88";
+    public const string DevelopmentVersion = "v5.89";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2396,6 +2396,197 @@ private static void SubscribePrismaticAttackEventsOnActorChain(Actor actor)
             " attackEffectStrength=" + damage.attackEffectStrength);
 
         TracePrismaticAttackEventActorChain(info.actor, "dealDamage.actor");
+
+        if (info.actor.GetType().Name.IndexOf("PrismaticEyes_Attack", StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            TracePrismaticAttackTriggerMetadata(info.actor);
+        }
+    }
+
+    private static void TracePrismaticAttackTriggerMetadata(Actor source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC METADATA begin actor=" +
+            DescribeActor(source));
+
+        object pendingAttack = FindPrismaticPendingAttack(source);
+        if (pendingAttack != null)
+        {
+            TracePrismaticMetadataObject(pendingAttack, "pendingAttack");
+        }
+
+        TracePrismaticMetadataObject(source, "attackActor");
+
+        Actor current = source.parentActor;
+        int depth = 1;
+        while (current != null && depth < 4)
+        {
+            if (current.firstTrigger != null)
+            {
+                TracePrismaticMetadataObject(current.firstTrigger, "chainTrigger" + depth);
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC METADATA end");
+    }
+
+    private static object FindPrismaticPendingAttack(Actor source)
+    {
+        Actor current = source;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            FieldInfo field = current.GetType().GetField(
+                "_pendingAttack",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (field != null)
+            {
+                try
+                {
+                    object value = field.GetValue(current);
+                    if (value != null)
+                    {
+                        return value;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
+    private static void TracePrismaticMetadataObject(object target, string label)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        Type type = target.GetType();
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC METADATA object=" +
+            label + " type=" + type.FullName);
+
+        PropertyInfo[] properties = type.GetProperties(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        int propertyCount = 0;
+        for (int i = 0; i < properties.Length && propertyCount < 32; i++)
+        {
+            PropertyInfo property = properties[i];
+
+            if (property.GetIndexParameters().Length != 0 ||
+                property.GetMethod == null ||
+                !IsPrismaticMetadataMemberName(property.Name))
+            {
+                continue;
+            }
+
+            try
+            {
+                object value = property.GetValue(target, null);
+                if (value == null)
+                {
+                    continue;
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC METADATA " +
+                    label + " property=" + property.Name +
+                    " type=" + property.PropertyType.FullName +
+                    " value=[" + DescribePrismaticMetadataValue(value) + "]");
+                propertyCount++;
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        FieldInfo[] fields = type.GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        int fieldCount = 0;
+        for (int i = 0; i < fields.Length && fieldCount < 48; i++)
+        {
+            FieldInfo field = fields[i];
+
+            if (!IsPrismaticMetadataMemberName(field.Name))
+            {
+                continue;
+            }
+
+            try
+            {
+                object value = field.GetValue(target);
+                if (value == null)
+                {
+                    continue;
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC METADATA " +
+                    label + " field=" + field.Name +
+                    " type=" + field.FieldType.FullName +
+                    " value=[" + DescribePrismaticMetadataValue(value) + "]");
+                fieldCount++;
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
+    private static bool IsPrismaticMetadataMemberName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
+
+        return name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("cast", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("origin", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static string DescribePrismaticMetadataValue(object value)
+    {
+        if (value == null)
+        {
+            return "<null>";
+        }
+
+        if (value is string ||
+            value.GetType().IsPrimitive ||
+            value.GetType().IsEnum)
+        {
+            return value.ToString();
+        }
+
+        UnityEngine.Object unityObject = value as UnityEngine.Object;
+        if (unityObject != null)
+        {
+            return value.GetType().Name + ":" + (unityObject.name ?? "<unnamed>");
+        }
+
+        return value.GetType().Name;
     }
 
     private static void TracePrismaticAttackEventActorChain(Actor actor, string label)
