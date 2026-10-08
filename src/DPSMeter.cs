@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.148";
+    public const string DevelopmentVersion = "v5.149";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2113,16 +2113,33 @@ public sealed class DPSMeter : ModBehaviour
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CASTINFO begin");
 
-            TracePrismaticCastInfoObject("target.GetCastInfo()", target == null ? null : target.GetCastInfo());
+            AbilityInstance targetInstance = target as AbilityInstance;
+            if (targetInstance != null)
+            {
+                TracePrismaticCastInfoObject(
+                    "targetInstance.info",
+                    targetInstance.info);
+            }
 
             Actor pendingAttack = GetPrismaticPendingAttack(effect);
-            TracePrismaticCastInfoObject("pendingAttack.GetCastInfo()", pendingAttack == null ? null : pendingAttack.GetCastInfo());
+            AbilityInstance pendingInstance = pendingAttack as AbilityInstance;
+            if (pendingInstance != null)
+            {
+                TracePrismaticCastInfoObject(
+                    "pendingInstance.info",
+                    pendingInstance.info);
+            }
 
             AbilityTrigger trigger = pendingAttack == null ? null : pendingAttack.firstTrigger;
-            if (trigger != null)
+            Entity targetEntity = target == null ? null : target.firstEntity;
+            if (trigger != null && targetEntity != null)
             {
-                TracePrismaticCastInfoObject("trigger.GetCastInfoToTarget()", trigger.GetCastInfoToTarget());
-                TracePrismaticCastInfoObject("trigger.GetPredictedCastInfoToTarget()", trigger.GetPredictedCastInfoToTarget());
+                TracePrismaticCastInfoObject(
+                    "trigger.GetCastInfoToTarget(targetEntity)",
+                    trigger.GetCastInfoToTarget(targetEntity));
+                TracePrismaticCastInfoObject(
+                    "trigger.GetPredictedCastInfoToTarget(targetEntity)",
+                    trigger.GetPredictedCastInfoToTarget(targetEntity));
             }
 
             FieldInfo pendingCastField = effect == null ? null : effect.GetType().GetField(
