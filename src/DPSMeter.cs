@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.167";
+    public const string DevelopmentVersion = "v5.168";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -27,6 +27,8 @@ public sealed class DPSMeter : ModBehaviour
     private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _chompScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _prismaticVisionDiagnosticSeen = new HashSet<string>();
+    private static readonly HashSet<int> _prismaticAttackHitSubscribedIds = new HashSet<int>();
+    private static readonly Action<EventInfoAttackHit> _prismaticAttackHitHandler = OnPrismaticAttackHit;
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -1033,13 +1035,13 @@ public sealed class DPSMeter : ModBehaviour
                 }
 
                 OpCode op = (OpCode)field.GetValue(null);
-                if (op.Value < 0x100)
-                {
-                    single[op.Value] = op;
-                }
-                else if ((op.Value & 0xFF00) == 0xFE00)
+                if ((op.Value & 0xFF00) == 0xFE00)
                 {
                     multi[(short)(op.Value & 0xFF)] = op;
+                }
+                else if (op.Value < 0x100)
+                {
+                    single[op.Value] = op;
                 }
             }
 
@@ -2810,9 +2812,10 @@ public sealed class DPSMeter : ModBehaviour
             if (pendingAttack != null)
             {
                 TracePrismaticBismuthRockIdentity(pendingAttack);
-            TracePrismaticAttackHitMetadata(pendingAttack);
-            TracePrismaticAttackHitIL("DoBasicAttackHit");
-            TracePrismaticAttackHitIL("InvokeOnAttackHit");
+                SubscribePrismaticAttackHit(pendingAttack);
+                TracePrismaticAttackHitMetadata(pendingAttack);
+                TracePrismaticAttackHitIL("DoBasicAttackHit");
+                TracePrismaticAttackHitIL("InvokeOnAttackHit");
             }
         }
         catch (Exception ex)
@@ -2852,6 +2855,120 @@ public sealed class DPSMeter : ModBehaviour
     }
 
     private static void TracePrismaticBismuthRockIdentity(Actor pendingAttack)
+    private static void SubscribePrismaticAttackHit(Actor attack)
+    {
+        if (attack == null)
+        {
+            return;
+        }
+
+        try
+        {
+            int instanceId = attack.GetInstanceID();
+            if (_prismaticAttackHitSubscribedIds.Contains(instanceId))
+            {
+                return;
+            }
+
+            FieldInfo field = null;
+            Type current = attack.GetType();
+            while (current != null && field == null)
+            {
+                field = current.GetField(
+                    "ActorEvent_OnAttackHit",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+                current = current.BaseType;
+            }
+
+            if (field == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT SUBSCRIBE fieldNotFound");
+                return;
+            }
+
+            Action<EventInfoAttackHit> handler = _prismaticAttackHitHandler;
+            object safeAction = field.GetValue(attack);
+
+            if (safeAction == null)
+            {
+                MethodInfo addOperator = field.FieldType.GetMethod(
+                    "op_Addition",
+                    BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                    null,
+                    new Type[] { field.FieldType, typeof(Action<EventInfoAttackHit>) },
+                    null);
+
+                if (addOperator == null)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT SUBSCRIBE addOperatorNotFound");
+                    return;
+                }
+
+                safeAction = addOperator.Invoke(null, new object[] { null, handler });
+                field.SetValue(attack, safeAction);
+            }
+            else
+            {
+                MethodInfo addMethod = field.FieldType.GetMethod(
+                    "Add",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                    null,
+                    new Type[] { typeof(Action<EventInfoAttackHit>) },
+                    null);
+
+                if (addMethod == null)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT SUBSCRIBE addMethodNotFound");
+                    return;
+                }
+
+                addMethod.Invoke(safeAction, new object[] { handler });
+            }
+
+            _prismaticAttackHitSubscribedIds.Add(instanceId);
+
+            MethodInfo countMethod = field.FieldType.GetMethod(
+                "get_Count",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            object count = countMethod == null ? null : countMethod.Invoke(safeAction, null);
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT SUBSCRIBED instance=" +
+                instanceId + " handlerCount=" + (count ?? "<unknown>"));
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT SUBSCRIBE error=" +
+                ex.GetType().Name + " " + ex.Message);
+        }
+    }
+
+    private static void OnPrismaticAttackHit(EventInfoAttackHit info)
+    {
+        try
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT RUNTIME type=" +
+                info.GetType().FullName);
+
+            TracePrismaticObjectMembers(info, "PRISMATIC ATTACKHIT RUNTIME");
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT RUNTIME actor=" +
+                DescribeActor(info.actor));
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT RUNTIME attacker=" +
+                DescribeEntity(info.attacker));
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT RUNTIME victim=" +
+                DescribeEntity(info.victim));
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT RUNTIME isCrit=" +
+                info.isCrit + " strength=" + info.strength);
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACKHIT RUNTIME error=" +
+                ex.GetType().Name + " " + ex.Message);
+        }
+    }
+
     {
         try
         {
@@ -4028,6 +4145,16 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return false;
+    }
+
+    private static string DescribeEntity(Entity entity)
+    {
+        if (entity == null)
+        {
+            return "<null>";
+        }
+
+        return "type=" + entity.GetType().Name + " name=" + (entity.name ?? "<null>");
     }
 
     private static string DescribeActor(Actor actor)
