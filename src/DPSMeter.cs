@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.115";
+    public const string DevelopmentVersion = "v5.116";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1972,116 +1972,12 @@ public sealed class DPSMeter : ModBehaviour
         try
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT begin");
-            TracePrismaticObjectMembers(info, "info", true);
-            TracePrismaticObjectMembers(info.actor, "actor", false);
-            TracePrismaticObjectMembers(info.damage, "damage", false);
             TracePrismaticObjectMethods(info.damage, "damage");
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT end");
         }
         catch (Exception ex)
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT error=" + ex.GetType().Name);
-        }
-    }
-
-    private static void TracePrismaticObjectMembers(object source, string label, bool includeAllSimple)
-    {
-        if (source == null)
-        {
-            return;
-        }
-
-        Type type = source.GetType();
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT object=" + label + " type=" + type.FullName);
-
-        Type current = type;
-        int logged = 0;
-        while (current != null && current != typeof(object) && logged < 36)
-        {
-            FieldInfo[] fields = current.GetFields(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                BindingFlags.DeclaredOnly);
-
-            for (int i = 0; i < fields.Length && logged < 36; i++)
-            {
-                FieldInfo field = fields[i];
-                string name = field.Name ?? string.Empty;
-                bool interesting = includeAllSimple ||
-                    name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("effect", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("id", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                if (!interesting)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    object value = field.GetValue(source);
-                    string valueText = value == null ? "<null>" : value.ToString();
-                    string objectType = value == null ? "" : " objectType=" + value.GetType().FullName;
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT " + label +
-                        " field=" + name + " type=" + field.FieldType.FullName +
-                        " value=[" + valueText + "]" + objectType);
-                    logged++;
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            PropertyInfo[] properties = current.GetProperties(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                BindingFlags.DeclaredOnly);
-
-            for (int i = 0; i < properties.Length && logged < 36; i++)
-            {
-                PropertyInfo property = properties[i];
-                if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
-                {
-                    continue;
-                }
-
-                string name = property.Name ?? string.Empty;
-                bool interesting = includeAllSimple ||
-                    name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("effect", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("id", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                if (!interesting)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    object value = property.GetValue(source, null);
-                    string valueText = value == null ? "<null>" : value.ToString();
-                    string objectType = value == null ? "" : " objectType=" + value.GetType().FullName;
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC EVENT " + label +
-                        " property=" + name + " type=" + property.PropertyType.FullName +
-                        " value=[" + valueText + "]" + objectType);
-                    logged++;
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            current = current.BaseType;
         }
     }
 
@@ -2190,7 +2086,6 @@ public sealed class DPSMeter : ModBehaviour
         TracePrismaticNameSource(pendingAttack, "pendingAttack");
         TracePrismaticAttackIdentity(pendingAttack);
         TracePrismaticUiLocalization(info.actor, prismaticEffect, pendingAttack);
-        TracePrismaticSkillRegistry(pendingAttack, 63);
         TracePrismaticEquippedSkills(pendingAttack);
         TracePrismaticOriginChain(prismaticEffect);
 
@@ -2634,125 +2529,6 @@ public sealed class DPSMeter : ModBehaviour
         catch (Exception ex)
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SKILLS error=" +
-                ex.GetType().Name);
-        }
-    }
-
-    private static void TracePrismaticSkillRegistry(object attackSource, int abilityIndex)
-    {
-        try
-        {
-            PropertyInfo ownerProperty = attackSource.GetType().GetProperty(
-                "owner",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (ownerProperty == null || ownerProperty.GetMethod == null)
-            {
-                return;
-            }
-
-            object owner = ownerProperty.GetValue(attackSource, null);
-            if (owner == null)
-            {
-                return;
-            }
-
-            FieldInfo skillField = owner.GetType().GetField(
-                "Skill",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            PropertyInfo skillProperty = owner.GetType().GetProperty(
-                "Skill",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-            object skillSystem = null;
-            if (skillProperty != null && skillProperty.GetMethod != null)
-            {
-                skillSystem = skillProperty.GetValue(owner, null);
-            }
-            if (skillSystem == null && skillField != null)
-            {
-                skillSystem = skillField.GetValue(owner);
-            }
-            if (skillSystem == null)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC REGISTRY Skill=<null>");
-                return;
-            }
-
-            Type skillType = skillSystem.GetType();
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC REGISTRY SkillType=" +
-                skillType.FullName + " abilityIndex=" + abilityIndex);
-
-            int logged = 0;
-            for (Type cursor = skillType; cursor != null && logged < 36; cursor = cursor.BaseType)
-            {
-                FieldInfo[] fields = cursor.GetFields(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-                for (int i = 0; i < fields.Length && logged < 36; i++)
-                {
-                    string name = fields[i].Name ?? string.Empty;
-                    if (name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("index", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("slot", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        object value = fields[i].GetValue(skillSystem);
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC REGISTRY field=" +
-                            name + " declaringType=" + cursor.FullName +
-                            " type=" + fields[i].FieldType.FullName +
-                            " value=[" + (value == null ? "<null>" : value.ToString()) + "]");
-                        logged++;
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-            }
-
-            for (Type cursor = skillType; cursor != null && logged < 52; cursor = cursor.BaseType)
-            {
-                MethodInfo[] methods = cursor.GetMethods(
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.DeclaredOnly);
-                for (int i = 0; i < methods.Length && logged < 52; i++)
-                {
-                    MethodInfo method = methods[i];
-                    string name = method.Name ?? string.Empty;
-                    if (name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("index", StringComparison.OrdinalIgnoreCase) < 0 &&
-                        name.IndexOf("slot", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        continue;
-                    }
-
-                    ParameterInfo[] parameters = method.GetParameters();
-                    string parameterText = string.Empty;
-                    for (int p = 0; p < parameters.Length; p++)
-                    {
-                        if (p > 0)
-                        {
-                            parameterText += ",";
-                        }
-                        parameterText += parameters[p].ParameterType.FullName;
-                    }
-
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC REGISTRY method=" +
-                        name + " declaringType=" + cursor.FullName +
-                        " return=" + method.ReturnType.FullName +
-                        " params=[" + parameterText + "]");
-                    logged++;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC REGISTRY error=" +
                 ex.GetType().Name);
         }
     }
