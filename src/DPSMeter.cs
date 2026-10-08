@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.105";
+    public const string DevelopmentVersion = "v5.106";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2034,6 +2034,7 @@ public sealed class DPSMeter : ModBehaviour
 
         TracePrismaticNameSource(pendingAttack, "pendingAttack");
         TracePrismaticAttackIdentity(pendingAttack);
+        TracePrismaticUiLocalization(info.actor, prismaticEffect, pendingAttack);
 
         AbilityTrigger trigger = pendingAttack.firstTrigger;
         if (trigger != null)
@@ -2283,6 +2284,80 @@ public sealed class DPSMeter : ModBehaviour
         catch (Exception ex)
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity error=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticUiLocalization(
+        Actor target,
+        Actor effect,
+        Actor pendingAttack)
+    {
+        try
+        {
+            Actor[] candidates = new[] { target, pendingAttack, effect };
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                Actor source = candidates[i];
+                if (source == null)
+                {
+                    continue;
+                }
+
+                string label = i == 0 ? "target" : (i == 1 ? "pendingAttack" : "effect");
+                string runtimeName = source.name;
+                string originalName = source.GetOriginalName();
+                string typeName = source.GetType().Name;
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC UI label=" + label +
+                    " runtimeName=[" + (runtimeName ?? "<null>") + "] original=[" +
+                    (originalName ?? "<null>") + "] type=[" + (typeName ?? "<null>") + "]");
+
+                TracePrismaticUiKey(label, "runtimeName", runtimeName);
+                TracePrismaticUiKey(label, "originalName", originalName);
+                TracePrismaticUiKey(label, "typeName", typeName);
+
+                string resolved = ResolveLocalizedDamageSourceName(source);
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC UI label=" + label +
+                    " existingResolver=[" + (resolved ?? "<null>") + "]");
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC UI error=" +
+                ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticUiKey(
+        string label,
+        string sourceLabel,
+        string sourceValue)
+    {
+        if (string.IsNullOrEmpty(sourceValue))
+        {
+            return;
+        }
+
+        string key = sourceValue;
+        int suffix = key.IndexOf('(');
+        if (suffix > 0)
+        {
+            key = key.Substring(0, suffix).Trim();
+        }
+
+        try
+        {
+            string localizedName;
+            bool found = DewLocalization.TryGetUIValue(key + "_Name", out localizedName);
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC UI label=" + label +
+                " source=" + sourceLabel + " key=[" + key + "_Name] found=" + found +
+                " value=[" + (localizedName ?? "<null>") + "]");
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC UI label=" + label +
+                " source=" + sourceLabel + " key=[" + key + "_Name] error=" +
+                ex.GetType().Name);
         }
     }
 
