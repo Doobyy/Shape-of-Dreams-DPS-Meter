@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.182";
+    public const string DevelopmentVersion = "v5.183";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1403,7 +1403,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
     private void OnTakeDamage(EventInfoDamage info)
     {
-        RunDamageNumberResolverProbe();
+        RunDamageNumberColorProbe();
         if (info.actor == null || info.victim == null)
         {
             return;
@@ -3262,16 +3262,16 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         return null;
     }
 
-    private bool _damageNumberResolverProbeDone;
+    private bool _damageNumberColorProbeDone;
 
-    private void RunDamageNumberResolverProbe()
+    private void RunDamageNumberColorProbe()
     {
-        if (_damageNumberResolverProbeDone)
+        if (_damageNumberColorProbeDone)
         {
             return;
         }
 
-        _damageNumberResolverProbeDone = true;
+        _damageNumberColorProbeDone = true;
 
         try
         {
@@ -3284,140 +3284,243 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
                     continue;
                 }
 
-                Type groupType = assembly.GetType("UI_DamageNumberGroup", false);
                 Type textType = assembly.GetType("UI_DamageNumberText", false);
-                if (groupType == null && textType == null)
+                if (textType == null)
                 {
                     continue;
                 }
 
-                WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER RESOLVER assembly=" +
+                WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER COLOR PROBE assembly=" +
                     assembly.GetName().Name);
 
-                if (groupType != null)
+                object[] objects = Resources.FindObjectsOfTypeAll(textType);
+                WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER COLOR PROBE instances=" +
+                    (objects == null ? 0 : objects.Length));
+
+                if (objects == null)
                 {
-                    DescribeDamageNumberType(groupType);
+                    return;
                 }
 
-                if (textType != null)
+                Type variantType = textType.GetNestedType(
+                    "VisualVariant",
+                    BindingFlags.Public | BindingFlags.NonPublic);
+
+                Array variants = variantType != null && variantType.IsEnum
+                    ? Enum.GetValues(variantType)
+                    : null;
+
+                MethodInfo getMaterial = textType.GetMethod(
+                    "GetMaterialForVariant",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                for (int iObject = 0; iObject < objects.Length; iObject++)
                 {
-                    DescribeDamageNumberType(textType);
-
-                    Type variantType = textType.GetNestedType(
-                        "VisualVariant",
-                        BindingFlags.Public | BindingFlags.NonPublic);
-                    if (variantType != null)
+                    object textObject = objects[iObject];
+                    if (textObject == null)
                     {
-                        WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER VARIANT type=" +
-                            variantType.FullName);
+                        continue;
+                    }
 
-                        if (variantType.IsEnum)
+                    UnityEngine.Object unityObject = textObject as UnityEngine.Object;
+                    string objectName = unityObject == null ? "<non-unity>" : unityObject.name;
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER COLOR OBJECT name=" +
+                        objectName + " type=" + textType.FullName);
+
+                    LogDamageNumberColorField(textType, textObject, "matDamage");
+                    LogDamageNumberColorField(textType, textObject, "matAttack");
+                    LogDamageNumberColorField(textType, textObject, "matAttackCrit");
+                    LogDamageNumberColorField(textType, textObject, "matSkill");
+                    LogDamageNumberColorField(textType, textObject, "matSkillCrit");
+                    LogDamageNumberColorField(textType, textObject, "matHeal");
+                    LogDamageNumberColorField(textType, textObject, "matHealCrit");
+                    LogDamageNumberColorField(textType, textObject, "matFire");
+                    LogDamageNumberColorField(textType, textObject, "matCold");
+                    LogDamageNumberColorField(textType, textObject, "matLight");
+                    LogDamageNumberColorField(textType, textObject, "matDark");
+                    LogDamageNumberColorField(textType, textObject, "_variantFaceColors");
+                    LogDamageNumberColorField(textType, textObject, "_variantOutlineColors");
+
+                    if (variants == null || getMaterial == null)
+                    {
+                        return;
+                    }
+
+                    for (int iVariant = 0; iVariant < variants.Length; iVariant++)
+                    {
+                        object variant = variants.GetValue(iVariant);
+
+                        try
                         {
-                            string[] names = Enum.GetNames(variantType);
-                            for (int n = 0; n < names.Length; n++)
+                            Material material = getMaterial.Invoke(
+                                textObject,
+                                new object[] { variant }) as Material;
+
+                            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER COLOR VARIANT variant=" +
+                                variant + " material=" +
+                                (material == null ? "<null>" : material.name));
+
+                            if (material != null)
                             {
-                                WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER VARIANT name=" +
-                                    names[n]);
+                                LogDamageNumberMaterialColors(material, "variant=" + variant);
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER COLOR VARIANT variant=" +
+                                variant + " error=" + ex.GetType().Name);
+                        }
                     }
-                }
 
-                Type numberPoolType = groupType == null
-                    ? null
-                    : groupType.GetNestedType("NumberPool",
-                        BindingFlags.Public | BindingFlags.NonPublic);
-
-                if (numberPoolType != null)
-                {
-                    WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER POOL type=" +
-                        numberPoolType.FullName);
-                    DescribeDamageNumberType(numberPoolType);
+                    return;
                 }
 
                 return;
             }
 
-            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER RESOLVER typesNotFound");
+            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER COLOR PROBE textTypeNotFound");
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER resolverProbeError=" +
+            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER COLOR probeError=" +
                 ex.GetType().Name + " message=" + ex.Message);
         }
     }
 
-    private static string DescribeDamageNumberParameters(MethodInfo method)
+    private static void LogDamageNumberColorField(Type textType, object textObject, string fieldName)
     {
-        ParameterInfo[] parameters = method.GetParameters();
-        if (parameters == null || parameters.Length == 0)
-        {
-            return "<none>";
-        }
+        FieldInfo field = textType.GetField(
+            fieldName,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-        string result = string.Empty;
-        for (int i = 0; i < parameters.Length; i++)
-        {
-            if (i > 0)
-            {
-                result += ", ";
-            }
-
-            ParameterInfo parameter = parameters[i];
-            result += parameter.ParameterType == null ? "<null>" : parameter.ParameterType.FullName;
-            result += " " + parameter.Name;
-        }
-
-        return result;
-    }
-
-    private static void DescribeDamageNumberType(Type type)
-    {
-        if (type == null)
+        if (field == null)
         {
             return;
         }
 
-        FieldInfo[] fields = type.GetFields(
-            BindingFlags.Instance | BindingFlags.Static |
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-        for (int i = 0; i < fields.Length; i++)
+        try
         {
-            FieldInfo field = fields[i];
-            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER FIELD type=" +
-                type.FullName + " name=" + field.Name +
-                " fieldType=" + (field.FieldType == null ? "<null>" : field.FieldType.FullName));
+            object value = field.GetValue(textObject);
+
+            Material material = value as Material;
+            if (material != null)
+            {
+                LogDamageNumberMaterialColors(material, "field=" + fieldName);
+                return;
+            }
+
+            Array array = value as Array;
+            if (array != null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER COLOR ARRAY field=" +
+                    fieldName + " length=" + array.Length);
+
+                for (int i = 0; i < array.Length; i++)
+                {
+                    object item = array.GetValue(i);
+                    WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER COLOR ARRAY field=" +
+                        fieldName + " index=" + i + " value=" + DescribeColorValue(item));
+                }
+
+                return;
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER COLOR FIELD field=" +
+                fieldName + " value=" + DescribeColorValue(value));
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER COLOR FIELD field=" +
+                fieldName + " error=" + ex.GetType().Name);
+        }
+    }
+
+    private static string DescribeColorValue(object value)
+    {
+        if (value == null)
+        {
+            return "<null>";
         }
 
-        PropertyInfo[] properties = type.GetProperties(
-            BindingFlags.Instance | BindingFlags.Static |
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-        for (int i = 0; i < properties.Length; i++)
+        if (value is Color)
         {
-            PropertyInfo property = properties[i];
-            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER PROPERTY type=" +
-                type.FullName + " name=" + property.Name +
-                " propertyType=" + (property.PropertyType == null ? "<null>" : property.PropertyType.FullName));
+            return "Color=" + ColorToHex((Color)value);
         }
 
-        MethodInfo[] methods = type.GetMethods(
-            BindingFlags.Instance | BindingFlags.Static |
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-
-        for (int i = 0; i < methods.Length; i++)
+        if (value is Color32)
         {
-            MethodInfo method = methods[i];
-            if (method == null)
+            Color32 color32 = (Color32)value;
+            return "Color32=#" + color32.r.ToString("X2") +
+                color32.g.ToString("X2") +
+                color32.b.ToString("X2") +
+                color32.a.ToString("X2");
+        }
+
+        return value.ToString();
+    }
+
+    private static string ColorToHex(Color color)
+    {
+        Color32 color32 = color;
+        return "#" + color32.r.ToString("X2") +
+            color32.g.ToString("X2") +
+            color32.b.ToString("X2") +
+            color32.a.ToString("X2") +
+            " (" + color.r + "," + color.g + "," + color.b + "," + color.a + ")";
+    }
+
+    private static void LogDamageNumberMaterialColors(Material material, string source)
+    {
+        if (material == null)
+        {
+            return;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER MATERIAL source=" +
+            source + " name=" + material.name + " shader=" +
+            (material.shader == null ? "<null>" : material.shader.name));
+
+        int[] colorIds =
+        {
+            Shader.PropertyToID("_FaceColor"),
+            Shader.PropertyToID("_OutlineColor"),
+            Shader.PropertyToID("_Color"),
+            Shader.PropertyToID("_BaseColor"),
+            Shader.PropertyToID("_MainColor"),
+            Shader.PropertyToID("_TintColor")
+        };
+
+        string[] colorNames =
+        {
+            "_FaceColor",
+            "_OutlineColor",
+            "_Color",
+            "_BaseColor",
+            "_MainColor",
+            "_TintColor"
+        };
+
+        for (int i = 0; i < colorIds.Length; i++)
+        {
+            if (!material.HasProperty(colorIds[i]))
             {
                 continue;
             }
 
-            WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER METHOD type=" +
-                type.FullName + " name=" + method.Name +
-                " return=" + (method.ReturnType == null ? "<null>" : method.ReturnType.FullName) +
-                " params=" + DescribeDamageNumberParameters(method));
+            try
+            {
+                Color color = material.GetColor(colorIds[i]);
+                WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER MATERIAL COLOR name=" +
+                    material.name + " property=" + colorNames[i] +
+                    " value=" + ColorToHex(color));
+            }
+            catch (Exception ex)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] DAMAGE NUMBER MATERIAL COLOR name=" +
+                    material.name + " property=" + colorNames[i] +
+                    " error=" + ex.GetType().Name);
+            }
         }
     }
 
