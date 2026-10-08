@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.136";
+    public const string DevelopmentVersion = "v5.137";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -27,6 +27,7 @@ public sealed class DPSMeter : ModBehaviour
     private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _chompScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _prismaticVisionDiagnosticSeen = new HashSet<string>();
+    private static bool _prismaticBasicAttackCallersScanned;
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -1492,7 +1493,11 @@ public sealed class DPSMeter : ModBehaviour
 
             if (isLocalPlayer && string.IsNullOrEmpty(skillName) && !string.IsNullOrEmpty(sourceName))
             {
-                _data.RegisterOtherIcon(sourceName, FindActorIcon(info.actor));
+                Sprite otherIcon = string.Equals(sourceName, "Fire", StringComparison.OrdinalIgnoreCase)
+                    ? FindElmFireIcon(info.actor)
+                    : FindActorIcon(info.actor);
+
+                _data.RegisterOtherIcon(sourceName, otherIcon);
             }
         }
 
@@ -2118,6 +2123,7 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         TracePrismaticDamageDataActor(info);
+        TracePrismaticBasicAttackCallers();
 
         string traceKey = "prismatic-name:" + info.actor.GetInstanceID();
         if (!_prismaticVisionDiagnosticSeen.Add(traceKey))
@@ -2213,6 +2219,165 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
+
+    private static Sprite FindElmFireIcon(Actor actor)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            if (string.Equals(current.GetType().Name, "Se_Elm_Fire", StringComparison.Ordinal))
+            {
+                return FindSpriteMember(current);
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
+    private static void TracePrismaticBasicAttackCallers()
+    {
+        if (_prismaticBasicAttackCallersScanned)
+        {
+            return;
+        }
+
+        _prismaticBasicAttackCallersScanned = true;
+
+        try
+        {
+            Assembly assembly = typeof(Hero).Assembly;
+            Type[] types = assembly.GetTypes();
+            int matches = 0;
+
+            for (int typeIndex = 0; typeIndex < types.Length && matches < 64; typeIndex++)
+            {
+                Type type = types[typeIndex];
+                if (type == null)
+                {
+                    continue;
+                }
+
+                MethodInfo[] methods = type.GetMethods(
+                    BindingFlags.Instance | BindingFlags.Static |
+                    BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+
+                for (int methodIndex = 0; methodIndex < methods.Length && matches < 64; methodIndex++)
+                {
+                    MethodInfo method = methods[methodIndex];
+                    MethodBody body;
+
+                    try
+                    {
+                        body = method.GetMethodBody();
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
+                    if (body == null)
+                    {
+                        continue;
+                    }
+
+                    byte[] il;
+                    try
+                    {
+                        il = body.GetILAsByteArray();
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
+                    if (il == null)
+                    {
+                        continue;
+                    }
+
+                    Module module = method.Module;
+                    bool found = false;
+
+                    for (int i = 0; i < il.Length;)
+                    {
+                        OpCode opcode;
+                        int operandSize;
+                        int token;
+
+                        byte code = il[i++];
+                        if (code == 0xFE)
+                        {
+                            if (i >= il.Length)
+                            {
+                                break;
+                            }
+
+                            opcode = TwoByteOpCodes[il[i++]];
+                        }
+                        else
+                        {
+                            opcode = OneByteOpCodes[code];
+                        }
+
+                        operandSize = GetPrismaticIlOperandSize(opcode.OperandType);
+                        if (operandSize < 0 || i + operandSize > il.Length)
+                        {
+                            break;
+                        }
+
+                        if (opcode.OperandType == OperandType.InlineMethod ||
+                            opcode.OperandType == OperandType.InlineTok)
+                        {
+                            token = BitConverter.ToInt32(il, i);
+
+                            try
+                            {
+                                MemberInfo member = module.ResolveMember(token);
+                                MethodBase calledMethod = member as MethodBase;
+
+                                if (calledMethod != null &&
+                                    string.Equals(calledMethod.Name, "DoBasicAttackHit", StringComparison.Ordinal) &&
+                                    calledMethod.DeclaringType != null &&
+                                    typeof(Actor).IsAssignableFrom(calledMethod.DeclaringType))
+                                {
+                                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER type=" +
+                                        type.FullName + " method=" + method.Name +
+                                        " declaring=" + calledMethod.DeclaringType.FullName);
+                                    matches++;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
+
+                        i += operandSize;
+                    }
+
+                    if (found && matches >= 64)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER scanAssembly=" +
+                assembly.GetName().Name + " matches=" + matches);
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER scanError=" +
+                ex.GetType().Name);
+        }
+    }
 
     private static void TraceElmFireSource(EventInfoDamage info, string sourceName)
     {
