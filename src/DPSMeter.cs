@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.107";
+    public const string DevelopmentVersion = "v5.108";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2036,6 +2036,7 @@ public sealed class DPSMeter : ModBehaviour
         TracePrismaticAttackIdentity(pendingAttack);
         TracePrismaticUiLocalization(info.actor, prismaticEffect, pendingAttack);
         TracePrismaticSkillRegistry(pendingAttack, 63);
+        TracePrismaticEquippedSkills(pendingAttack);
 
         AbilityTrigger trigger = pendingAttack.firstTrigger;
         if (trigger != null)
@@ -2285,6 +2286,105 @@ public sealed class DPSMeter : ModBehaviour
         catch (Exception ex)
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity error=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticEquippedSkills(object attackSource)
+    {
+        try
+        {
+            PropertyInfo ownerProperty = attackSource.GetType().GetProperty(
+                "owner",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (ownerProperty == null || ownerProperty.GetMethod == null)
+            {
+                return;
+            }
+
+            object owner = ownerProperty.GetValue(attackSource, null);
+            if (owner == null)
+            {
+                return;
+            }
+
+            PropertyInfo skillProperty = owner.GetType().GetProperty(
+                "Skill",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (skillProperty == null || skillProperty.GetMethod == null)
+            {
+                return;
+            }
+
+            object skillSystem = skillProperty.GetValue(owner, null);
+            if (skillSystem == null)
+            {
+                return;
+            }
+
+            MethodInfo getSkill = skillSystem.GetType().GetMethod(
+                "GetSkill",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null,
+                new[] { typeof(HeroSkillLocation) },
+                null);
+            if (getSkill == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SKILLS GetSkill=<null>");
+                return;
+            }
+
+            Array locations = Enum.GetValues(typeof(HeroSkillLocation));
+            for (int i = 0; i < locations.Length; i++)
+            {
+                object location = locations.GetValue(i);
+                try
+                {
+                    object result = getSkill.Invoke(skillSystem, new[] { location });
+                    SkillTrigger skill = result as SkillTrigger;
+                    if (skill == null)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SKILLS location=" +
+                            location + " skill=<null>");
+                        continue;
+                    }
+
+                    string title = null;
+                    try
+                    {
+                        title = skill.GetFormattedSkillTitle();
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SKILLS location=" +
+                        location + " type=" + skill.GetType().FullName +
+                        " name=[" + (skill.name ?? "<null>") + "] original=[" +
+                        (skill.GetOriginalName() ?? "<null>") + "] title=[" +
+                        (title ?? "<null>") + "]");
+
+                    PropertyInfo abilityProperty = skill.GetType().GetProperty(
+                        "abilityIndex",
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (abilityProperty != null && abilityProperty.GetMethod != null)
+                    {
+                        object index = abilityProperty.GetValue(skill, null);
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SKILLS location=" +
+                            location + " abilityIndex=[" +
+                            (index == null ? "<null>" : index.ToString()) + "]");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SKILLS location=" +
+                        location + " error=" + ex.GetType().Name);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SKILLS error=" +
+                ex.GetType().Name);
         }
     }
 
