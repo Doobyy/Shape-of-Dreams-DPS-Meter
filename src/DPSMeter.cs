@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.127";
+    public const string DevelopmentVersion = "v5.128";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2038,6 +2038,8 @@ public sealed class DPSMeter : ModBehaviour
             (pendingAttack.GetOriginalName() ?? "<null>") + "]");
         TracePrismaticDamageSourceType(pendingAttack);
         TracePrismaticBasicAttackExecution(pendingAttack);
+        TracePrismaticBasicAttackCaller(pendingAttack);
+        TraceFireIconAssets(info, sourceName);
 
         AbilityTrigger trigger = pendingAttack.firstTrigger;
         if (trigger != null)
@@ -2094,6 +2096,181 @@ public sealed class DPSMeter : ModBehaviour
         catch (Exception)
         {
             return null;
+        }
+    }
+
+    private static void TracePrismaticBasicAttackCaller(Actor source)
+    {
+        if (source == null)
+            return;
+
+        try
+        {
+            Type targetType = source.GetType();
+            MethodInfo basicAttackMethod = typeof(Actor).GetMethod(
+                "DoBasicAttackHit",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (basicAttackMethod == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER target=" +
+                    targetType.FullName + " basicMethod=<unavailable>");
+                return;
+            }
+
+            Type current = targetType;
+            while (current != null)
+            {
+                MethodInfo[] methods = current.GetMethods(
+                    BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public |
+                    BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+
+                for (int m = 0; m < methods.Length; m++)
+                {
+                    MethodInfo method = methods[m];
+
+                    if (method.IsAbstract || method.ContainsGenericParameters)
+                        continue;
+
+                    MethodBody body;
+                    byte[] il;
+
+                    try
+                    {
+                        body = method.GetMethodBody();
+                        il = body == null ? null : body.GetILAsByteArray();
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
+                    if (il == null)
+                        continue;
+
+                    Module module = method.Module;
+                    bool callsBasicAttack = false;
+                    List<string> strings = new List<string>();
+
+                    for (int i = 0; i < il.Length;)
+                    {
+                        OpCode opcode;
+                        int operandSize;
+
+                        byte code = il[i++];
+                        if (code == 0xFE)
+                        {
+                            if (i >= il.Length)
+                                break;
+
+                            opcode = TwoByteOpCodes[il[i++]];
+                        }
+                        else
+                        {
+                            opcode = OneByteOpCodes[code];
+                        }
+
+                        operandSize = GetPrismaticIlOperandSize(opcode.OperandType);
+                        if (operandSize < 0 || i + operandSize > il.Length)
+                            break;
+
+                        if (opcode.OperandType == OperandType.InlineMethod ||
+                            opcode.OperandType == OperandType.InlineTok)
+                        {
+                            int token = BitConverter.ToInt32(il, i);
+                            try
+                            {
+                                MemberInfo member = module.ResolveMember(token);
+                                MethodBase resolvedMethod = member as MethodBase;
+                                if (resolvedMethod != null &&
+                                    resolvedMethod.Name == "DoBasicAttackHit")
+                                {
+                                    callsBasicAttack = true;
+                                }
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
+                        else if (opcode.OperandType == OperandType.InlineString)
+                        {
+                            int token = BitConverter.ToInt32(il, i);
+                            try
+                            {
+                                string value = module.ResolveString(token);
+                                if (!string.IsNullOrEmpty(value) && strings.Count < 8)
+                                {
+                                    strings.Add(value);
+                                }
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
+
+                        i += operandSize;
+                    }
+
+                    if (!callsBasicAttack)
+                        continue;
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER method=" +
+                        method.DeclaringType.FullName + "." + method.Name +
+                        " params=" + method.GetParameters().Length);
+
+                    for (int s = 0; s < strings.Count; s++)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER string=[" +
+                            strings[s] + "]");
+                    }
+                }
+
+                current = current.BaseType;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CALLER error=" +
+                ex.GetType().Name);
+        }
+    }
+
+    private static void TraceFireIconAssets(EventInfoDamage info, string sourceName)
+    {
+        if (info.actor == null || !string.Equals(sourceName, "Fire", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        try
+        {
+            Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+            int matches = 0;
+
+            for (int i = 0; i < sprites.Length && matches < 16; i++)
+            {
+                Sprite sprite = sprites[i];
+                if (sprite == null)
+                    continue;
+
+                string name = sprite.name ?? string.Empty;
+                if (name.IndexOf("elm_fire", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("fire", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] FIRE ICON sprite=[" +
+                    name + "] texture=[" +
+                    (sprite.texture == null ? "<null>" : sprite.texture.name) + "]");
+                matches++;
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "] FIRE ICON matches=" + matches +
+                " loadedSprites=" + sprites.Length);
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] FIRE ICON error=" +
+                ex.GetType().Name);
         }
     }
 
