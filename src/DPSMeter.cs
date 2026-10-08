@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.144";
+    public const string DevelopmentVersion = "v5.145";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2011,6 +2011,7 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         TracePrismaticBasicAttackCallerDetails();
+        TracePrismaticIdentityMemberSurface(info.actor, prismaticEffect);
         TracePrismaticBasicAttackIdentityMembers();
 
         string traceKey = "prismatic-name:" + info.actor.GetInstanceID();
@@ -2202,6 +2203,98 @@ public sealed class DPSMeter : ModBehaviour
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC IDENTITY error=" + ex.GetType().Name);
         }
+    }
+
+
+    private static void TracePrismaticIdentityMemberSurface(Actor target, Actor effect)
+    {
+        try
+        {
+            HashSet<Type> seen = new HashSet<Type>();
+            TracePrismaticIdentityType(target == null ? null : target.GetType(), seen);
+            TracePrismaticIdentityType(effect == null ? null : effect.GetType(), seen);
+
+            Actor pendingAttack = GetPrismaticPendingAttack(effect);
+            TracePrismaticIdentityType(pendingAttack == null ? null : pendingAttack.GetType(), seen);
+
+            AbilityTrigger trigger = pendingAttack == null ? null : pendingAttack.firstTrigger;
+            TracePrismaticIdentityType(trigger == null ? null : trigger.GetType(), seen);
+
+            Type attackProjectile = typeof(Hero).Assembly.GetType("AttackProjectile", false);
+            TracePrismaticIdentityType(attackProjectile, seen);
+            Type meleeAttackInstance = typeof(Hero).Assembly.GetType("MeleeAttackInstance", false);
+            TracePrismaticIdentityType(meleeAttackInstance, seen);
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SURFACE error=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticIdentityType(Type type, HashSet<Type> seen)
+    {
+        if (type == null || seen.Contains(type))
+        {
+            return;
+        }
+
+        seen.Add(type);
+
+        Type current = type;
+        while (current != null && current != typeof(object))
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SURFACE type=" + current.FullName);
+
+            FieldInfo[] fields = current.GetFields(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                if (IsPrismaticIdentityMemberName(fields[i].Name))
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SURFACE field=" + fields[i].Name +
+                        " type=" + fields[i].FieldType.FullName);
+                }
+            }
+
+            PropertyInfo[] properties = current.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            for (int i = 0; i < properties.Length; i++)
+            {
+                if (IsPrismaticIdentityMemberName(properties[i].Name))
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SURFACE property=" + properties[i].Name +
+                        " type=" + properties[i].PropertyType.FullName);
+                }
+            }
+
+            MethodInfo[] methods = current.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                if (IsPrismaticIdentityMemberName(methods[i].Name))
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC SURFACE method=" + methods[i].Name +
+                        " return=" + methods[i].ReturnType.FullName + " params=" + methods[i].GetParameters().Length);
+                }
+            }
+
+            current = current.BaseType;
+        }
+    }
+
+    private static bool IsPrismaticIdentityMemberName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
+
+        return name.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("display", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("origin", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            name.IndexOf("cast", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static void TracePrismaticBasicAttackCallerDetails()
