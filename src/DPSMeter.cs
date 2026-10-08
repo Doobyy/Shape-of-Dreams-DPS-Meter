@@ -1235,6 +1235,7 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             TracePrismaticDamageDataActorSetter();
+            TracePrismaticDealDamageActorStores();
 
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH END");
         }
