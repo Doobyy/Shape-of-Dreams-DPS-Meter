@@ -458,7 +458,7 @@ public sealed class DpsOverlay : MonoBehaviour
         switch (_mode)
         {
             case DisplayMode.CurrentDps:
-                title = "CURRENT DPS";
+                title = "CURRENT";
                 metric = FormatNumber(_data.CurrentPersonalDps) + " DPS";
                 break;
 
@@ -468,7 +468,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
 
             case DisplayMode.CurrentHps:
-                title = "CURRENT HPS";
+                title = "CURRENT";
                 metric = FormatNumber(_data.CurrentPersonalHps) + " HPS";
                 break;
 
@@ -478,7 +478,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
 
             case DisplayMode.CurrentBps:
-                title = "CURRENT BPS";
+                title = "CURRENT";
                 metric = FormatNumber(_data.CurrentPersonalBps) + " BPS";
                 break;
 
@@ -706,8 +706,8 @@ public sealed class DpsOverlay : MonoBehaviour
             : _data.CumulativePersonalBarrier;
 
         GUILayout.Label(
-            "----------  " + FormatNumber(bps) + " BPS  ----------",
-            _small);
+            FormatNumber(bps) + " BPS",
+            _headerRight);
 
         DrawBarrierSources(rows, total);
     }
@@ -795,8 +795,8 @@ public sealed class DpsOverlay : MonoBehaviour
             : _data.TotalPersonalHps;
 
         GUILayout.Label(
-            "----------  " + FormatNumber(hps) + " HPS  ----------",
-            _small);
+            FormatNumber(hps) + " HPS",
+            _headerRight);
 
         DrawHealingSources(rows, total);
     }
