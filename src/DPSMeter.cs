@@ -1381,13 +1381,19 @@ public sealed class DPSMeter : ModBehaviour
                     }
                 }
 
-                bool relevant = IsPrismaticReadableNameILReference(operandText);
+                bool readableNameSite = IsPrismaticReadableNameILReference(operandText);
+                bool readableNameContext =
+                    label.IndexOf("Actor DealDamage", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    ((instructionOffset >= 0x0050 && instructionOffset <= 0x0080) ||
+                     (instructionOffset >= 0x00C0 && instructionOffset <= 0x00E8));
 
-                if (relevant)
+                if (readableNameSite || readableNameContext)
                 {
                     foundRelevant = true;
-                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC READABLE NAME SITE label=" +
-                        label + " il=" + instructionOffset.ToString("X4") +
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC READABLE NAME " +
+                        (readableNameSite ? "SITE" : "CONTEXT") +
+                        " label=" + label +
+                        " il=" + instructionOffset.ToString("X4") +
                         " op=" + opcode +
                         (operandText == null ? "" : " operand=" + operandText));
                 }
