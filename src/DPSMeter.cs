@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.63";
+    public const string DevelopmentVersion = "v5.64";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1751,7 +1751,7 @@ public sealed class DPSMeter : ModBehaviour
 
         try
         {
-            SkillConfig config = skill.currentConfig;
+            var config = skill.currentConfig;
             if (config == null)
             {
                 WriteDebugLog("[" + DevelopmentVersion + "] memory configured unavailable currentConfig=<null>");
