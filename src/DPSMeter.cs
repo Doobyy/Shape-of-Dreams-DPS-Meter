@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.82";
+    public const string DevelopmentVersion = "v5.83";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2032,8 +2032,6 @@ public sealed class DPSMeter : ModBehaviour
             {
                 TracePrismaticPendingAttack(current);
             }
-
-            TracePrismaticAbilityInstanceReferences(current);
 
             current = current.parentActor;
             actorDepth++;
