@@ -850,7 +850,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.DrawTexture(barRect, _whiteTexture);
 
-        DrawBarWithOutline(barRect, ratio, HealingBarColor, HealingBarOutlineColor);
+        DrawBar(barRect, ratio, HealingBarColor);
 
         string valueText = FormatNumber(amount) + "  " + percent.ToString("0.0") + "%";
         float valueWidth = _rowRight.CalcSize(new GUIContent(valueText)).x;
@@ -919,7 +919,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.DrawTexture(barRect, _whiteTexture);
 
-        DrawBarWithOutline(barRect, ratio, GetBarColor(elemental, scaling), GetBarOutlineColor(elemental, scaling));
+        DrawBar(barRect, ratio, GetBarColor(elemental, scaling));
 
         GUI.color = SourceNameColor;
 
@@ -997,33 +997,17 @@ public sealed class DpsOverlay : MonoBehaviour
         return text.Replace("</color>", string.Empty);
     }
 
-    private void DrawBarWithOutline(Rect barRect, float ratio, Color fillColor, Color outlineColor)
+    private void DrawBar(Rect barRect, float ratio, Color fillColor)
     {
         float fillWidth = barRect.width * ratio;
-        if (fillWidth <= 0f) return;
-
-        const float outlineThickness = 2f;
-        Rect fillRect = new Rect(barRect.x, barRect.y, fillWidth, barRect.height);
-
-        // Keep the outline entirely inside the original bar bounds.
-        GUI.color = outlineColor;
-        GUI.DrawTexture(fillRect, _whiteTexture);
-
-        float innerWidth = fillWidth - (outlineThickness * 2f);
-        float innerHeight = barRect.height - (outlineThickness * 2f);
-        if (innerWidth <= 0f || innerHeight <= 0f)
+        if (fillWidth <= 0f)
         {
             return;
         }
 
-        Rect innerRect = new Rect(
-            fillRect.x + outlineThickness,
-            fillRect.y + outlineThickness,
-            innerWidth,
-            innerHeight);
-
+        Rect fillRect = new Rect(barRect.x, barRect.y, fillWidth, barRect.height);
         GUI.color = fillColor;
-        GUI.DrawTexture(innerRect, _whiteTexture);
+        GUI.DrawTexture(fillRect, _whiteTexture);
     }
 
     private static void DrawBarTextWithStroke(Rect textRect, string text, GUIStyle style)
