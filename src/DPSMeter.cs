@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.62";
+    public const string DevelopmentVersion = "v5.63";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -23,6 +23,7 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private readonly HashSet<string> _essenceScalingDiagnosticSeen = new HashSet<string>();
+    private readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -1401,6 +1402,7 @@ public sealed class DPSMeter : ModBehaviour
         // the first AbilityInstance is not the Essence's instance.
         Gem directGem = FindDamageSourceEssence(info.actor);
         TraceTargetEssenceScaling(info.actor, directGem);
+        TraceTargetMemoryScaling(info.actor, skill);
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
         bool isDirectEssenceDamage = directGem != null;
         Actor skillSourceActor = info.actor;
@@ -1675,6 +1677,136 @@ public sealed class DPSMeter : ModBehaviour
         {
             WriteDebugLog("[v5.62] configured trace exception=" + ex.GetType().Name);
         }
+    }
+
+    private static void TraceTargetMemoryScaling(Actor actor, SkillTrigger directSkill)
+    {
+        if (actor == null)
+        {
+            return;
+        }
+
+        SkillTrigger skill = directSkill;
+        Actor skillSourceActor = actor;
+        if (skill == null)
+        {
+            skill = FindSkillTriggerInActorChain(actor, out skillSourceActor);
+        }
+
+        if (skill == null)
+        {
+            return;
+        }
+
+        string skillName = null;
+        try
+        {
+            skillName = skill.GetFormattedSkillTitle();
+        }
+        catch (Exception)
+        {
+        }
+
+        if (!ContainsTargetMemoryName(skillName))
+        {
+            try
+            {
+                string localized = DewLocalization.GetSkillName(skill, 0);
+                if (ContainsTargetMemoryName(localized))
+                {
+                    skillName = localized;
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        if (!ContainsTargetMemoryName(skillName))
+        {
+            return;
+        }
+
+        string identity = GetSkillSlotIdentity(skillSourceActor, skill);
+        string traceKey = "memory:" + (identity ?? skillName);
+        if (!_memoryScalingDiagnosticSeen.Add(traceKey))
+        {
+            return;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] TARGET MEMORY trace skill=" +
+            (skillName ?? "<null>") + " identity=" + (identity ?? "<null>"));
+
+        Actor current = actor;
+        int depth = 0;
+        while (current != null && depth < 8)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] memory runtime depth=" + depth +
+                " type=" + current.GetType().FullName +
+                " name=" + (current.name ?? "<null>"));
+            LogScalingFields(current, "[" + DevelopmentVersion + "] memory runtime depth=" + depth);
+            current = current.parentActor;
+            depth++;
+        }
+
+        try
+        {
+            SkillConfig config = skill.currentConfig;
+            if (config == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] memory configured unavailable currentConfig=<null>");
+                return;
+            }
+
+            AbilityInstance configured = config.spawnedInstance;
+            WriteDebugLog("[" + DevelopmentVersion + "] memory configured root type=" +
+                (configured == null ? "<null>" : configured.GetType().FullName) +
+                " name=" + (configured == null ? "<null>" : (configured.name ?? "<null>")));
+
+            if (configured != null)
+            {
+                TraceConfiguredAbilityTree(configured, 0);
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] memory configured trace exception=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TraceConfiguredAbilityTree(AbilityInstance instance, int depth)
+    {
+        if (instance == null || depth > 8)
+        {
+            return;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] memory configured depth=" + depth +
+            " type=" + instance.GetType().FullName +
+            " name=" + (instance.name ?? "<null>") +
+            " gem=" + DescribeGem(instance.gem));
+        LogScalingFields(instance, "[" + DevelopmentVersion + "] memory configured depth=" + depth);
+
+        List<Actor> children = instance.children;
+        if (children == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child != null)
+            {
+                TraceConfiguredAbilityTree(child, depth + 1);
+            }
+        }
+    }
+
+    private static bool ContainsTargetMemoryName(string value)
+    {
+        return !string.IsNullOrEmpty(value) &&
+            value.IndexOf("Backstep", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static bool IsTargetEssenceGem(Gem gem)
