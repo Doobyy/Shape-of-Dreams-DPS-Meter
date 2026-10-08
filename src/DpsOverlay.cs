@@ -11,7 +11,9 @@ public sealed class DpsOverlay : MonoBehaviour
     private enum DisplayMode
     {
         CurrentDps,
-        DamageTotal
+        DamageTotal,
+        PartyDps,
+        PartyTotal
     }
 
     private static readonly Color DefaultBarColor = new Color(0.875f, 0.871f, 0.867f, 1f);
@@ -140,7 +142,17 @@ public sealed class DpsOverlay : MonoBehaviour
                     true);
                 break;
 
+            case DisplayMode.PartyDps:
+                DrawParty(
+                    _data.CurrentParty,
+                    _data.CurrentInstancePartyDamage);
+                break;
 
+            case DisplayMode.PartyTotal:
+                DrawParty(
+                    _data.CumulativeParty,
+                    _data.CumulativePartyDamage);
+                break;
         }
 
         GUILayout.EndScrollView();
@@ -318,8 +330,7 @@ public sealed class DpsOverlay : MonoBehaviour
         if (_contextMenuOpen)
         {
             bool mouseEvent =
-                e.type == EventType.MouseDown ||
-                e.type == EventType.MouseUp;
+                e.type == EventType.MouseDown;
 
             if (mouseEvent)
             {
@@ -438,7 +449,7 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 if (!_headerMoved)
                 {
-                    _mode = (DisplayMode)(((int)_mode + 1) % 2);
+                    _mode = (DisplayMode)(((int)_mode + 1) % 4);
                 }
 
                 _dragging = false;
@@ -566,6 +577,16 @@ public sealed class DpsOverlay : MonoBehaviour
             case DisplayMode.DamageTotal:
                 title = "TOTAL";
                 metric = "DMG: " + FormatNumber(_data.CumulativePersonalDamage);
+                break;
+
+            case DisplayMode.PartyDps:
+                title = "PARTY DPS";
+                metric = FormatNumber(_data.CurrentPartyDps) + " DPS";
+                break;
+
+            case DisplayMode.PartyTotal:
+                title = "PARTY TOTAL";
+                metric = "DMG: " + FormatNumber(_data.CumulativePartyDamage);
                 break;
 
             default:
