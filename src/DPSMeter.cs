@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.100";
+    public const string DevelopmentVersion = "v5.101";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2033,6 +2033,7 @@ public sealed class DPSMeter : ModBehaviour
             (pendingAttack.GetOriginalName() ?? "<null>") + "]");
 
         TracePrismaticNameSource(pendingAttack, "pendingAttack");
+        TracePrismaticAttackIdentity(pendingAttack);
 
         AbilityTrigger trigger = pendingAttack.firstTrigger;
         if (trigger != null)
@@ -2089,6 +2090,196 @@ public sealed class DPSMeter : ModBehaviour
         catch (Exception)
         {
             return null;
+        }
+    }
+
+    private static void TracePrismaticAttackIdentity(object source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        try
+        {
+            Type type = source.GetType();
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity type=" + type.FullName);
+
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            int logged = 0;
+            for (int i = 0; i < fields.Length && logged < 40; i++)
+            {
+                FieldInfo field = fields[i];
+                string fieldName = field.Name ?? string.Empty;
+                bool interesting =
+                    fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("owner", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("config", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (!interesting)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = field.GetValue(source);
+                    if (value == null)
+                    {
+                        continue;
+                    }
+
+                    if (value is string || field.FieldType.IsEnum ||
+                        field.FieldType == typeof(int) || field.FieldType == typeof(bool) ||
+                        field.FieldType == typeof(float) || field.FieldType == typeof(double))
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity field=" +
+                            fieldName + " type=" + field.FieldType.FullName + " value=[" + value + "]");
+                    }
+                    else
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity field=" +
+                            fieldName + " type=" + field.FieldType.FullName + " objectType=" +
+                            value.GetType().FullName);
+                    }
+                    logged++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            PropertyInfo[] properties = type.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < properties.Length && logged < 56; i++)
+            {
+                PropertyInfo property = properties[i];
+                string propertyName = property.Name ?? string.Empty;
+                bool interesting =
+                    propertyName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("source", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("owner", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("config", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (!interesting || property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = property.GetValue(source, null);
+                    if (value == null)
+                    {
+                        continue;
+                    }
+
+                    if (value is string || property.PropertyType.IsEnum ||
+                        property.PropertyType == typeof(int) || property.PropertyType == typeof(bool) ||
+                        property.PropertyType == typeof(float) || property.PropertyType == typeof(double))
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity property=" +
+                            propertyName + " type=" + property.PropertyType.FullName + " value=[" + value + "]");
+                    }
+                    else
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity property=" +
+                            propertyName + " type=" + property.PropertyType.FullName + " objectType=" +
+                            value.GetType().FullName);
+                    }
+                    logged++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            MethodInfo[] methods = type.GetMethods(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            int methodLogged = 0;
+            for (int i = 0; i < methods.Length && methodLogged < 24; i++)
+            {
+                MethodInfo method = methods[i];
+                if (method.GetParameters().Length != 0 || method.ReturnType != typeof(string))
+                {
+                    continue;
+                }
+
+                string methodName = method.Name ?? string.Empty;
+                bool interesting =
+                    methodName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    methodName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    methodName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    methodName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    methodName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    methodName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (!interesting)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    string value = method.Invoke(source, null) as string;
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity method=" +
+                            methodName + " value=[" + value + "]");
+                    }
+                    methodLogged++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            MethodInfo[] localizationMethods = typeof(DewLocalization).GetMethods(
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            int localizationLogged = 0;
+            for (int i = 0; i < localizationMethods.Length && localizationLogged < 20; i++)
+            {
+                MethodInfo method = localizationMethods[i];
+                string methodName = method.Name ?? string.Empty;
+                if (method.ReturnType != typeof(string) ||
+                    (methodName.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     methodName.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     methodName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     methodName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0 &&
+                     methodName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0))
+                {
+                    continue;
+                }
+
+                string parameters = string.Empty;
+                ParameterInfo[] parameterInfo = method.GetParameters();
+                for (int p = 0; p < parameterInfo.Length; p++)
+                {
+                    if (p > 0) parameters += ",";
+                    parameters += parameterInfo[p].ParameterType.Name;
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME localizationMethod=" +
+                    methodName + " return=String params=[" + parameters + "]");
+                localizationLogged++;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity error=" + ex.GetType().Name);
         }
     }
 
