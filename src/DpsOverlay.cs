@@ -30,7 +30,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color ApScalingBarColor = new Color(0.353f, 0.898f, 1.00f, 0.68f);
     private static readonly Color HpScalingBarColor = new Color(0.36f, 0.55f, 0.22f, 0.68f);
     private static readonly Color HealingBarColor = new Color(0.518f, 1.00f, 0.314f, 0.68f);
-    private static readonly Color SourceNameColor = new Color(0.0f, 0.0f, 0.0f, 1f);
+    private static readonly Color SourceNameColor = Color.white;
+    private static readonly Color BarTextStrokeColor = Color.black;
     private static readonly Color DefaultBarOutlineColor = new Color(0.259f, 0.259f, 0.259f, 1f);
     private static readonly Color FireBarOutlineColor = new Color(0.675f, 0.039f, 0.000f, 1f);
     private static readonly Color IceBarOutlineColor = new Color(0.180f, 0.529f, 0.925f, 1f);
@@ -858,11 +859,11 @@ public sealed class DpsOverlay : MonoBehaviour
         float nameWidth = Mathf.Max(0f, valueLeft - (barRect.x + 7f) - 7f);
 
         GUI.color = SourceNameColor;
-        GUI.Label(
+        DrawBarTextWithStroke(
             new Rect(barRect.x + 7f, rowRect.y, nameWidth, rowRect.height),
             TruncateTextToWidth(StripRichTextTags(name), nameWidth, _row),
             _row);
-        GUI.Label(
+        DrawBarTextWithStroke(
             new Rect(valueLeft, rowRect.y, Mathf.Max(0f, valueRight - valueLeft), rowRect.height),
             valueText,
             _rowRight);
@@ -935,8 +936,8 @@ public sealed class DpsOverlay : MonoBehaviour
             rowRect.width - 14f,
             rowRect.height);
 
-        DrawAdaptiveBarText(nameRect, name, CreateBarTextStyle(_row, Color.black), barRect, ratio);
-        DrawAdaptiveBarText(valueRect, FormatNumber(amount) + "  " + percent.ToString("0.0") + "%", CreateBarTextStyle(_rowRight, Color.black), barRect, ratio);
+        DrawBarTextWithStroke(nameRect, name, _row);
+        DrawBarTextWithStroke(valueRect, FormatNumber(amount) + "  " + percent.ToString("0.0") + "%", _rowRight);
 
         GUI.color = Color.white;
     }
@@ -1025,19 +1026,22 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.DrawTexture(innerRect, _whiteTexture);
     }
 
-    private static void DrawAdaptiveBarText(Rect textRect, string text, GUIStyle style, Rect barRect, float ratio)
+    private static void DrawBarTextWithStroke(Rect textRect, string text, GUIStyle style)
     {
         if (style == null || string.IsNullOrEmpty(text) || textRect.width <= 0f)
         {
             return;
         }
 
-        float fillRight = barRect.x + (barRect.width * ratio);
-        float textCenter = textRect.x + (textRect.width * 0.5f);
-        Color textColor = textCenter <= fillRight ? Color.black : Color.white;
-
-        GUIStyle textStyle = CreateBarTextStyle(style, textColor);
+        GUIStyle strokeStyle = CreateBarTextStyle(style, BarTextStrokeColor);
+        GUIStyle textStyle = CreateBarTextStyle(style, Color.white);
+        const float stroke = 1f;
         GUI.color = Color.white;
+
+        GUI.Label(new Rect(textRect.x - stroke, textRect.y, textRect.width, textRect.height), text, strokeStyle);
+        GUI.Label(new Rect(textRect.x + stroke, textRect.y, textRect.width, textRect.height), text, strokeStyle);
+        GUI.Label(new Rect(textRect.x, textRect.y - stroke, textRect.width, textRect.height), text, strokeStyle);
+        GUI.Label(new Rect(textRect.x, textRect.y + stroke, textRect.width, textRect.height), text, strokeStyle);
         GUI.Label(textRect, text, textStyle);
     }
 
