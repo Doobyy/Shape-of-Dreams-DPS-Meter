@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.77";
+    public const string DevelopmentVersion = "v5.78";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -26,7 +26,6 @@ public sealed class DPSMeter : ModBehaviour
     private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _chompScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _prismaticVisionDiagnosticSeen = new HashSet<string>();
-    private static readonly HashSet<string> _prismaticAbilityInstanceDiagnosticSeen = new HashSet<string>();
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -128,13 +127,7 @@ public sealed class DPSMeter : ModBehaviour
             _data.ResetCurrentInstance();
         }
 
-        if (_currentHero != null)
-        {
-            _currentHero.ActorEvent_OnAbilityInstanceCreated -= OnPrismaticAbilityInstanceCreated;
-        }
-
         _currentHero = hero;
-        _currentHero.ActorEvent_OnAbilityInstanceCreated += OnPrismaticAbilityInstanceCreated;
         _skillScalingCache.Clear();
         _essenceScalingCache.Clear();
         Debug.Log("[DPS Meter] Reset current damage window for hero ability change.");
@@ -144,86 +137,12 @@ public sealed class DPSMeter : ModBehaviour
     {
         _data.ResetCurrentInstance();
 
-        if (_currentHero != null)
-        {
-            _currentHero.ActorEvent_OnAbilityInstanceCreated -= OnPrismaticAbilityInstanceCreated;
-        }
-
         _currentHero = null;
 
         // A new run can recreate the networked event manager. Re-check the
         // active manager so damage events continue reaching the meter.
         AttachToClientEvents();
         AttachToZoneManager();
-    }
-
-    private void OnPrismaticAbilityInstanceCreated(EventInfoAbilityInstance info)
-    {
-        if (info.instance == null)
-        {
-            return;
-        }
-
-        Actor source = info.actor ?? info.instance;
-        bool prismatic = false;
-        Actor current = source;
-        int depth = 0;
-
-        while (current != null && depth < 8)
-        {
-            if (current.GetType().Name.IndexOf("PrismaticEyes", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                (!string.IsNullOrEmpty(current.name) &&
-                 current.name.IndexOf("PrismaticEyes", StringComparison.OrdinalIgnoreCase) >= 0))
-            {
-                prismatic = true;
-                break;
-            }
-
-            current = current.parentActor;
-            depth++;
-        }
-
-        AbilityTrigger trigger = info.instance.firstTrigger;
-        if (!prismatic && trigger != null &&
-            trigger.GetType().Name.IndexOf("BismuthRock", StringComparison.OrdinalIgnoreCase) >= 0)
-        {
-            prismatic = true;
-        }
-
-        if (!prismatic)
-        {
-            return;
-        }
-
-        string key = info.instance.GetType().FullName + ":" +
-            (trigger != null ? trigger.GetType().FullName : "<null>");
-        if (!_prismaticAbilityInstanceDiagnosticSeen.Add(key))
-        {
-            return;
-        }
-
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC abilityInstance CREATED actor=" +
-            DescribeActor(info.actor) + " instance=" + DescribeActor(info.instance) +
-            " trigger=" + (trigger != null ? trigger.GetType().FullName : "<null>"));
-
-        TraceReadableIdentity(info.instance, "[" + DevelopmentVersion + "] PRISMATIC abilityInstance");
-        TracePrismaticObjectMembers(
-            info.instance,
-            "[" + DevelopmentVersion + "] PRISMATIC abilityInstance");
-
-        if (trigger != null)
-        {
-            TraceReadableIdentity(
-                trigger,
-                "[" + DevelopmentVersion + "] PRISMATIC abilityInstance trigger");
-            TracePrismaticObjectMembers(
-                trigger,
-                "[" + DevelopmentVersion + "] PRISMATIC abilityInstance trigger");
-        }
-
-        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC abilityInstance firstEntity=" +
-            DescribeActor(info.instance.firstEntity) +
-            " firstTrigger=" + DescribeActor(info.instance.firstTrigger));
     }
 
     private bool OnTravelToNodeInterrupt(EventInfoTravelToNodeInterrupt info)
