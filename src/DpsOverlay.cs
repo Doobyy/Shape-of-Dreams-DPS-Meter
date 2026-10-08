@@ -143,22 +143,19 @@ public sealed class DpsOverlay : MonoBehaviour
                 break;
 
             case DisplayMode.PartyDps:
-                DrawParty(
-                    _data.CurrentParty,
-                    _data.CurrentInstancePartyDamage);
+                DrawParty(_data.CurrentParty, _data.CurrentInstancePartyDamage, _data.CurrentPartyDps, "DPS");
                 break;
 
             case DisplayMode.PartyTotal:
-                DrawParty(
-                    _data.CumulativeParty,
-                    _data.CumulativePartyDamage);
+                DrawParty(_data.CumulativeParty, _data.CumulativePartyDamage, _data.CumulativePartyDps, "DPS");
                 break;
         }
 
         GUILayout.EndScrollView();
         GUILayout.EndArea();
 
-        if (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal)
+        if (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal ||
+            _mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
         {
             Rect breakdownRect = new Rect(
                 _windowRect.x + 6f,
@@ -169,28 +166,42 @@ public sealed class DpsOverlay : MonoBehaviour
             GUILayout.BeginArea(breakdownRect);
 
             if (_showHealing)
+        {
+            if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
+            {
+                DrawParty(
+                    _mode == DisplayMode.PartyDps ? _data.CurrentPartyHealing : _data.CumulativePartyHealing,
+                    _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyHealing : _data.CumulativePartyHealing,
+                    _mode == DisplayMode.PartyDps ? _data.CurrentPartyHps : _data.TotalPartyHps,
+                    "HPS");
+            }
+            else
             {
                 DrawHealingBreakdown(
-                    _mode == DisplayMode.CurrentDps
-                        ? _data.CurrentPersonalHealingRows
-                        : _data.CumulativeHealingRows,
-                    _mode == DisplayMode.CurrentDps
-                        ? _data.CurrentInstancePersonalHealing
-                        : _data.CumulativePersonalHealing);
+                    _mode == DisplayMode.CurrentDps ? _data.CurrentPersonalHealingRows : _data.CumulativeHealingRows,
+                    _mode == DisplayMode.CurrentDps ? _data.CurrentInstancePersonalHealing : _data.CumulativePersonalHealing);
             }
+        }
 
-            if (_showBarrier)
+        if (_showBarrier)
+        {
+            if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
+            {
+                DrawParty(
+                    _mode == DisplayMode.PartyDps ? _data.CurrentPartyBarrier : _data.CumulativePartyBarrier,
+                    _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyBarrier : _data.CumulativePartyBarrier,
+                    _mode == DisplayMode.PartyDps ? _data.CurrentPartyBps : _data.TotalPartyBps,
+                    "BPS");
+            }
+            else
             {
                 DrawBarrierBreakdown(
-                    _mode == DisplayMode.CurrentDps
-                        ? _data.CurrentPersonalBarrierRows
-                        : _data.CumulativeBarrierRows,
-                    _mode == DisplayMode.CurrentDps
-                        ? _data.CurrentInstancePersonalBarrier
-                        : _data.CumulativePersonalBarrier);
+                    _mode == DisplayMode.CurrentDps ? _data.CurrentPersonalBarrierRows : _data.CumulativeBarrierRows,
+                    _mode == DisplayMode.CurrentDps ? _data.CurrentInstancePersonalBarrier : _data.CumulativePersonalBarrier);
             }
+        }
 
-            GUILayout.EndArea();
+        GUILayout.EndArea();
         }
 
         DrawResizeGrip();
@@ -1056,18 +1067,48 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = Color.white;
     }
 
-    private void DrawParty(IReadOnlyList<KeyValuePair<string, float>> rows, float total)
+    private void DrawParty(
+        IReadOnlyList<KeyValuePair<string, float>> rows,
+        float total,
+        float rate,
+        string rateLabel)
     {
-        if (rows.Count == 0)
+        if (rows == null || rows.Count == 0)
         {
-            GUILayout.Label("No party damage recorded yet.", _small);
+            GUILayout.Label("No party data recorded yet.", _small);
             return;
         }
+
+        float duration = rate > 0f && total > 0f ? total / rate : 0f;
+        float maxAmount = rows[0].Value;
 
         for (int i = 0; i < rows.Count; i++)
         {
             KeyValuePair<string, float> row = rows[i];
-            DrawDamageRow(row.Key, row.Value, total, rows[0].Value, i, null, DpsData.DamageScalingType.None, null);
+            float playerRate = duration > 0f ? row.Value / duration : 0f;
+            float percent = total > 0f ? Mathf.Clamp01(row.Value / total) * 100f : 0f;
+            float ratio = maxAmount > 0f ? Mathf.Clamp01(row.Value / maxAmount) : 0f;
+
+            Rect rowRect = GUILayoutUtility.GetRect(0f, 22f, GUILayout.ExpandWidth(true));
+            DrawBar(rowRect, ratio, rateLabel == "DPS" ? DefaultBarColor : HealingBarColor, null, DpsData.DamageScalingType.None);
+
+            string valueText = FormatNumber(playerRate) + " " + rateLabel + " (" +
+                FormatNumber(row.Value) + ", " + percent.ToString("0.0") + "%)";
+            float valueWidth = _rowRight.CalcSize(new GUIContent(valueText)).x;
+            float valueRight = rowRect.xMax - 7f;
+            float valueLeft = Mathf.Max(rowRect.x + 7f, valueRight - valueWidth);
+            float nameWidth = Mathf.Max(0f, valueLeft - rowRect.x - 14f);
+
+            GUI.color = SourceNameColor;
+            DrawBarTextWithStroke(
+                new Rect(rowRect.x + 7f, rowRect.y, nameWidth, rowRect.height),
+                TruncateTextToWidth(StripRichTextTags(row.Key), nameWidth, _row),
+                _row);
+            DrawBarTextWithStroke(
+                new Rect(valueLeft, rowRect.y, Mathf.Max(0f, valueRight - valueLeft), rowRect.height),
+                valueText,
+                _rowRight);
+            GUI.color = Color.white;
         }
     }
 
