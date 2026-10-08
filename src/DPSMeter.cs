@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.85";
+    public const string DevelopmentVersion = "v5.86";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2292,12 +2292,26 @@ private static void SubscribePrismaticAttackEvents(AttackTrigger pendingAttack)
 
         try
         {
+            if (pendingAttack.ActorEvent_OnAttackHit == null)
+            {
+                pendingAttack.ActorEvent_OnAttackHit = new SafeAction<EventInfoAttackHit>();
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent initialized=OnAttackHit");
+            }
+
+            if (pendingAttack.ActorEvent_OnAttackEffectTriggered == null)
+            {
+                pendingAttack.ActorEvent_OnAttackEffectTriggered = new SafeAction<EventInfoAttackEffect>();
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent initialized=OnAttackEffectTriggered");
+            }
+
             pendingAttack.ActorEvent_OnAttackHit.Add(OnPrismaticAttackHit);
             pendingAttack.ActorEvent_OnAttackEffectTriggered.Add(OnPrismaticAttackEffectTriggered);
             _prismaticAttackEventSubscribed.Add(pendingAttack);
 
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent subscribed type=" +
-                pendingAttack.GetType().FullName + " id=" + pendingAttack.GetInstanceID());
+                pendingAttack.GetType().FullName + " hitCount=" +
+                pendingAttack.ActorEvent_OnAttackHit.Count + " effectCount=" +
+                pendingAttack.ActorEvent_OnAttackEffectTriggered.Count);
         }
         catch (Exception ex)
         {
