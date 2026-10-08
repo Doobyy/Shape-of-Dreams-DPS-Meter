@@ -211,9 +211,7 @@ public sealed class DpsOverlay : MonoBehaviour
             16f);
 
         bool rightClick =
-            e.type == EventType.ContextClick ||
-            (e.type == EventType.MouseDown && e.button == 1) ||
-            Input.GetMouseButtonDown(1);
+            e.type == EventType.MouseDown && e.button == 1;
 
         if (rightClick)
         {
