@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.125";
+    public const string DevelopmentVersion = "v5.126";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2037,6 +2037,7 @@ public sealed class DPSMeter : ModBehaviour
             (pendingAttack.GetActorReadableName() ?? "<null>") + "] original=[" +
             (pendingAttack.GetOriginalName() ?? "<null>") + "]");
         TracePrismaticDamageSourceType(pendingAttack);
+        TracePrismaticBasicAttackExecution(pendingAttack);
 
         AbilityTrigger trigger = pendingAttack.firstTrigger;
         if (trigger != null)
@@ -2175,6 +2176,194 @@ public sealed class DPSMeter : ModBehaviour
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE SOURCE error=" +
                 ex.GetType().Name);
         }
+    }
+
+    \nprivate static void TracePrismaticBasicAttackExecution(Actor source)
+    {
+        if (source == null)
+            return;
+
+        try
+        {
+            MethodInfo method = null;
+            Type current = source.GetType();
+
+            while (current != null && method == null)
+            {
+                method = current.GetMethod(
+                    "DoBasicAttackHit",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                current = current.BaseType;
+            }
+
+            if (method == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BASIC IL method=<unavailable>");
+                return;
+            }
+
+            ParameterInfo[] parameters = method.GetParameters();
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BASIC IL method=" +
+                method.DeclaringType.FullName + ".DoBasicAttackHit params=" + parameters.Length);
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BASIC IL param=" + i +
+                    " type=" + parameters[i].ParameterType.FullName);
+            }
+
+            MethodBody body = method.GetMethodBody();
+            if (body == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BASIC IL body=<null>");
+                return;
+            }
+
+            byte[] il = body.GetILAsByteArray();
+            if (il == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BASIC IL bytes=<null>");
+                return;
+            }
+
+            Module module = method.Module;
+            int loggedCalls = 0;
+
+            for (int i = 0; i < il.Length && loggedCalls < 32;)
+            {
+                OpCode opcode;
+                int operandSize;
+                int token;
+
+                byte code = il[i++];
+                if (code == 0xFE)
+                {
+                    if (i >= il.Length)
+                        break;
+
+                    opcode = TwoByteOpCodes[il[i++]];
+                }
+                else
+                {
+                    opcode = OneByteOpCodes[code];
+                }
+
+                operandSize = GetPrismaticIlOperandSize(opcode.OperandType);
+                if (operandSize < 0 || i + operandSize > il.Length)
+                    break;
+
+                if (opcode.OperandType == OperandType.InlineMethod ||
+                    opcode.OperandType == OperandType.InlineTok)
+                {
+                    token = BitConverter.ToInt32(il, i);
+                    try
+                    {
+                        MemberInfo member = module.ResolveMember(token);
+                        if (member is MethodBase resolvedMethod)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BASIC IL call=" +
+                                opcode.Name + " " + resolvedMethod.DeclaringType.FullName + "." +
+                                resolvedMethod.Name + " params=" +
+                                resolvedMethod.GetParameters().Length);
+                            loggedCalls++;
+                        }
+                        else
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BASIC IL member=" +
+                                opcode.Name + " " + (member == null ? "<null>" : member.ToString()));
+                            loggedCalls++;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                i += operandSize;
+            }
+
+            Type damageDataType = typeof(DamageData);
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BASIC IL DamageData type=" +
+                damageDataType.FullName);
+
+            FieldInfo[] fields = damageDataType.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < fields.Length && i < 24; i++)
+            {
+                FieldInfo field = fields[i];
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BASIC IL DamageData field=" +
+                    field.Name + " type=" + field.FieldType.FullName);
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BASIC IL error=" +
+                ex.GetType().Name);
+        }
+    }
+
+    private static int GetPrismaticIlOperandSize(OperandType operandType)
+    {
+        switch (operandType)
+        {
+            case OperandType.InlineNone:
+                return 0;
+            case OperandType.ShortInlineI:
+            case OperandType.ShortInlineR:
+            case OperandType.ShortInlineBrTarget:
+            case OperandType.ShortInlineVar:
+                return 1;
+            case OperandType.InlineVar:
+                return 2;
+            case OperandType.InlineI:
+            case OperandType.InlineR:
+            case OperandType.InlineBrTarget:
+            case OperandType.InlineField:
+            case OperandType.InlineMethod:
+            case OperandType.InlineSig:
+            case OperandType.InlineString:
+            case OperandType.InlineTok:
+            case OperandType.InlineType:
+                return 4;
+            case OperandType.InlineSwitch:
+                if (operandType == OperandType.InlineSwitch)
+                    return 4;
+                break;
+        }
+
+        return -1;
+    }
+
+    private static readonly OpCode[] OneByteOpCodes = BuildOneByteOpCodes();
+    private static readonly OpCode[] TwoByteOpCodes = BuildTwoByteOpCodes();
+
+    private static OpCode[] BuildOneByteOpCodes()
+    {
+        OpCode[] result = new OpCode[256];
+        FieldInfo[] fields = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            if (fields[i].GetValue(null) is OpCode opcode && opcode.Size == 1)
+                result[opcode.Value & 0xFF] = opcode;
+        }
+
+        return result;
+    }
+
+    private static OpCode[] BuildTwoByteOpCodes()
+    {
+        OpCode[] result = new OpCode[256];
+        FieldInfo[] fields = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            if (fields[i].GetValue(null) is OpCode opcode && opcode.Size == 2)
+                result[opcode.Value & 0xFF] = opcode;
+        }
+
+        return result;
     }
 
     private static void TryPrismaticLocalizationLookup(object source, Type type)
