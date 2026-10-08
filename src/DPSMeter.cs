@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.170";
+    public const string DevelopmentVersion = "v5.171";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1182,7 +1182,9 @@ public sealed class DPSMeter : ModBehaviour
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH BEGIN");
 
             ConstructorInfo damageConstructor = null;
-            ConstructorInfo[] constructors = typeof(DamageData).GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            ConstructorInfo[] constructors = typeof(DamageData).GetConstructors(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
             for (int i = 0; i < constructors.Length; i++)
             {
                 ParameterInfo[] parameters = constructors[i].GetParameters();
@@ -1209,7 +1211,9 @@ public sealed class DPSMeter : ModBehaviour
             }
             else
             {
-                TracePrismaticMethodIL(damageConstructor, "DamageData ctor(SourceType, ScalingValue, Entity, Int32, Single)");
+                TracePrismaticRelevantIL(
+                    damageConstructor,
+                    "DamageData ctor(SourceType, ScalingValue, Entity, Int32, Single)");
             }
 
             MethodInfo dealDamage = typeof(Actor).GetMethod(
@@ -1225,53 +1229,96 @@ public sealed class DPSMeter : ModBehaviour
             }
             else
             {
-                TracePrismaticMethodIL(dealDamage, "Actor DealDamage(DamageData, Entity, ReactionChain)");
+                TracePrismaticRelevantIL(
+                    dealDamage,
+                    "Actor DealDamage(DamageData, Entity, ReactionChain)");
             }
 
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH END");
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH error=" + ex.GetType().Name + " " + ex.Message);
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH error=" +
+                ex.GetType().Name + " " + ex.Message);
         }
     }
 
-    private static void TracePrismaticMethodIL(MethodBase target, string label)
+    private static void TracePrismaticRelevantIL(MethodBase target, string label)
     {
         try
         {
-            if (target == null) return;
+            if (target == null)
+            {
+                return;
+            }
+
             MethodBody body = target.GetMethodBody();
             byte[] il = body == null ? null : body.GetILAsByteArray();
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH method=" + label + " target=" + target + " ilLength=" + (il == null ? -1 : il.Length));
-            if (il == null) return;
+
+            if (il == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH label=" +
+                    label + " il=<null>");
+                return;
+            }
+
             Dictionary<short, OpCode> single = new Dictionary<short, OpCode>();
             Dictionary<short, OpCode> multi = new Dictionary<short, OpCode>();
-            foreach (FieldInfo field in typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static))
+
+            foreach (FieldInfo field in typeof(OpCodes).GetFields(
+                BindingFlags.Public | BindingFlags.Static))
             {
-                if (field.FieldType != typeof(OpCode)) continue;
+                if (field.FieldType != typeof(OpCode))
+                {
+                    continue;
+                }
+
                 OpCode op = (OpCode)field.GetValue(null);
-                if ((op.Value & 0xFF00) == 0xFE00) multi[(short)(op.Value & 0xFF)] = op;
-                else if (op.Value < 0x100) single[op.Value] = op;
+                if ((op.Value & 0xFF00) == 0xFE00)
+                {
+                    multi[(short)(op.Value & 0xFF)] = op;
+                }
+                else if (op.Value < 0x100)
+                {
+                    single[op.Value] = op;
+                }
             }
+
+            bool foundRelevant = false;
+
             for (int offset = 0; offset < il.Length;)
             {
                 int instructionOffset = offset;
                 byte first = il[offset++];
+
                 OpCode opcode;
                 if (first == 0xFE)
                 {
-                    if (offset >= il.Length || !multi.TryGetValue((short)il[offset++], out opcode)) break;
+                    if (offset >= il.Length ||
+                        !multi.TryGetValue((short)il[offset++], out opcode))
+                    {
+                        break;
+                    }
                 }
-                else if (!single.TryGetValue((short)first, out opcode)) break;
+                else if (!single.TryGetValue((short)first, out opcode))
+                {
+                    break;
+                }
+
                 int operandSize;
                 switch (opcode.OperandType)
                 {
-                    case OperandType.InlineNone: operandSize = 0; break;
+                    case OperandType.InlineNone:
+                        operandSize = 0;
+                        break;
                     case OperandType.ShortInlineI:
                     case OperandType.ShortInlineVar:
-                    case OperandType.ShortInlineBrTarget: operandSize = 1; break;
-                    case OperandType.InlineVar: operandSize = 2; break;
+                    case OperandType.ShortInlineBrTarget:
+                        operandSize = 1;
+                        break;
+                    case OperandType.InlineVar:
+                        operandSize = 2;
+                        break;
                     case OperandType.InlineI:
                     case OperandType.InlineBrTarget:
                     case OperandType.InlineMethod:
@@ -1279,34 +1326,125 @@ public sealed class DPSMeter : ModBehaviour
                     case OperandType.InlineType:
                     case OperandType.InlineTok:
                     case OperandType.InlineString:
-                    case OperandType.InlineSig: operandSize = 4; break;
+                    case OperandType.InlineSig:
+                        operandSize = 4;
+                        break;
                     case OperandType.InlineI8:
-                    case OperandType.InlineR: operandSize = 8; break;
-                    case OperandType.ShortInlineR: operandSize = 4; break;
-                    case OperandType.InlineSwitch: operandSize = offset + 4 > il.Length ? il.Length - offset : 4 + BitConverter.ToInt32(il, offset) * 4; break;
-                    default: operandSize = 0; break;
+                    case OperandType.InlineR:
+                        operandSize = 8;
+                        break;
+                    case OperandType.ShortInlineR:
+                        operandSize = 4;
+                        break;
+                    case OperandType.InlineSwitch:
+                        operandSize = offset + 4 > il.Length
+                            ? il.Length - offset
+                            : 4 + BitConverter.ToInt32(il, offset) * 4;
+                        break;
+                    default:
+                        operandSize = 0;
+                        break;
                 }
-                if (offset + operandSize > il.Length) break;
+
+                if (offset + operandSize > il.Length)
+                {
+                    break;
+                }
+
                 string operandText = null;
-                if (operandSize == 4 && (opcode.OperandType == OperandType.InlineMethod || opcode.OperandType == OperandType.InlineField || opcode.OperandType == OperandType.InlineType || opcode.OperandType == OperandType.InlineTok))
+                if (operandSize == 4 &&
+                    (opcode.OperandType == OperandType.InlineMethod ||
+                     opcode.OperandType == OperandType.InlineField ||
+                     opcode.OperandType == OperandType.InlineType ||
+                     opcode.OperandType == OperandType.InlineTok))
                 {
                     int token = BitConverter.ToInt32(il, offset);
-                    try { operandText = target.Module.ResolveMember(token).ToString(); } catch (Exception) { operandText = "token=0x" + token.ToString("X8"); }
+                    try
+                    {
+                        operandText = target.Module.ResolveMember(token).ToString();
+                    }
+                    catch (Exception)
+                    {
+                        operandText = "token=0x" + token.ToString("X8");
+                    }
                 }
                 else if (operandSize == 4 && opcode.OperandType == OperandType.InlineString)
                 {
                     int token = BitConverter.ToInt32(il, offset);
-                    try { operandText = target.Module.ResolveString(token); } catch (Exception) { operandText = "stringToken=0x" + token.ToString("X8"); }
+                    try
+                    {
+                        operandText = target.Module.ResolveString(token);
+                    }
+                    catch (Exception)
+                    {
+                        operandText = "stringToken=0x" + token.ToString("X8");
+                    }
                 }
-                else if (operandSize > 0) operandText = BitConverter.ToString(il, offset, operandSize);
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH label=" + label + " il=" + instructionOffset.ToString("X4") + " op=" + opcode + " operandType=" + opcode.OperandType + " operandSize=" + operandSize + (operandText == null ? "" : " operand=" + operandText));
+
+                bool relevant = IsPrismaticRelevantILReference(operandText);
+
+                if (relevant)
+                {
+                    foundRelevant = true;
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH label=" +
+                        label + " il=" + instructionOffset.ToString("X4") +
+                        " op=" + opcode +
+                        (operandText == null ? "" : " operand=" + operandText));
+                }
+
                 offset += operandSize;
+            }
+
+            if (!foundRelevant)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH label=" +
+                    label + " relevant=<none>");
             }
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH method error=" + label + " " + ex.GetType().Name + " " + ex.Message);
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE PATH method error=" +
+                label + " " + ex.GetType().Name + " " + ex.Message);
         }
+    }
+
+    private static bool IsPrismaticRelevantILReference(string operandText)
+    {
+        if (string.IsNullOrEmpty(operandText))
+        {
+            return false;
+        }
+
+        string[] keywords =
+        {
+            "SourceType",
+            "DamageData",
+            "Actor",
+            "Entity",
+            "Ability",
+            "Skill",
+            "CastInfo",
+            "Gem",
+            "Trigger",
+            "Name",
+            "Title",
+            "Display",
+            "Localization",
+            "Localized",
+            "Identity",
+            "Source",
+            "AbilityIndex"
+        };
+
+        for (int i = 0; i < keywords.Length; i++)
+        {
+            if (operandText.IndexOf(keywords[i], StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void TracePrismaticObjectMembers(object value, string label)
