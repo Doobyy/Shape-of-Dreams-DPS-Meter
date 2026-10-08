@@ -1437,7 +1437,26 @@ public sealed class DPSMeter : ModBehaviour
                 return;
             }
 
-            TracePrismaticMethodIL(setter, "DamageData actor setter");
+            MethodBody body = setter.GetMethodBody();
+            byte[] il = body == null ? null : body.GetILAsByteArray();
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DamageData.actor setter method=" +
+                setter + " ilLength=" + (il == null ? -1 : il.Length));
+
+            if (il != null)
+            {
+                StringBuilder hex = new StringBuilder();
+                for (int i = 0; i < il.Length; i++)
+                {
+                    if (i > 0)
+                    {
+                        hex.Append(' ');
+                    }
+                    hex.Append(il[i].ToString("X2"));
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DamageData.actor setter rawIL=" +
+                    hex);
+            }
         }
         catch (Exception ex)
         {
