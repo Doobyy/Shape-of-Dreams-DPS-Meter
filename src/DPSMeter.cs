@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.84";
+    public const string DevelopmentVersion = "v5.85";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -26,6 +26,7 @@ public sealed class DPSMeter : ModBehaviour
     private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _chompScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _prismaticVisionDiagnosticSeen = new HashSet<string>();
+    private static readonly HashSet<AttackTrigger> _prismaticAttackEventSubscribed = new HashSet<AttackTrigger>();
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -2068,6 +2069,7 @@ public sealed class DPSMeter : ModBehaviour
                 " value=[" + pendingAttack + "]");
 
             TracePrismaticAttackEventTypes(pendingAttack);
+            SubscribePrismaticAttackEvents(pendingAttack as AttackTrigger);
 
             FieldInfo configsField = pendingAttack.GetType().GetField(
                 "configs",
@@ -2281,7 +2283,131 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-private static void TracePrismaticAttackEventTypes(object pendingAttack)
+private static void SubscribePrismaticAttackEvents(AttackTrigger pendingAttack)
+    {
+        if (pendingAttack == null || _prismaticAttackEventSubscribed.Contains(pendingAttack))
+        {
+            return;
+        }
+
+        try
+        {
+            pendingAttack.ActorEvent_OnAttackHit.Add(OnPrismaticAttackHit);
+            pendingAttack.ActorEvent_OnAttackEffectTriggered.Add(OnPrismaticAttackEffectTriggered);
+            _prismaticAttackEventSubscribed.Add(pendingAttack);
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent subscribed type=" +
+                pendingAttack.GetType().FullName + " id=" + pendingAttack.GetInstanceID());
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC attackEvent subscribeError=" +
+                ex.GetType().Name);
+        }
+    }
+
+    private static void OnPrismaticAttackHit(EventInfoAttackHit info)
+    {
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK HIT actor=" +
+            DescribeActor(info.actor) + " attacker=" + DescribeEntity(info.attacker) +
+            " victim=" + DescribeEntity(info.victim) + " strength=" + info.strength +
+            " crit=" + info.isCrit);
+
+        TracePrismaticAttackEventActorChain(info.actor, "attackHit.actor");
+        TracePrismaticAttackEventActorChain(info.attacker as Actor, "attackHit.attacker");
+    }
+
+    private static void OnPrismaticAttackEffectTriggered(EventInfoAttackEffect info)
+    {
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC ATTACK EFFECT actor=" +
+            DescribeActor(info.actor) + " attacker=" + DescribeEntity(info.attacker) +
+            " victim=" + DescribeEntity(info.victim) + " type=" + info.type +
+            " strength=" + info.strength);
+
+        TracePrismaticAttackEventActorChain(info.actor, "attackEffect.actor");
+        TracePrismaticAttackEventActorChain(info.attacker as Actor, "attackEffect.attacker");
+        TracePrismaticReactionChain(info.chain, "attackEffect.chain");
+    }
+
+    private static void TracePrismaticAttackEventActorChain(Actor actor, string label)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
+                " depth=" + depth + " " + DescribeActor(current));
+
+            SkillTrigger skill = current.firstTrigger as SkillTrigger;
+            if (skill != null)
+            {
+                string skillTitle = skill.GetFormattedSkillTitle();
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
+                    " depth=" + depth + " skillTitle=[" + (skillTitle ?? "<null>") +
+                    "] skillIdentity=[" + (GetSkillSlotIdentity(current, skill) ?? "<null>") + "]");
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+    }
+
+    private static void TracePrismaticReactionChain(ReactionChain chain, string label)
+    {
+        try
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
+                " value=[" + chain + "]");
+
+            Type currentType = chain.GetType();
+            int hierarchyDepth = 0;
+            while (currentType != null && hierarchyDepth < 3)
+            {
+                FieldInfo[] fields = currentType.GetFields(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.DeclaredOnly);
+
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    FieldInfo field = fields[i];
+                    try
+                    {
+                        object value = field.GetValue(chain);
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
+                            " field=" + field.Name + " type=" +
+                            (field.FieldType.FullName ?? field.FieldType.Name) +
+                            " value=[" + (value ?? "<null>") + "]");
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
+                            " field=" + field.Name + " readError=" + ex.GetType().Name);
+                    }
+                }
+
+                currentType = currentType.BaseType;
+                hierarchyDepth++;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC " + label +
+                " readError=" + ex.GetType().Name);
+        }
+    }
+
+    private static string DescribeEntity(Entity entity)
+    {
+        if (entity == null)
+        {
+            return "<null>";
+        }
+
+        return "type=" + entity.GetType().Name + " name=" + (entity.name ?? "<null>");
+    }
+
+    private static void TracePrismaticAttackEventTypes(object pendingAttack)
 {
     if (pendingAttack == null)
     {
