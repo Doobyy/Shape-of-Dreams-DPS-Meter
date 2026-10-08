@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.103";
+    public const string DevelopmentVersion = "v5.104";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2248,6 +2248,7 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             TryPrismaticLocalizationLookup(source, type);
+            TracePrismaticCurrentConfig(source);
 
             MethodInfo[] localizationMethods = typeof(DewLocalization).GetMethods(
                 BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
@@ -2282,6 +2283,123 @@ public sealed class DPSMeter : ModBehaviour
         catch (Exception ex)
         {
             WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME attackIdentity error=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticCurrentConfig(object source)
+    {
+        try
+        {
+            PropertyInfo currentConfigProperty = source.GetType().GetProperty(
+                "currentConfig",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (currentConfigProperty == null || currentConfigProperty.GetMethod == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG currentConfig=<unavailable>");
+                return;
+            }
+
+            object config = currentConfigProperty.GetValue(source, null);
+            if (config == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG currentConfig=<null>");
+                return;
+            }
+
+            Type configType = config.GetType();
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG type=" + configType.FullName);
+
+            FieldInfo[] fields = configType.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            int logged = 0;
+            for (int i = 0; i < fields.Length && logged < 40; i++)
+            {
+                FieldInfo field = fields[i];
+                object value;
+                try { value = field.GetValue(config); }
+                catch (Exception) { continue; }
+
+                if (value == null)
+                {
+                    continue;
+                }
+
+                string fieldName = field.Name ?? string.Empty;
+                bool interesting =
+                    fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("memory", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fieldName.IndexOf("description", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (!interesting)
+                {
+                    continue;
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG field=" +
+                    fieldName + " type=" + field.FieldType.FullName +
+                    " value=[" + value + "] objectType=" + value.GetType().FullName);
+                logged++;
+            }
+
+            PropertyInfo[] properties = configType.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < properties.Length && logged < 56; i++)
+            {
+                PropertyInfo property = properties[i];
+                if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+                {
+                    continue;
+                }
+
+                string propertyName = property.Name ?? string.Empty;
+                bool interesting =
+                    propertyName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("key", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("local", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("memory", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    propertyName.IndexOf("description", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (!interesting)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = property.GetValue(config, null);
+                    if (value == null)
+                    {
+                        continue;
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG property=" +
+                        propertyName + " type=" + property.PropertyType.FullName +
+                        " value=[" + value + "] objectType=" + value.GetType().FullName);
+                    logged++;
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG error=" + ex.GetType().Name);
         }
     }
 
