@@ -764,7 +764,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
         GUI.DrawTexture(barRect, _whiteTexture);
 
-        GUI.color = new Color(0.46f, 0.46f, 0.48f, 0.68f);
+        GUI.color = new Color(0.784f, 0.784f, 0.784f, 1f);
         GUI.DrawTexture(
             new Rect(barRect.x, barRect.y, barRect.width * ratio, barRect.height),
             _whiteTexture);
