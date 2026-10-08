@@ -814,8 +814,8 @@ public sealed class DPSMeter : ModBehaviour
         _bismuthBookDamageTraceCount++;
         FinalDamageData damage = info.damage;
 
-        WriteDebugLog("[v5.56] Bismuth Book damage trace " + _bismuthBookDamageTraceCount);
-        WriteDebugLog("[v5.56] book   amount=" + damage.amount
+        WriteDebugLog("[v5.57] Bismuth Book damage trace " + _bismuthBookDamageTraceCount);
+        WriteDebugLog("[v5.57] book   amount=" + damage.amount
             + " discarded=" + damage.discardedAmount
             + " source=" + damage.type
             + " elemental=" + damage.elemental
@@ -823,10 +823,10 @@ public sealed class DPSMeter : ModBehaviour
             + " attackEffectType=" + damage.attackEffectType
             + " attackEffectStrength=" + damage.attackEffectStrength);
 
-        WriteDebugLog("[v5.56] book   eventActor type=" + info.actor.GetType().Name
+        WriteDebugLog("[v5.57] book   eventActor type=" + info.actor.GetType().Name
             + " name=" + info.actor.name);
 
-        TraceSourceChain(info.actor, "[v5.56] book");
+        TraceSourceChain(info.actor, "[v5.57] book");
     }
 
 
@@ -945,8 +945,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _healthOrbTraceCount++;
-        WriteDebugLog("[v5.56] Health Orb trace " + _healthOrbTraceCount);
-        TraceSourceChain(source, "[v5.56] orb");
+        WriteDebugLog("[v5.57] Health Orb trace " + _healthOrbTraceCount);
+        TraceSourceChain(source, "[v5.57] orb");
         TraceRegenOrbPickup(source);
     }
 
@@ -958,10 +958,10 @@ public sealed class DPSMeter : ModBehaviour
         {
             if (string.Equals(current.GetType().Name, "Pickup_RegenOrb", StringComparison.OrdinalIgnoreCase))
             {
-                WriteDebugLog("[v5.56] regen pickup begin");
-                TraceReadableIdentity(current, "[v5.56] regen");
-                TraceMainEffect(current, "[v5.56] regen");
-                WriteDebugLog("[v5.56] regen pickup end");
+                WriteDebugLog("[v5.57] regen pickup begin");
+                TraceReadableIdentity(current, "[v5.57] regen");
+                TraceMainEffect(current, "[v5.57] regen");
+                WriteDebugLog("[v5.57] regen pickup end");
                 return;
             }
 
@@ -1130,8 +1130,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _bismuthHealTraceCount++;
-        WriteDebugLog("[v5.56] Bismuth heal trace " + _bismuthHealTraceCount);
-        TraceSourceChain(source, "[v5.56] bismuth");
+        WriteDebugLog("[v5.57] Bismuth heal trace " + _bismuthHealTraceCount);
+        TraceSourceChain(source, "[v5.57] bismuth");
     }
 
     private static void TraceSourceChain(Actor source, string label)
@@ -1902,41 +1902,21 @@ public sealed class DPSMeter : ModBehaviour
                 }
             }
 
-            // If the configured root is actually owned by this Gem, its
-            // direct scaler is authoritative.
-            if (configured.gem == gem)
+            // Resolve the configured AbilityInstance that is actually owned by
+            // this Essence. This is the critical distinction from the host
+            // skill's root scaler: a socketed AP Essence must not inherit an
+            // unrelated AD scaler from its host Memory.
+            DpsData.DamageScalingType essenceScaling =
+                FindConfiguredGemAbilityScaling(configured, gem, 0);
+
+            if (essenceScaling != DpsData.DamageScalingType.None)
             {
-                DpsData.DamageScalingType directScaling = FindConfiguredAbilityScaling(configured, 0);
-                if (directScaling != DpsData.DamageScalingType.None)
-                {
-                    return directScaling;
-                }
+                return essenceScaling;
             }
 
-            // Some Essences expose their real damage scaler on a child
-            // DamageInstance/AbilityInstance. Search the configured tree,
-            // but deliberately skip the host skill's root so a character
-            // skill such as Valiant Heart cannot donate its 2.4ad scaler to
-            // an AP Essence socketed inside it.
-            List<Actor> children = configured.children;
-            if (children != null)
-            {
-                for (int i = 0; i < children.Count; i++)
-                {
-                    AbilityInstance child = children[i] as AbilityInstance;
-                    if (child == null)
-                    {
-                        continue;
-                    }
-
-                    DpsData.DamageScalingType childScaling = FindConfiguredAbilityScaling(child, 0);
-                    if (childScaling != DpsData.DamageScalingType.None)
-                    {
-                        return childScaling;
-                    }
-                }
-            }
-
+            // Never fall back to the host skill's scaler here. If the Essence
+            // has no identifiable configured scaler, leave it unresolved
+            // rather than inventing one.
             return DpsData.DamageScalingType.None;
         }
         catch (Exception)
@@ -1944,7 +1924,6 @@ public sealed class DPSMeter : ModBehaviour
             return DpsData.DamageScalingType.None;
         }
     }
-
 
     private static DpsData.DamageScalingType FindDamageScalingType(Actor actor)
     {
