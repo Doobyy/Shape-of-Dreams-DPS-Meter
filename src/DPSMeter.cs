@@ -814,8 +814,8 @@ public sealed class DPSMeter : ModBehaviour
         _bismuthBookDamageTraceCount++;
         FinalDamageData damage = info.damage;
 
-        WriteDebugLog("[v5.54] Bismuth Book damage trace " + _bismuthBookDamageTraceCount);
-        WriteDebugLog("[v5.54] book   amount=" + damage.amount
+        WriteDebugLog("[v5.55] Bismuth Book damage trace " + _bismuthBookDamageTraceCount);
+        WriteDebugLog("[v5.55] book   amount=" + damage.amount
             + " discarded=" + damage.discardedAmount
             + " source=" + damage.type
             + " elemental=" + damage.elemental
@@ -823,15 +823,12 @@ public sealed class DPSMeter : ModBehaviour
             + " attackEffectType=" + damage.attackEffectType
             + " attackEffectStrength=" + damage.attackEffectStrength);
 
-        WriteDebugLog("[v5.54] book   eventActor type=" + info.actor.GetType().Name
+        WriteDebugLog("[v5.55] book   eventActor type=" + info.actor.GetType().Name
             + " name=" + info.actor.name);
 
-        TraceSourceChain(info.actor, "[v5.54] book");
+        TraceSourceChain(info.actor, "[v5.55] book");
     }
 
-    private static void TraceBasicAttackSource(Actor source)
-    {
-    }
 
     private static string BuildHealingExportActorChain(Actor source)
     {
@@ -948,8 +945,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _healthOrbTraceCount++;
-        WriteDebugLog("[v5.54] Health Orb trace " + _healthOrbTraceCount);
-        TraceSourceChain(source, "[v5.54] orb");
+        WriteDebugLog("[v5.55] Health Orb trace " + _healthOrbTraceCount);
+        TraceSourceChain(source, "[v5.55] orb");
         TraceRegenOrbPickup(source);
     }
 
@@ -961,11 +958,11 @@ public sealed class DPSMeter : ModBehaviour
         {
             if (string.Equals(current.GetType().Name, "Pickup_RegenOrb", StringComparison.OrdinalIgnoreCase))
             {
-                WriteDebugLog("[v5.54] regen pickup begin");
-                TraceReadableIdentity(current, "[v5.54] regen");
-                TracePickupMembers(current, "[v5.54] regen");
-                TraceMainEffect(current, "[v5.54] regen");
-                WriteDebugLog("[v5.54] regen pickup end");
+                WriteDebugLog("[v5.55] regen pickup begin");
+                TraceReadableIdentity(current, "[v5.55] regen");
+                TracePickupMembers(current, "[v5.55] regen");
+                TraceMainEffect(current, "[v5.55] regen");
+                WriteDebugLog("[v5.55] regen pickup end");
                 return;
             }
 
@@ -1227,8 +1224,8 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _bismuthHealTraceCount++;
-        WriteDebugLog("[v5.54] Bismuth heal trace " + _bismuthHealTraceCount);
-        TraceSourceChain(source, "[v5.54] bismuth");
+        WriteDebugLog("[v5.55] Bismuth heal trace " + _bismuthHealTraceCount);
+        TraceSourceChain(source, "[v5.55] bismuth");
     }
 
     private static void TraceSourceChain(Actor source, string label)
