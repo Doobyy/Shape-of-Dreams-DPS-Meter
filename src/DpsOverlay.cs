@@ -504,7 +504,7 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         // Keep a small visual gap below the final barrier row.
-        height += 6f;
+        height += 2f;
 
         return height;
     }
