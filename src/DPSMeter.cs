@@ -1434,47 +1434,21 @@ public sealed class DPSMeter : ModBehaviour
                 new Type[] { typeof(DamageData), typeof(Entity), typeof(ReactionChain) },
                 null);
 
-            if (dealDamage == null)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage actor stores method=<null>");
-                return;
-            }
-
-            byte[] il = dealDamage.GetMethodBody()?.GetILAsByteArray();
+            byte[] il = dealDamage?.GetMethodBody()?.GetILAsByteArray();
             if (il == null)
             {
                 WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage actor stores il=<null>");
                 return;
             }
 
-            int hits = 0;
-            for (int offset = 0; offset <= il.Length - 5; offset++)
+            int[] offsets = new int[] { 0x015B, 0x0305, 0x03A0, 0x0522 };
+            for (int n = 0; n < offsets.Length; n++)
             {
-                if (il[offset] != 0x7D)
-                {
-                    continue;
-                }
-
-                int token = BitConverter.ToInt32(il, offset + 1);
-                MemberInfo member;
-                try
-                {
-                    member = dealDamage.Module.ResolveMember(token);
-                }
-                catch (Exception)
-                {
-                    continue;
-                }
-
-                if (member == null || member.Name != "actor")
-                {
-                    continue;
-                }
-
-                hits++;
-                int start = Math.Max(0, offset - 8);
-                int end = Math.Min(il.Length, offset + 6);
+                int offset = offsets[n];
+                int start = Math.Max(0, offset - 24);
+                int end = Math.Min(il.Length, offset + 8);
                 StringBuilder bytes = new StringBuilder();
+
                 for (int i = start; i < end; i++)
                 {
                     if (i > start)
@@ -1485,12 +1459,8 @@ public sealed class DPSMeter : ModBehaviour
                 }
 
                 WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage actor store #" +
-                    hits + " il=" + offset.ToString("X4") + " contextBytes=" + bytes);
-            }
-
-            if (hits == 0)
-            {
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC PATH DealDamage actor stores=<none>");
+                    (n + 1) + " il=" + offset.ToString("X4") + " contextStart=" +
+                    start.ToString("X4") + " contextBytes=" + bytes);
             }
         }
         catch (Exception ex)
