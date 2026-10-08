@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.162";
+    public const string DevelopmentVersion = "v5.163";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2358,6 +2358,11 @@ public sealed class DPSMeter : ModBehaviour
             TracePrismaticDisplayIdentityObject("effect", effect);
             TracePrismaticDisplayIdentityObject("pendingAttack", pendingAttack);
             TracePrismaticDisplayIdentityObject("pendingTrigger", pendingTrigger);
+
+            if (pendingAttack != null)
+            {
+                TracePrismaticBismuthRockIdentity(pendingAttack);
+            }
         }
         catch (Exception ex)
         {
@@ -2393,6 +2398,113 @@ public sealed class DPSMeter : ModBehaviour
         TracePrismaticLocalizedKey(label, originalName);
         TracePrismaticZeroArgMethod(label, value, "GetCustomTooltipName");
         TracePrismaticZeroArgMethod(label, value, "GetActorReadableName");
+    }
+
+    private static void TracePrismaticBismuthRockIdentity(Actor pendingAttack)
+    {
+        try
+        {
+            Type type = pendingAttack.GetType();
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BISMUTHROCK type=" + type.FullName);
+
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                string fieldName = field.Name;
+
+                if (fieldName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("identity", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    fieldName.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object fieldValue = field.GetValue(pendingAttack);
+                    string renderedValue;
+
+                    if (fieldValue == null)
+                    {
+                        renderedValue = "<null>";
+                    }
+                    else if (fieldValue is string)
+                    {
+                        renderedValue = (string)fieldValue;
+                    }
+                    else if (fieldValue is Actor)
+                    {
+                        Actor fieldActor = (Actor)fieldValue;
+                        renderedValue = "Actor(type=" + fieldActor.GetType().Name +
+                            ",name=" + (fieldActor.name ?? "<null>") + ")";
+                    }
+                    else
+                    {
+                        renderedValue = fieldValue.GetType().FullName;
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BISMUTHROCK field=" +
+                        fieldName + " type=" + field.FieldType.FullName +
+                        " value=" + renderedValue);
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BISMUTHROCK field=" +
+                        fieldName + " readError=" + ex.GetType().Name);
+                }
+            }
+
+            MethodInfo[] methods = type.GetMethods(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < methods.Length; i++)
+            {
+                MethodInfo method = methods[i];
+
+                if (method.ReturnType != typeof(string) ||
+                    method.GetParameters().Length != 0)
+                {
+                    continue;
+                }
+
+                string methodName = method.Name;
+                if (methodName.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    methodName.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    methodName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    methodName.IndexOf("display", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    methodName.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    methodName.IndexOf("identity", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    string value = method.Invoke(pendingAttack, null) as string;
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BISMUTHROCK method=" +
+                        methodName + " value=" + (value ?? "<null>"));
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BISMUTHROCK method=" +
+                        methodName + " readError=" + ex.GetType().Name);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC BISMUTHROCK error=" +
+                ex.GetType().Name);
+        }
     }
 
     private static void TracePrismaticLocalizedKey(string label, string key)
