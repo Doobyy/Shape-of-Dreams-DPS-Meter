@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.132";
+    public const string DevelopmentVersion = "v5.133";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2905,46 +2905,7 @@ public sealed class DPSMeter : ModBehaviour
 
 
 
-    private static void TracePrismaticConfigObject(object value, string label)
-    {
-        if (value == null)
-            return;
 
-        Type type = value.GetType();
-
-        if (type.IsPrimitive || value is string || value is Enum)
-            return;
-
-        FieldInfo[] fields = type.GetFields(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        for (int i = 0; i < fields.Length && i < 48; i++)
-        {
-            FieldInfo field = fields[i];
-            string name = field.Name ?? string.Empty;
-
-            if (name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("icon", StringComparison.OrdinalIgnoreCase) < 0 &&
-                name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0)
-                continue;
-
-            try
-            {
-                object fieldValue = field.GetValue(value);
-
-                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG parent=" +
-                    label + " field=" + name + " type=" + field.FieldType.FullName +
-                    " value=[" + (fieldValue == null ? "<null>" : fieldValue.ToString()) + "]");
-            }
-            catch (Exception)
-            {
-            }
-        }
-    }
 
     private static string ResolveLocalizedDamageSourceName(Actor source)
     {
