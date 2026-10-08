@@ -1657,9 +1657,9 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
         if (value is Color32 color32)
         {
-            Color color = color32;
+            Color convertedColor = color32;
             return "Color32(r=" + color32.r + ",g=" + color32.g + ",b=" + color32.b + ",a=" + color32.a +
-                ") hex=" + ColorUtility.ToHtmlStringRGBA(color);
+                ") hex=" + ColorUtility.ToHtmlStringRGBA(convertedColor);
         }
 
         return value.ToString();
