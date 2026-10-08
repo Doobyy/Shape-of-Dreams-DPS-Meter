@@ -2147,6 +2147,709 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static void TracePrismaticCastInfoObject(string label, object castInfo)
+    {
+        if (castInfo == null)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CASTINFO " + label + "=<null>");
+            return;
+        }
+
+        Type type = castInfo.GetType();
+        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CASTINFO " + label +
+            " type=" + type.FullName);
+
+        Type current = type;
+        while (current != null && current != typeof(object))
+        {
+            FieldInfo[] fields = current.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                string name = field.Name ?? string.Empty;
+
+                if (name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("display", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("source", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("origin", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("caster", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                object value;
+                try
+                {
+                    value = field.GetValue(castInfo);
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CASTINFO " + label +
+                        " field=" + name + " readError=" + ex.GetType().Name);
+                    continue;
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CASTINFO " + label +
+                    " field=" + name + " type=" +
+                    (field.FieldType != null ? field.FieldType.FullName : "<null>") +
+                    " value=[" + DescribePrismaticCastInfoValue(value) + "]");
+            }
+
+            current = current.BaseType;
+        }
+    }
+
+    private static string DescribePrismaticCastInfoValue(object value)
+    {
+        if (value == null)
+        {
+            return "<null>";
+        }
+
+        Actor actor = value as Actor;
+        if (actor != null)
+        {
+            return "Actor type=" + actor.GetType().Name +
+                " name=" + (actor.name ?? "<null>") +
+                " readable=[" + (actor.GetActorReadableName() ?? "<null>") + "]" +
+                " original=[" + (actor.GetOriginalName() ?? "<null>") + "]";
+        }
+
+        return value.ToString();
+    }
+
+
+    private static Sprite FindElmFireIcon(Actor actor)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            if (string.Equals(current.GetType().Name, "Se_Elm_Fire", StringComparison.Ordinal))
+            {
+                return FindSpriteMember(current);
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
+
+    private static int GetPrismaticIlOperandSize(OperandType operandType)
+    {
+        switch (operandType)
+        {
+            case OperandType.InlineNone:
+                return 0;
+            case OperandType.ShortInlineI:
+            case OperandType.ShortInlineR:
+            case OperandType.ShortInlineBrTarget:
+            case OperandType.ShortInlineVar:
+                return 1;
+            case OperandType.InlineVar:
+                return 2;
+            case OperandType.InlineI:
+            case OperandType.InlineBrTarget:
+            case OperandType.InlineField:
+            case OperandType.InlineMethod:
+            case OperandType.InlineSig:
+            case OperandType.InlineString:
+            case OperandType.InlineTok:
+            case OperandType.InlineType:
+                return 4;
+            case OperandType.InlineI8:
+            case OperandType.InlineR:
+                return 8;
+            case OperandType.InlineSwitch:
+                return 4;
+        }
+
+        return -1;
+    }
+
+    private static readonly OpCode[] OneByteOpCodes = BuildOneByteOpCodes();
+    private static readonly OpCode[] TwoByteOpCodes = BuildTwoByteOpCodes();
+
+    private static OpCode[] BuildOneByteOpCodes()
+    {
+        OpCode[] result = new OpCode[256];
+        FieldInfo[] fields = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            if (fields[i].GetValue(null) is OpCode opcode && opcode.Size == 1)
+                result[opcode.Value & 0xFF] = opcode;
+        }
+
+        return result;
+    }
+
+    private static OpCode[] BuildTwoByteOpCodes()
+    {
+        OpCode[] result = new OpCode[256];
+        FieldInfo[] fields = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            if (fields[i].GetValue(null) is OpCode opcode && opcode.Size == 2)
+                result[opcode.Value & 0xFF] = opcode;
+        }
+
+        return result;
+    }
+
+    private static void TryPrismaticLocalizationLookup(object source, Type type)
+    {
+        if (source == null || type == null)
+        {
+            return;
+        }
+
+        try
+        {
+            string[] candidates = new string[]
+            {
+                type.Name,
+                source is Actor ? ((Actor)source).GetOriginalName() : null,
+                "63"
+            };
+
+            MethodInfo getSkillKeyString = typeof(DewLocalization).GetMethod(
+                "GetSkillKey", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new Type[] { typeof(string) }, null);
+            MethodInfo getSkillNameString = typeof(DewLocalization).GetMethod(
+                "GetSkillName", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new Type[] { typeof(string), typeof(int) }, null);
+            MethodInfo getSkillMemoryString = typeof(DewLocalization).GetMethod(
+                "GetSkillMemory", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new Type[] { typeof(string) }, null);
+
+            MethodInfo getSkillNameKeyString = typeof(DewLocalization).GetMethod(
+                "GetSkillNameKey", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new Type[] { typeof(SkillTrigger), typeof(int) }, null);
+
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                string candidate = candidates[i];
+                if (string.IsNullOrEmpty(candidate))
+                {
+                    continue;
+                }
+
+                string key = null;
+                if (getSkillKeyString != null)
+                {
+                    try { key = getSkillKeyString.Invoke(null, new object[] { candidate }) as string; }
+                    catch (Exception) { }
+                }
+
+                string name = null;
+                if (getSkillNameString != null)
+                {
+                    try { name = getSkillNameString.Invoke(null, new object[] { candidate, 0 }) as string; }
+                    catch (Exception) { }
+                }
+
+                string memory = null;
+                if (getSkillMemoryString != null)
+                {
+                    try { memory = getSkillMemoryString.Invoke(null, new object[] { candidate }) as string; }
+                    catch (Exception) { }
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME lookup candidate=[" + candidate +
+                    "] skillKey=[" + (key ?? "<null>") + "] skillName=[" + (name ?? "<null>") +
+                    "] skillMemory=[" + (memory ?? "<null>") + "]");
+
+                if (!string.IsNullOrEmpty(key) && !string.Equals(key, candidate, StringComparison.Ordinal))
+                {
+                    string keyedName = null;
+                    try { keyedName = getSkillNameString.Invoke(null, new object[] { key, 0 }) as string; }
+                    catch (Exception) { }
+
+                    string keyedMemory = null;
+                    if (getSkillMemoryString != null)
+                    {
+                        try { keyedMemory = getSkillMemoryString.Invoke(null, new object[] { key }) as string; }
+                        catch (Exception) { }
+                    }
+
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME lookup key=[" + key +
+                        "] skillName=[" + (keyedName ?? "<null>") + "] skillMemory=[" +
+                        (keyedMemory ?? "<null>") + "]");
+                }
+            }
+
+            MethodInfo getSkillKeyType = typeof(DewLocalization).GetMethod(
+                "GetSkillKey", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new Type[] { typeof(Type) }, null);
+            if (getSkillKeyType != null)
+            {
+                string key = null;
+                try { key = getSkillKeyType.Invoke(null, new object[] { type }) as string; }
+                catch (Exception) { }
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME lookup type=[" + type.FullName +
+                    "] skillKey=[" + (key ?? "<null>") + "]");
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC NAME lookup error=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TraceTargetChompScaling(Actor actor, SkillTrigger directSkill)
+    {
+        if (actor == null)
+        {
+            return;
+        }
+
+        SkillTrigger skill = directSkill;
+        Actor skillSourceActor = actor;
+        if (skill == null)
+        {
+            skill = FindSkillTriggerInActorChain(actor, out skillSourceActor);
+        }
+
+        if (skill == null || !IsTargetChompSkill(skill))
+        {
+            return;
+        }
+
+        string skillName = null;
+        try
+        {
+            skillName = skill.GetFormattedSkillTitle();
+        }
+        catch (Exception)
+        {
+        }
+
+        if (!ContainsTargetChompName(skillName))
+        {
+            try
+            {
+                string localized = DewLocalization.GetSkillName(skill, 0);
+                if (ContainsTargetChompName(localized))
+                {
+                    skillName = localized;
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        string identity = GetSkillSlotIdentity(skillSourceActor, skill);
+        string traceKey = "memory:chomp:" + (identity ?? skillName);
+        if (!_chompScalingDiagnosticSeen.Add(traceKey))
+        {
+            return;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] TARGET MEMORY CHOMP trace skill=" +
+            (skillName ?? "<null>") + " identity=" + (identity ?? "<null>"));
+
+        Actor current = actor;
+        int depth = 0;
+        while (current != null && depth < 8)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] CHOMP runtime depth=" + depth +
+                " type=" + current.GetType().FullName +
+                " name=" + (current.name ?? "<null>"));
+            LogScalingFields(current, "[" + DevelopmentVersion + "] CHOMP runtime depth=" + depth);
+            current = current.parentActor;
+            depth++;
+        }
+
+        try
+        {
+            var config = skill.currentConfig;
+            if (config == null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] CHOMP configured unavailable currentConfig=<null>");
+                return;
+            }
+
+            AbilityInstance configured = config.spawnedInstance;
+            WriteDebugLog("[" + DevelopmentVersion + "] CHOMP configured root type=" +
+                (configured == null ? "<null>" : configured.GetType().FullName) +
+                " name=" + (configured == null ? "<null>" : (configured.name ?? "<null>")));
+
+            if (configured != null)
+            {
+                TraceConfiguredChompAbilityTree(configured, 0);
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] CHOMP configured trace exception=" + ex.GetType().Name);
+        }
+    }
+
+    private static void TraceConfiguredChompAbilityTree(AbilityInstance instance, int depth)
+    {
+        if (instance == null || depth > 8)
+        {
+            return;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "] CHOMP configured depth=" + depth +
+            " type=" + instance.GetType().FullName +
+            " name=" + (instance.name ?? "<null>") +
+            " gem=" + DescribeGem(instance.gem));
+        LogScalingFields(instance, "[" + DevelopmentVersion + "] CHOMP configured depth=" + depth);
+
+        List<Actor> children = instance.children;
+        if (children == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child != null)
+            {
+                TraceConfiguredChompAbilityTree(child, depth + 1);
+            }
+        }
+    }
+
+    private static bool ContainsTargetMemoryName(string value)
+    {
+        return !string.IsNullOrEmpty(value) &&
+            value.IndexOf("Backstep", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static bool IsTargetEssenceGem(Gem gem)
+    {
+        if (gem == null)
+        {
+            return false;
+        }
+
+        string original = gem.GetOriginalName();
+        string name = gem.name;
+        string localized = GetLocalizedEssenceName(gem);
+
+        return ContainsTargetEssenceName(original) ||
+            ContainsTargetEssenceName(name) ||
+            ContainsTargetEssenceName(localized);
+    }
+
+    private static bool ContainsTargetEssenceName(string value)
+    {
+        return !string.IsNullOrEmpty(value) &&
+            (value.IndexOf("Backstep", StringComparison.OrdinalIgnoreCase) >= 0 ||
+             value.IndexOf("Sharpness", StringComparison.OrdinalIgnoreCase) >= 0);
+    }
+
+    private static string DescribeGem(Gem gem)
+    {
+        if (gem == null)
+        {
+            return "<null>";
+        }
+
+        return "original=" + (gem.GetOriginalName() ?? "<null>") +
+            " name=" + (gem.name ?? "<null>") +
+            " localized=" + (GetLocalizedEssenceName(gem) ?? "<null>");
+    }
+
+    private static void LogScalingFields(Actor actor, string label)
+    {
+        if (actor == null)
+        {
+            return;
+        }
+
+        FieldInfo[] fields = actor.GetType().GetFields(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field.FieldType != typeof(ScalingValue))
+            {
+                continue;
+            }
+
+            try
+            {
+                ScalingValue value = (ScalingValue)field.GetValue(actor);
+                WriteDebugLog(label + " scalingField=" + field.Name +
+                    " ad=" + value.adFactor.ToString("0.######") +
+                    " ap=" + value.apFactor.ToString("0.######") +
+                    " hp=" + value.addedHpFactor.ToString("0.######") +
+                    " resolved=" + GetScalingType(value));
+            }
+            catch (Exception ex)
+            {
+                WriteDebugLog(label + " scalingField=" + field.Name +
+                    " readException=" + ex.GetType().Name);
+            }
+        }
+    }
+
+    private static void TraceConfiguredEssenceTree(
+        AbilityInstance instance,
+        Gem targetGem,
+        int depth)
+    {
+        if (instance == null || depth > 8)
+        {
+            return;
+        }
+
+        WriteDebugLog("[v5.62] configured depth=" + depth +
+            " type=" + instance.GetType().FullName +
+            " name=" + (instance.name ?? "<null>") +
+            " gem=" + DescribeGem(instance.gem) +
+            " gemMatches=" + (instance.gem == targetGem));
+
+        LogScalingFields(instance, "[v5.62] configured depth=" + depth);
+
+        List<Actor> children = instance.children;
+        if (children == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < children.Count; i++)
+        {
+            AbilityInstance child = children[i] as AbilityInstance;
+            if (child != null)
+            {
+                TraceConfiguredEssenceTree(child, targetGem, depth + 1);
+            }
+        }
+    }
+
+    private DpsData.DamageScalingType GetCachedEssenceScaling(Gem gem, Actor actor)
+    {
+        if (gem == null)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        DpsData.DamageScalingType cached;
+        if (_essenceScalingCache.TryGetValue(gem, out cached))
+        {
+            return cached;
+        }
+
+        // First use the Essence's configured data. This keeps socketed
+        // Essences independent from the host skill's scaler.
+        DpsData.DamageScalingType scaling = FindConfiguredGemScaling(gem);
+
+        // Some Essences expose their actual scaler only on the runtime
+        // AbilityInstance that owns the Essence. Resolve that runtime source
+        // by matching the same Essence identity, rather than walking into the
+        // host skill's unrelated scaler (for example Valiant Heart = AD).
+        if (scaling == DpsData.DamageScalingType.None)
+        {
+            scaling = FindRuntimeEssenceScaling(actor, gem, 0);
+        }
+
+        if (scaling != DpsData.DamageScalingType.None)
+        {
+            _essenceScalingCache[gem] = scaling;
+        }
+
+        return scaling;
+    }
+
+
+    private static DpsData.DamageScalingType FindRuntimeEssenceScaling(
+        Actor actor,
+        Gem gem,
+        int depth)
+    {
+        if (actor == null || gem == null || depth > 8)
+        {
+            return DpsData.DamageScalingType.None;
+        }
+
+        AbilityInstance instance = actor as AbilityInstance;
+        if (instance != null && AreSameGemIdentity(instance.gem, gem))
+        {
+            DamageInstance damageInstance = instance as DamageInstance;
+            if (damageInstance != null)
+            {
+                DpsData.DamageScalingType scaling = GetScalingType(damageInstance.dmgFactor);
+                if (scaling != DpsData.DamageScalingType.None)
+                {
+                    return scaling;
+                }
+            }
+
+            DpsData.DamageScalingType fieldScaling = FindRuntimeDamageScaling(instance, "damage");
+            if (fieldScaling != DpsData.DamageScalingType.None)
+            {
+                return fieldScaling;
+            }
+
+            fieldScaling = FindRuntimeDamageScaling(instance, "normalDamage");
+            if (fieldScaling != DpsData.DamageScalingType.None)
+            {
+                return fieldScaling;
+            }
+
+            fieldScaling = FindRuntimeDamageScaling(instance, null);
+            if (fieldScaling != DpsData.DamageScalingType.None)
+            {
+                return fieldScaling;
+            }
+
+            DpsData.DamageScalingType childScaling = FindConfiguredAbilityScaling(instance, 0);
+            if (childScaling != DpsData.DamageScalingType.None)
+            {
+                return childScaling;
+            }
+        }
+
+        return FindRuntimeEssenceScaling(actor.parentActor, gem, depth + 1);
+    }
+
+
+    private static void TracePrismaticAttackTriggerPath(Actor source)
+    {
+        if (source == null)
+            return;
+
+        try
+        {
+            Type type = source.GetType();
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER type=" +
+                type.FullName + " name=" + (source.name ?? "<null>") +
+                " original=" + (source.GetOriginalName() ?? "<null>"));
+
+            PropertyInfo currentConfigProperty = type.GetProperty(
+                "currentConfig", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (currentConfigProperty != null)
+            {
+                try
+                {
+                    object currentConfig = currentConfigProperty.GetValue(source, null);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER currentConfig type=" +
+                        (currentConfig == null ? "<null>" : currentConfig.GetType().FullName));
+                    TracePrismaticConfigObject(currentConfig, "currentConfig");
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER currentConfig readError=" +
+                        ex.GetType().Name);
+                }
+            }
+
+            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                string name = field.Name ?? string.Empty;
+                if (name.IndexOf("config", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
+                try
+                {
+                    object value = field.GetValue(source);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER field=" +
+                        name + " type=" + field.FieldType.FullName + " value=[" +
+                        (value == null ? "<null>" : value.ToString()) + "]");
+
+                    if (field.FieldType.IsArray)
+                    {
+                        Array array = value as Array;
+                        if (array != null)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER array=" +
+                                name + " length=" + array.Length);
+                            for (int index = 0; index < array.Length && index < 8; index++)
+                            {
+                                object item = array.GetValue(index);
+                                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER array=" +
+                                    name + "[" + index + "] type=" +
+                                    (item == null ? "<null>" : item.GetType().FullName));
+                                TracePrismaticConfigObject(item, name + "[" + index + "]");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        TracePrismaticConfigObject(value, name);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER field=" +
+                        name + " readError=" + ex.GetType().Name);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC TRIGGER error=" +
+                ex.GetType().Name);
+        }
+    }
+
+    private static void TracePrismaticConfigObject(object value, string label)
+    {
+        if (value == null)
+            return;
+
+        Type type = value.GetType();
+        if (type.IsPrimitive || value is string || value is Enum)
+            return;
+
+        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        for (int i = 0; i < fields.Length && i < 64; i++)
+        {
+            FieldInfo field = fields[i];
+            string name = field.Name ?? string.Empty;
+            if (name.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("icon", StringComparison.OrdinalIgnoreCase) < 0 &&
+                name.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0)
+                continue;
+
+            try
+            {
+                object fieldValue = field.GetValue(value);
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC CONFIG parent=" +
+                    label + " field=" + name + " type=" + field.FieldType.FullName +
+                    " value=[" + (fieldValue == null ? "<null>" : fieldValue.ToString()) + "]");
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
+
+
+
 
     private static string ResolveLocalizedDamageSourceName(Actor source)
     {
