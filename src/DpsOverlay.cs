@@ -56,8 +56,6 @@ public sealed class DpsOverlay : MonoBehaviour
     private bool _resizeMoved;
     private float _resizeStartHealingHeight;
     private bool _headerMoved;
-    private bool _showHealing = true;
-    private bool _showBarrier = true;
     private float _collapsedWindowHeight;
     private bool _manualResize;
 
@@ -70,8 +68,6 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _rowRight;
     private Texture2D _whiteTexture;
     private Sprite _basicAttackIcon;
-    private Texture2D _healingExpandIcon;
-    private Texture2D _barrierExpandIcon;
 
     public bool Visible { get; set; } = true;
 
@@ -181,29 +177,21 @@ public sealed class DpsOverlay : MonoBehaviour
 
             GUILayout.BeginArea(breakdownRect);
 
-            DrawBreakdownToggles();
+            DrawHealingBreakdown(
+                _mode == DisplayMode.CurrentDps
+                    ? _data.CurrentPersonalHealingRows
+                    : _data.CumulativeHealingRows,
+                _mode == DisplayMode.CurrentDps
+                    ? _data.CurrentInstancePersonalHealing
+                    : _data.CumulativePersonalHealing);
 
-            if (_showHealing)
-            {
-                DrawHealingBreakdown(
-                    _mode == DisplayMode.CurrentDps
-                        ? _data.CurrentPersonalHealingRows
-                        : _data.CumulativeHealingRows,
-                    _mode == DisplayMode.CurrentDps
-                        ? _data.CurrentInstancePersonalHealing
-                        : _data.CumulativePersonalHealing);
-            }
-
-            if (_showBarrier)
-            {
-                DrawBarrierBreakdown(
-                    _mode == DisplayMode.CurrentDps
-                        ? _data.CurrentPersonalBarrierRows
-                        : _data.CumulativeBarrierRows,
-                    _mode == DisplayMode.CurrentDps
-                        ? _data.CurrentInstancePersonalBarrier
-                        : _data.CumulativePersonalBarrier);
-            }
+            DrawBarrierBreakdown(
+                _mode == DisplayMode.CurrentDps
+                    ? _data.CurrentPersonalBarrierRows
+                    : _data.CumulativeBarrierRows,
+                _mode == DisplayMode.CurrentDps
+                    ? _data.CurrentInstancePersonalBarrier
+                    : _data.CumulativePersonalBarrier);
 
             GUILayout.EndArea();
         }
@@ -411,41 +399,19 @@ public sealed class DpsOverlay : MonoBehaviour
             return 0f;
         }
 
-        float height = 0f;
+        float height = 16f;
 
-        if (!_showHealing && !_showBarrier)
-        {
-            return 0f;
-        }
+        IReadOnlyList<DpsData.BreakdownRow> healingRows =
+            _mode == DisplayMode.CurrentDps
+                ? _data.CurrentPersonalHealingRows
+                : _data.CumulativeHealingRows;
+        height += 22f + (Mathf.Max(1, healingRows != null ? healingRows.Count : 0) * 22f);
 
-        height = 16f;
-
-        if (_showHealing)
-        {
-            IReadOnlyList<DpsData.BreakdownRow> rows =
-                _mode == DisplayMode.CurrentDps
-                    ? _data.CurrentPersonalHealingRows
-                    : _data.CumulativeHealingRows;
-
-            int rowCount = rows != null ? rows.Count : 0;
-            height += 22f + (Mathf.Max(1, rowCount) * 22f);
-        }
-
-        if (_showBarrier)
-        {
-            IReadOnlyList<DpsData.BreakdownRow> rows =
-                _mode == DisplayMode.CurrentDps
-                    ? _data.CurrentPersonalBarrierRows
-                    : _data.CumulativeBarrierRows;
-
-            int rowCount = rows != null ? rows.Count : 0;
-            height += 22f + (Mathf.Max(1, rowCount) * 22f);
-        }
-
-        if (_showHealing != _showBarrier)
-        {
-            height += 1.36f;
-        }
+        IReadOnlyList<DpsData.BreakdownRow> barrierRows =
+            _mode == DisplayMode.CurrentDps
+                ? _data.CurrentPersonalBarrierRows
+                : _data.CumulativeBarrierRows;
+        height += 22f + (Mathf.Max(1, barrierRows != null ? barrierRows.Count : 0) * 22f);
 
         return height;
     }
@@ -674,29 +640,6 @@ public sealed class DpsOverlay : MonoBehaviour
             DamageRow row = rows[i];
             DrawDamageRow(row.Name, row.Amount, total, maxAmount, i, row.Elemental, row.Scaling, row.Icon);
         }
-    }
-
-    private void DrawBreakdownToggles()
-    {
-        GUILayout.BeginHorizontal();
-
-        Rect healingRect = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f), GUILayout.Height(20f));
-        if (GUI.Button(healingRect, GUIContent.none, GUIStyle.none))
-        {
-            _showHealing = !_showHealing;
-        }
-        DrawExpandIcon(GetHealingExpandIcon(), healingRect, _showHealing);
-
-        GUILayout.FlexibleSpace();
-
-        Rect barrierRect = GUILayoutUtility.GetRect(20f, 20f, GUILayout.Width(20f), GUILayout.Height(20f));
-        if (GUI.Button(barrierRect, GUIContent.none, GUIStyle.none))
-        {
-            _showBarrier = !_showBarrier;
-        }
-        DrawExpandIcon(GetBarrierExpandIcon(), barrierRect, _showBarrier);
-
-        GUILayout.EndHorizontal();
     }
 
     private void DrawBarrierBreakdown(IReadOnlyList<DpsData.BreakdownRow> rows, float total)
@@ -1175,109 +1118,6 @@ public sealed class DpsOverlay : MonoBehaviour
 
         return string.Equals(name, "2", StringComparison.OrdinalIgnoreCase)
             || string.Equals(name, "2.png", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private Texture2D GetHealingExpandIcon()
-    {
-        if (_healingExpandIcon != null)
-        {
-            return _healingExpandIcon;
-        }
-
-        _healingExpandIcon = CreateExpandIcon(false);
-        return _healingExpandIcon;
-    }
-
-    private Texture2D GetBarrierExpandIcon()
-    {
-        if (_barrierExpandIcon != null)
-        {
-            return _barrierExpandIcon;
-        }
-
-        _barrierExpandIcon = CreateExpandIcon(true);
-        return _barrierExpandIcon;
-    }
-
-    private static Texture2D CreateExpandIcon(bool shield)
-    {
-        const int size = 24;
-        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-        texture.filterMode = FilterMode.Point;
-
-        Color clear = new Color(0f, 0f, 0f, 0f);
-        Color ink = new Color(0.78f, 0.78f, 0.80f, 0.95f);
-
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                texture.SetPixel(x, y, clear);
-            }
-        }
-
-        if (shield)
-        {
-            for (int y = 3; y <= 20; y++)
-            {
-                float halfWidth = 8f - (Mathf.Abs(y - 12f) * 0.18f);
-                int left = Mathf.RoundToInt(12f - halfWidth);
-                int right = Mathf.RoundToInt(12f + halfWidth);
-
-                if (y == 3 || y == 4 || y == 19 || y == 20 || y <= 7)
-                {
-                    for (int x = left; x <= right; x++)
-                    {
-                        if (x == left || x == right || y == 3 || y == 4)
-                            texture.SetPixel(x, y, ink);
-                    }
-                }
-                else
-                {
-                    for (int x = left; x <= right; x++)
-                    {
-                        if (x == left || x == right)
-                            texture.SetPixel(x, y, ink);
-                    }
-                }
-            }
-
-            for (int i = 0; i < 6; i++)
-            {
-                texture.SetPixel(12, 9 + i, ink);
-                texture.SetPixel(11, 10 + i, ink);
-                texture.SetPixel(13, 10 + i, ink);
-            }
-        }
-        else
-        {
-            for (int i = 5; i <= 18; i++)
-            {
-                texture.SetPixel(12, i, ink);
-                texture.SetPixel(i, 12, ink);
-            }
-        }
-
-        texture.Apply();
-        return texture;
-    }
-
-    private static void DrawExpandIcon(Texture2D icon, Rect rect, bool active)
-    {
-        if (icon == null)
-            return;
-
-        GUI.color = active
-            ? Color.white
-            : new Color(0.62f, 0.62f, 0.64f, 0.78f);
-
-        GUI.DrawTexture(
-            new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, rect.height - 4f),
-            icon,
-            ScaleMode.ScaleToFit,
-            true);
-
-        GUI.color = Color.white;
     }
 
     private static void DrawSprite(Sprite sprite, Rect rect)
