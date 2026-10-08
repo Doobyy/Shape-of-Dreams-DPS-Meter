@@ -300,6 +300,29 @@ public sealed class DPSMeter : ModBehaviour
     }
 
 
+    private static SkillTrigger FindSkillTriggerInActorChain(Actor source, out Actor skillSourceActor)
+    {
+        skillSourceActor = source;
+
+        Actor current = source;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            SkillTrigger skill = current.firstTrigger as SkillTrigger;
+            if (skill != null)
+            {
+                skillSourceActor = current;
+                return skill;
+            }
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
     private static string GetSkillSlotIdentity(Actor source, SkillTrigger skill)
     {
         if (source == null || skill == null)
@@ -1183,6 +1206,12 @@ public sealed class DPSMeter : ModBehaviour
         Gem directGem = FindDamageSourceEssence(info.actor);
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
         bool isDirectEssenceDamage = directGem != null;
+        Actor skillSourceActor = info.actor;
+
+        if (!isDirectEssenceDamage && skill == null)
+        {
+            skill = FindSkillTriggerInActorChain(info.actor, out skillSourceActor);
+        }
 
         if (isDirectEssenceDamage)
         {
@@ -1215,7 +1244,7 @@ public sealed class DPSMeter : ModBehaviour
         {
             if (skill != null)
             {
-                skillIdentity = GetSkillSlotIdentity(info.actor, skill);
+                skillIdentity = GetSkillSlotIdentity(skillSourceActor, skill);
                 string formattedSkillName = skill.GetFormattedSkillTitle();
 
                 if (!string.IsNullOrEmpty(formattedSkillName))
@@ -1251,7 +1280,10 @@ public sealed class DPSMeter : ModBehaviour
         }
         else if (isBasicAttack)
         {
-            scalingType = DpsData.DamageScalingType.Ad;
+            // A damage event without a direct SkillTrigger is not necessarily
+            // a basic attack. Resolve its actual runtime scaler instead of
+            // assuming AD.
+            scalingType = FindDamageScalingType(info.actor);
         }
         else
         {
