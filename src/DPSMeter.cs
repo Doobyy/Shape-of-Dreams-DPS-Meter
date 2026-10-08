@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.163";
+    public const string DevelopmentVersion = "v5.164";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -805,6 +805,98 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static int _prismaticDamageEventInfoTraceCount;
+
+    private static void TracePrismaticDamageEventInfo(EventInfoDamage info)
+    {
+        if (info == null || info.actor == null ||
+            info.actor.GetType().Name.IndexOf("PrismaticEyes_Attack", StringComparison.OrdinalIgnoreCase) < 0 ||
+            _prismaticDamageEventInfoTraceCount >= 6)
+        {
+            return;
+        }
+
+        _prismaticDamageEventInfoTraceCount++;
+        try
+        {
+            Type type = info.GetType();
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE EVENT type=" + type.FullName);
+
+            FieldInfo[] fields = type.GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                try
+                {
+                    object value = field.GetValue(info);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE EVENT field=" +
+                        field.Name + " type=" + field.FieldType.FullName +
+                        " value=" + DescribePrismaticDiagnosticValue(value));
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE EVENT field=" +
+                        field.Name + " readError=" + ex.GetType().Name);
+                }
+            }
+
+            PropertyInfo[] properties = type.GetProperties(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            for (int i = 0; i < properties.Length; i++)
+            {
+                PropertyInfo property = properties[i];
+                if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = property.GetValue(info, null);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE EVENT property=" +
+                        property.Name + " type=" + property.PropertyType.FullName +
+                        " value=" + DescribePrismaticDiagnosticValue(value));
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE EVENT property=" +
+                        property.Name + " readError=" + ex.GetType().Name);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGE EVENT error=" +
+                ex.GetType().Name);
+        }
+    }
+
+    private static string DescribePrismaticDiagnosticValue(object value)
+    {
+        if (value == null)
+        {
+            return "<null>";
+        }
+
+        string textValue = value as string;
+        if (textValue != null)
+        {
+            return textValue;
+        }
+
+        Actor actor = value as Actor;
+        if (actor != null)
+        {
+            return "Actor(type=" + actor.GetType().Name +
+                ",name=" + (actor.name ?? "<null>") + ")";
+        }
+
+        return "[" + value + "]";
+    }
+
     private static int _healthOrbTraceCount;
     private static int _bismuthHealTraceCount;
     private static int _bismuthBookDamageTraceCount;
@@ -1409,6 +1501,7 @@ public sealed class DPSMeter : ModBehaviour
         TraceTargetMemoryScaling(info.actor, skill);
         TraceTargetChompScaling(info.actor, skill);
         TraceTargetPrismaticVisionDamage(info, skill);
+        TracePrismaticDamageEventInfo(info);
         Dictionary<Gem, float> essenceContributions = new Dictionary<Gem, float>();
         bool isDirectEssenceDamage = directGem != null;
         Actor skillSourceActor = info.actor;
