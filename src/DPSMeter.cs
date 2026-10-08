@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.133";
+    public const string DevelopmentVersion = "v5.134";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -1492,7 +1492,11 @@ public sealed class DPSMeter : ModBehaviour
 
             if (isLocalPlayer && string.IsNullOrEmpty(skillName) && !string.IsNullOrEmpty(sourceName))
             {
-                _data.RegisterOtherIcon(sourceName, FindActorIcon(info.actor));
+                Sprite otherIcon = string.Equals(sourceName, "Fire", StringComparison.OrdinalIgnoreCase)
+                    ? FindElmFireIcon(info.actor)
+                    : FindActorIcon(info.actor);
+
+                _data.RegisterOtherIcon(sourceName, otherIcon);
             }
         }
 
@@ -1941,6 +1945,87 @@ public sealed class DPSMeter : ModBehaviour
         return false;
     }
 
+    private static void TracePrismaticDamageDataActor(EventInfoDamage info)
+    {
+        if (info == null || info.actor == null || info.damage == null)
+        {
+            return;
+        }
+
+        try
+        {
+            Actor damageActor = info.damage.actor;
+
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR eventActor=" +
+                DescribeActor(info.actor) + " damageActor=" + DescribeActor(damageActor) +
+                " sameReference=" + (ReferenceEquals(info.actor, damageActor)));
+
+            if (damageActor == null)
+            {
+                return;
+            }
+
+            Actor current = damageActor;
+            int depth = 0;
+            while (current != null && depth < 8)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR depth=" +
+                    depth + " actor=" + DescribeActor(current) +
+                    " readable=[" + (current.GetActorReadableName() ?? "<null>") +
+                    "] original=[" + (current.GetOriginalName() ?? "<null>") + "]");
+
+                FieldInfo[] fields = current.GetType().GetFields(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    FieldInfo field = fields[i];
+                    string fieldName = field.Name ?? string.Empty;
+
+                    if (fieldName.IndexOf("name", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        fieldName.IndexOf("title", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        fieldName.IndexOf("local", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        fieldName.IndexOf("skill", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        fieldName.IndexOf("ability", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        fieldName.IndexOf("trigger", StringComparison.OrdinalIgnoreCase) < 0 &&
+                        fieldName.IndexOf("attack", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        object value = field.GetValue(current);
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR field=" +
+                            fieldName + " type=" + field.FieldType.FullName +
+                            " value=[" + (value == null ? "<null>" : value.ToString()) + "]");
+
+                        if (value is SkillTrigger skillTrigger)
+                        {
+                            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR skillTrigger=" +
+                                skillTrigger.GetType().FullName +
+                                " formatted=[" + (skillTrigger.GetFormattedSkillTitle() ?? "<null>") +
+                                "] localized=[" + (DewLocalization.GetSkillName(skillTrigger, 0) ?? "<null>") + "]");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR field=" +
+                            fieldName + " readError=" + ex.GetType().Name);
+                    }
+                }
+
+                current = current.parentActor;
+                depth++;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC DAMAGEACTOR error=" +
+                ex.GetType().Name);
+        }
+    }
+
     private static void TraceTargetPrismaticVisionDamage(EventInfoDamage info, SkillTrigger directSkill)
     {
         if (info.actor == null)
@@ -2003,6 +2088,8 @@ public sealed class DPSMeter : ModBehaviour
         {
             return;
         }
+
+        TracePrismaticDamageDataActor(info);
 
         string traceKey = "prismatic-name:" + info.actor.GetInstanceID();
         if (!_prismaticVisionDiagnosticSeen.Add(traceKey))
@@ -3546,6 +3633,29 @@ public sealed class DPSMeter : ModBehaviour
             Sprite icon = FindSpriteMember(current);
             if (icon != null)
                 return icon;
+
+            current = current.parentActor;
+            depth++;
+        }
+
+        return null;
+    }
+
+    private static Sprite FindElmFireIcon(Actor actor)
+    {
+        Actor current = actor;
+        int depth = 0;
+
+        while (current != null && depth < 8)
+        {
+            if (string.Equals(current.GetType().Name, "Se_Elm_Fire", StringComparison.Ordinal))
+            {
+                Sprite icon = FindSpriteMember(current);
+                if (icon != null)
+                {
+                    return icon;
+                }
+            }
 
             current = current.parentActor;
             depth++;
