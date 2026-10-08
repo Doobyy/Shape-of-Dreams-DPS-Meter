@@ -765,9 +765,19 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.DrawTexture(barRect, _whiteTexture);
 
         GUI.color = new Color(0.784f, 0.784f, 0.784f, 1f);
-        GUI.DrawTexture(
-            new Rect(barRect.x, barRect.y, barRect.width * ratio, barRect.height),
-            _whiteTexture);
+        Rect fillRect = new Rect(
+            barRect.x,
+            barRect.y,
+            barRect.width * ratio,
+            barRect.height);
+        GUI.DrawTexture(fillRect, _whiteTexture);
+
+        const float barrierOutline = 2f;
+        GUI.color = new Color(0.541f, 0.541f, 0.541f, 1f);
+        GUI.DrawTexture(new Rect(fillRect.x, fillRect.y, fillRect.width, barrierOutline), _whiteTexture);
+        GUI.DrawTexture(new Rect(fillRect.x, fillRect.yMax - barrierOutline, fillRect.width, barrierOutline), _whiteTexture);
+        GUI.DrawTexture(new Rect(fillRect.x, fillRect.y, barrierOutline, fillRect.height), _whiteTexture);
+        GUI.DrawTexture(new Rect(fillRect.xMax - barrierOutline, fillRect.y, barrierOutline, fillRect.height), _whiteTexture);
 
         string valueText = FormatNumber(amount) + "  " + percent.ToString("0.0") + "%";
         float valueWidth = _rowRight.CalcSize(new GUIContent(valueText)).x;
