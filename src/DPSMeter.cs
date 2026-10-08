@@ -2854,7 +2854,6 @@ public sealed class DPSMeter : ModBehaviour
         TracePrismaticZeroArgMethod(label, value, "GetActorReadableName");
     }
 
-    private static void TracePrismaticBismuthRockIdentity(Actor pendingAttack)
     private static void SubscribePrismaticAttackHit(Actor attack)
     {
         if (attack == null)
@@ -2969,6 +2968,7 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private static void TracePrismaticBismuthRockIdentity(Actor pendingAttack)
     {
         try
         {
