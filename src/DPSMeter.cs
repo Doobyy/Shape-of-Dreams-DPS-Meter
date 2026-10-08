@@ -10,7 +10,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.90";
+    public const string DevelopmentVersion = "v5.91";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2074,6 +2074,7 @@ public sealed class DPSMeter : ModBehaviour
                 " value=[" + pendingAttack + "]");
 
             TracePrismaticTypeMembers(pendingAttack, "PRISMATIC pendingAttack typeMembers");
+            TracePrismaticLocalizationCandidates(pendingAttack);
 
             TracePrismaticAttackEventTypes(pendingAttack);
             SubscribePrismaticAttackEventsOnActorChain(pendingAttack as Actor);
@@ -2818,6 +2819,91 @@ private static void TracePrismaticObjectMembers(object target, string label)
         }
     }
 
+
+    private static void TracePrismaticLocalizationCandidates(object pendingAttack)
+    {
+        if (pendingAttack == null)
+        {
+            return;
+        }
+
+        try
+        {
+            string[] keys =
+            {
+                "At_Atk_BismuthRock",
+                "At_Atk_BismuthRock(Clone)",
+                "63",
+                "BasicAttack",
+                "BasicAttackMain"
+            };
+
+            for (int i = 0; i < keys.Length; i++)
+            {
+                string key = keys[i];
+
+                try
+                {
+                    string skillName = DewLocalization.GetSkillName(key, 0);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC LOCALIZATION GetSkillName key=[" +
+                        key + "] result=[" + (skillName ?? "<null>") + "]");
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC LOCALIZATION GetSkillName key=[" +
+                        key + "] error=" + ex.GetType().Name);
+                }
+
+                try
+                {
+                    string skillKey = DewLocalization.GetSkillKey(key);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC LOCALIZATION GetSkillKey input=[" +
+                        key + "] result=[" + (skillKey ?? "<null>") + "]");
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC LOCALIZATION GetSkillKey input=[" +
+                        key + "] error=" + ex.GetType().Name);
+                }
+
+                try
+                {
+                    string uiValue = DewLocalization.GetUIValue(key);
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC LOCALIZATION GetUIValue key=[" +
+                        key + "] result=[" + (uiValue ?? "<null>") + "]");
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC LOCALIZATION GetUIValue key=[" +
+                        key + "] error=" + ex.GetType().Name);
+                }
+            }
+
+            AttackTrigger attack = pendingAttack as AttackTrigger;
+            if (attack != null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC LOCALIZATION AttackTrigger abilityIndex=" +
+                    attack.abilityIndex + " name=[" + (attack.name ?? "<null>") + "]");
+
+                try
+                {
+                    string readable = attack.GetActorReadableName();
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC LOCALIZATION AttackTrigger readable=[" +
+                        (readable ?? "<null>") + "]");
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC LOCALIZATION AttackTrigger readableError=" +
+                        ex.GetType().Name);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC LOCALIZATION probeError=" +
+                ex.GetType().Name);
+        }
+    }
 
     private static bool IsPrismaticDiagnosticFieldType(Type type)
     {
