@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.174";
+    public const string DevelopmentVersion = "v5.175";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2310,6 +2310,25 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         ElementalType? elementalType = info.damage.elemental;
+
+        // Prismatic Vision is a special case: its generated attack actor
+        // produces two damage events, one physical/basic-attack portion and
+        // one magic/AP portion. The game gives both events the same internal
+        // actor, so keep them under the same displayed skill name while using
+        // separate internal identities and explicit AD/AP scaling for the UI.
+        bool isPrismaticVision = info.actor.GetType().Name == "Ai_D_PrismaticEyes_Attack";
+        bool isPrismaticPhysical = isPrismaticVision &&
+            string.Equals(info.damage.type.ToString(), "Physical", StringComparison.OrdinalIgnoreCase);
+        bool isPrismaticMagic = isPrismaticVision &&
+            string.Equals(info.damage.type.ToString(), "Magic", StringComparison.OrdinalIgnoreCase);
+
+        if (isPrismaticPhysical || isPrismaticMagic)
+        {
+            skillName = "Prismatic Vision";
+            skillIdentity = isPrismaticPhysical
+                ? "Prismatic Vision|AD"
+                : "Prismatic Vision|AP";
+        }
         DpsData.DamageScalingType scalingType = DpsData.DamageScalingType.None;
 
         // Scaling and elemental type are separate pieces of information.
