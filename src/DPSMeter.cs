@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v5.154";
+    public const string DevelopmentVersion = "v5.155";
     public static DPSMeter Instance { get; private set; }
 
     private ClientEventManager _clientEvents;
@@ -2123,7 +2123,7 @@ public sealed class DPSMeter : ModBehaviour
                     int token = BitConverter.ToInt32(il, offset);
                     try
                     {
-                        MemberInfo member = onHit.Module.ResolveMember(token);
+                        MemberInfo member = onHit.Module.ResolveMember(token, onHit.DeclaringType.GetGenericArguments(), onHit.GetGenericArguments());
                         WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC MELEE ONHIT il=" + instructionOffset.ToString("X4") + " op=" + opcode.Name + " member=" + member);
                     }
                     catch (Exception)
@@ -2221,9 +2221,9 @@ public sealed class DPSMeter : ModBehaviour
                         MemberInfo member = onHit.Module.ResolveMember(token);
                         WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC MELEE CALLBACK TARGET il=" + instructionOffset.ToString("X4") + " member=" + member);
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC MELEE CALLBACK TARGET il=" + instructionOffset.ToString("X4") + " token=0x" + token.ToString("X8"));
+                        WriteDebugLog("[" + DevelopmentVersion + "] PRISMATIC MELEE CALLBACK TARGET il=" + instructionOffset.ToString("X4") + " resolve=" + ex.GetType().Name + " token=0x" + token.ToString("X8"));
                     }
                 }
 
