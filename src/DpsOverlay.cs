@@ -56,6 +56,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private bool _resizeMoved;
     private float _resizeStartHealingHeight;
     private bool _headerMoved;
+    private bool _showHealing = true;
+    private bool _showBarrier = true;
     private float _collapsedWindowHeight;
     private bool _manualResize;
 
@@ -177,21 +179,27 @@ public sealed class DpsOverlay : MonoBehaviour
 
             GUILayout.BeginArea(breakdownRect);
 
-            DrawHealingBreakdown(
-                _mode == DisplayMode.CurrentDps
-                    ? _data.CurrentPersonalHealingRows
-                    : _data.CumulativeHealingRows,
-                _mode == DisplayMode.CurrentDps
-                    ? _data.CurrentInstancePersonalHealing
-                    : _data.CumulativePersonalHealing);
+            if (_showHealing)
+            {
+                DrawHealingBreakdown(
+                    _mode == DisplayMode.CurrentDps
+                        ? _data.CurrentPersonalHealingRows
+                        : _data.CumulativeHealingRows,
+                    _mode == DisplayMode.CurrentDps
+                        ? _data.CurrentInstancePersonalHealing
+                        : _data.CumulativePersonalHealing);
+            }
 
-            DrawBarrierBreakdown(
-                _mode == DisplayMode.CurrentDps
-                    ? _data.CurrentPersonalBarrierRows
-                    : _data.CumulativeBarrierRows,
-                _mode == DisplayMode.CurrentDps
-                    ? _data.CurrentInstancePersonalBarrier
-                    : _data.CumulativePersonalBarrier);
+            if (_showBarrier)
+            {
+                DrawBarrierBreakdown(
+                    _mode == DisplayMode.CurrentDps
+                        ? _data.CurrentPersonalBarrierRows
+                        : _data.CumulativeBarrierRows,
+                    _mode == DisplayMode.CurrentDps
+                        ? _data.CurrentInstancePersonalBarrier
+                        : _data.CumulativePersonalBarrier);
+            }
 
             GUILayout.EndArea();
         }
@@ -399,19 +407,41 @@ public sealed class DpsOverlay : MonoBehaviour
             return 0f;
         }
 
-        float height = 16f;
+        float height = 0f;
 
-        IReadOnlyList<DpsData.BreakdownRow> healingRows =
-            _mode == DisplayMode.CurrentDps
-                ? _data.CurrentPersonalHealingRows
-                : _data.CumulativeHealingRows;
-        height += 22f + (Mathf.Max(1, healingRows != null ? healingRows.Count : 0) * 22f);
+        if (!_showHealing && !_showBarrier)
+        {
+            return 0f;
+        }
 
-        IReadOnlyList<DpsData.BreakdownRow> barrierRows =
-            _mode == DisplayMode.CurrentDps
-                ? _data.CurrentPersonalBarrierRows
-                : _data.CumulativeBarrierRows;
-        height += 22f + (Mathf.Max(1, barrierRows != null ? barrierRows.Count : 0) * 22f);
+        height = 16f;
+
+        if (_showHealing)
+        {
+            IReadOnlyList<DpsData.BreakdownRow> rows =
+                _mode == DisplayMode.CurrentDps
+                    ? _data.CurrentPersonalHealingRows
+                    : _data.CumulativeHealingRows;
+
+            int rowCount = rows != null ? rows.Count : 0;
+            height += 22f + (Mathf.Max(1, rowCount) * 22f);
+        }
+
+        if (_showBarrier)
+        {
+            IReadOnlyList<DpsData.BreakdownRow> rows =
+                _mode == DisplayMode.CurrentDps
+                    ? _data.CurrentPersonalBarrierRows
+                    : _data.CumulativeBarrierRows;
+
+            int rowCount = rows != null ? rows.Count : 0;
+            height += 22f + (Mathf.Max(1, rowCount) * 22f);
+        }
+
+        if (_showHealing != _showBarrier)
+        {
+            height += 1.36f;
+        }
 
         // Keep a small visual gap below the final barrier row.
         height += 6f;
