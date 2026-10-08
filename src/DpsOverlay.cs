@@ -234,10 +234,6 @@ public sealed class DpsOverlay : MonoBehaviour
                 const float menuHeight = 92f;
                 const float menuGap = 4f;
 
-                _resizing = false;
-                _dragging = false;
-                _resizeMoved = false;
-                _headerMoved = false;
                 _contextMenuOpen = false;
 
                 float x = Mathf.Clamp(
