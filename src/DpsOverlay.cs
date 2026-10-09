@@ -92,11 +92,6 @@ public sealed class DpsOverlay : MonoBehaviour
     private Sprite _basicAttackIcon;
     private Vector2 _historyScroll;
     private bool _showRunHistory;
-    private bool _iconFinderOpen;
-    private Rect _iconFinderRect = new Rect(0f, 0f, 700f, 520f);
-    private Vector2 _iconFinderScroll;
-    private readonly List<Sprite> _iconFinderCandidates = new List<Sprite>();
-    private readonly List<Texture2D> _iconFinderTextureCandidates = new List<Texture2D>();
     private const float HistoryPanelWidth = 224f;
     private const float HistoryCloseTabWidth = 22f;
     private const float HistoryCloseTabHeight = 44f;
@@ -281,10 +276,6 @@ public sealed class DpsOverlay : MonoBehaviour
             DrawRunHistoryPanel();
         }
 
-        if (_iconFinderOpen)
-        {
-            _iconFinderRect = GUI.Window(738221, _iconFinderRect, DrawIconFinderWindow, "Character Icon Finder (Temporary)");
-        }
 
         UpdateUiInputBlockers();
     }
@@ -362,132 +353,6 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         GUI.EndScrollView();
-    }
-
-    private void OpenIconFinder()
-    {
-        _iconFinderCandidates.Clear();
-        _iconFinderTextureCandidates.Clear();
-        Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
-        Texture2D[] textures = Resources.FindObjectsOfTypeAll<Texture2D>();
-        HashSet<string> seenSprites = new HashSet<string>();
-        HashSet<string> seenTextures = new HashSet<string>();
-        List<string> logLines = new List<string>();
-        logLines.Add("Shape of Dreams DPS Meter - temporary icon candidate catalog");
-        logLines.Add("Sprite candidates:");
-        
-        for (int i = 0; sprites != null && i < sprites.Length; i++)
-        {
-            Sprite sprite = sprites[i];
-            if (sprite == null || sprite.texture == null) continue;
-            string spriteName = sprite.name ?? string.Empty;
-            string textureName = sprite.texture.name ?? string.Empty;
-            if (!IsIconFinderCandidateName(spriteName) && !IsIconFinderCandidateName(textureName)) continue;
-            string key = spriteName + "|" + textureName + "|" + sprite.rect.width + "x" + sprite.rect.height;
-            if (!seenSprites.Add(key)) continue;
-            _iconFinderCandidates.Add(sprite);
-            logLines.Add("sprite=" + spriteName + " | texture=" + textureName
-                + " | spriteRect=" + sprite.rect.width + "x" + sprite.rect.height
-                + " | textureSize=" + sprite.texture.width + "x" + sprite.texture.height);
-        }
-
-        logLines.Add("");
-        logLines.Add("Texture2D candidates (shown directly, not only through Sprite wrappers):");
-        for (int i = 0; textures != null && i < textures.Length; i++)
-        {
-            Texture2D texture = textures[i];
-            if (texture == null) continue;
-            string textureName = texture.name ?? string.Empty;
-            if (!IsIconFinderCandidateName(textureName)) continue;
-            string key = textureName + "|" + texture.width + "x" + texture.height;
-            if (!seenTextures.Add(key)) continue;
-            _iconFinderTextureCandidates.Add(texture);
-            logLines.Add("texture=" + textureName + " | size=" + texture.width + "x" + texture.height);
-        }
-
-        _iconFinderCandidates.Sort((left, right) =>
-        {
-            int bySprite = string.Compare(left == null ? string.Empty : left.name,
-                right == null ? string.Empty : right.name, StringComparison.OrdinalIgnoreCase);
-            if (bySprite != 0) return bySprite;
-            return string.Compare(left == null || left.texture == null ? string.Empty : left.texture.name,
-                right == null || right.texture == null ? string.Empty : right.texture.name,
-                StringComparison.OrdinalIgnoreCase);
-        });
-        _iconFinderTextureCandidates.Sort((left, right) =>
-            string.Compare(left == null ? string.Empty : left.name,
-                right == null ? string.Empty : right.name, StringComparison.OrdinalIgnoreCase));
-
-        string logPath = Path.Combine(Application.persistentDataPath, "DPSMeter-icon-candidates.log");
-        try { File.WriteAllLines(logPath, logLines.ToArray()); }
-        catch (Exception) { }
-
-        _iconFinderRect = new Rect(
-            Mathf.Max(4f, (Screen.width - 700f) * 0.5f),
-            Mathf.Max(4f, (Screen.height - 520f) * 0.5f),
-            Mathf.Min(700f, Screen.width - 8f),
-            Mathf.Min(520f, Screen.height - 8f));
-        _iconFinderScroll = Vector2.zero;
-        _iconFinderOpen = true;
-    }
-
-    private static bool IsIconFinderCandidateName(string assetName)
-    {
-        if (string.IsNullOrEmpty(assetName)) return false;
-        return assetName.IndexOf("emblem", StringComparison.OrdinalIgnoreCase) >= 0
-            || assetName.IndexOf("hero_", StringComparison.OrdinalIgnoreCase) >= 0
-            || assetName.IndexOf("star_", StringComparison.OrdinalIgnoreCase) >= 0
-            || assetName.IndexOf("character", StringComparison.OrdinalIgnoreCase) >= 0
-            || assetName.IndexOf("portrait", StringComparison.OrdinalIgnoreCase) >= 0
-            || assetName.IndexOf("ach_", StringComparison.OrdinalIgnoreCase) >= 0
-            || assetName.IndexOf("once_upon_a_time", StringComparison.OrdinalIgnoreCase) >= 0
-            || assetName.IndexOf("pure_imagination", StringComparison.OrdinalIgnoreCase) >= 0;
-    }
-
-    private void DrawIconFinderWindow(int windowId)
-    {
-        GUI.Label(new Rect(12f, 28f, _iconFinderRect.width - 24f, 20f),
-            "Sprites: " + _iconFinderCandidates.Count + "   Textures: " + _iconFinderTextureCandidates.Count
-            + "   Catalog: DPSMeter-icon-candidates.log");
-        if (GUI.Button(new Rect(_iconFinderRect.width - 76f, 27f, 64f, 24f), "Close"))
-            _iconFinderOpen = false;
-
-        Rect listRect = new Rect(10f, 56f, _iconFinderRect.width - 20f, _iconFinderRect.height - 66f);
-        float spriteSectionHeight = 28f + _iconFinderCandidates.Count * 58f;
-        float textureSectionHeight = 28f + _iconFinderTextureCandidates.Count * 58f;
-        float contentHeight = spriteSectionHeight + textureSectionHeight + 12f;
-        _iconFinderScroll = GUI.BeginScrollView(listRect, _iconFinderScroll,
-            new Rect(0f, 0f, listRect.width - 18f, Mathf.Max(listRect.height, contentHeight)));
-
-        GUI.Label(new Rect(0f, 0f, listRect.width - 20f, 24f), "SPRITES");
-        for (int i = 0; i < _iconFinderCandidates.Count; i++)
-        {
-            Sprite sprite = _iconFinderCandidates[i];
-            if (sprite == null) continue;
-            float y = 28f + i * 58f;
-            GUI.Box(new Rect(0f, y, listRect.width - 20f, 54f), GUIContent.none);
-            DrawSprite(sprite, new Rect(4f, y + 3f, 48f, 48f));
-            string textureName = sprite.texture == null ? "<no texture>" : sprite.texture.name;
-            GUI.Label(new Rect(60f, y + 4f, listRect.width - 90f, 20f), "Sprite: " + sprite.name);
-            GUI.Label(new Rect(60f, y + 25f, listRect.width - 90f, 20f),
-                "Texture: " + textureName + "  |  Rect: " + sprite.rect.width + "x" + sprite.rect.height);
-        }
-
-        float textureStartY = spriteSectionHeight + 8f;
-        GUI.Label(new Rect(0f, textureStartY, listRect.width - 20f, 24f), "TEXTURES (DIRECT)");
-        for (int i = 0; i < _iconFinderTextureCandidates.Count; i++)
-        {
-            Texture2D texture = _iconFinderTextureCandidates[i];
-            if (texture == null) continue;
-            float y = textureStartY + 28f + i * 58f;
-            GUI.Box(new Rect(0f, y, listRect.width - 20f, 54f), GUIContent.none);
-            GUI.DrawTexture(new Rect(4f, y + 3f, 48f, 48f), texture, ScaleMode.ScaleToFit, true);
-            GUI.Label(new Rect(60f, y + 4f, listRect.width - 90f, 20f), "Texture: " + texture.name);
-            GUI.Label(new Rect(60f, y + 25f, listRect.width - 90f, 20f),
-                "Size: " + texture.width + "x" + texture.height);
-        }
-        GUI.EndScrollView();
-        GUI.DragWindow(new Rect(0f, 0f, _iconFinderRect.width - 90f, 24f));
     }
 
     private void DrawHistoryOutlineLine(float x1, float y1, float x2, float y2, float thickness)
@@ -1603,15 +1468,12 @@ public sealed class DpsOverlay : MonoBehaviour
             rowWidth,
             rowHeight);
 
-        Rect iconFinderRect = new Rect(historyRect.x, historyRect.yMax, rowWidth, rowHeight);
-
         Event e = Event.current;
 
         DrawContextMenuRow(settingsRect, "Settings");
         DrawContextMenuRow(reloadRect, "Reload");
         DrawContextMenuRow(exportRect, "Export");
         DrawContextMenuRow(historyRect, "Run History");
-        DrawContextMenuRow(iconFinderRect, "Icon Finder");
 
         if (e.type == EventType.MouseDown && e.button == 0)
         {
@@ -1637,12 +1499,6 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 _contextMenuOpen = false;
                 _showRunHistory = !_showRunHistory;
-                e.Use();
-            }
-            else if (iconFinderRect.Contains(e.mousePosition))
-            {
-                _contextMenuOpen = false;
-                OpenIconFinder();
                 e.Use();
             }
         }
