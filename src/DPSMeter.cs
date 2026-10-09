@@ -31,11 +31,26 @@ public sealed class RunHistoryRecord
     [DataMember] public int MapsVisited;
     [DataMember] public string CompletedAt;
     [DataMember] public List<RunHistoryBreakdownRow> BreakdownRows = new List<RunHistoryBreakdownRow>();
+    [DataMember] public List<RunHistoryBreakdownRow> ViewRows = new List<RunHistoryBreakdownRow>();
+    [DataMember] public List<RunHistoryViewMetrics> ViewMetrics = new List<RunHistoryViewMetrics>();
+}
+
+[DataContract]
+public sealed class RunHistoryViewMetrics
+{
+    [DataMember] public string View;
+    [DataMember] public float Damage;
+    [DataMember] public float DamageRate;
+    [DataMember] public float Healing;
+    [DataMember] public float HealingRate;
+    [DataMember] public float Barrier;
+    [DataMember] public float BarrierRate;
 }
 
 [DataContract]
 public sealed class RunHistoryBreakdownRow
 {
+    [DataMember] public string View;
     [DataMember] public string Category;
     [DataMember] public string SourceType;
     [DataMember] public string Identity;
@@ -49,7 +64,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v12.000";
+    public const string DevelopmentVersion = "v12.100";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -243,6 +258,7 @@ public sealed class DPSMeter : ModBehaviour
 
         RefreshActiveRunSummary();
         CaptureRunBreakdown(_activeRunRecord);
+        CaptureRunViewSnapshots(_activeRunRecord);
         _activeRunRecord.Outcome = "Concluded";
         _activeRunRecord.CompletedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
         _data.ArchiveRun(_activeRunRecord);
@@ -308,6 +324,132 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
+    private void CaptureRunViewSnapshots(DpsData.RunRecord run)
+    {
+        if (run == null || _data == null) return;
+        run.ViewRows.Clear();
+        run.ViewMetrics.Clear();
+
+        AddRunViewMetrics(run, "CURRENT", _data.CurrentInstancePersonalDamage, _data.CurrentPersonalDps,
+            _data.CurrentInstancePersonalHealing, _data.CurrentPersonalHps,
+            _data.CurrentInstancePersonalBarrier, _data.CurrentPersonalBps);
+        AddRunViewMetrics(run, "TOTAL", _data.CumulativePersonalDamage, 0f,
+            _data.CumulativePersonalHealing, _data.TotalPersonalHps,
+            _data.CumulativePersonalBarrier, _data.TotalPersonalBps);
+        AddRunViewMetrics(run, "PARTY", _data.CurrentInstancePartyDamage, _data.CurrentPartyDps,
+            _data.CurrentInstancePartyHealing, _data.CurrentPartyHps,
+            _data.CurrentInstancePartyBarrier, _data.CurrentPartyBps);
+        AddRunViewMetrics(run, "PARTY_TOTAL", _data.CumulativePartyDamage, _data.CumulativePartyDps,
+            _data.CumulativePartyHealing, _data.TotalPartyHps,
+            _data.CumulativePartyBarrier, _data.TotalPartyBps);
+
+        CapturePersonalViewRows(run, "CURRENT", false);
+        CapturePersonalViewRows(run, "TOTAL", true);
+        CapturePartyViewRows(run, "PARTY", false);
+        CapturePartyViewRows(run, "PARTY_TOTAL", true);
+    }
+
+    private static void AddRunViewMetrics(
+        DpsData.RunRecord run, string view, float damage, float damageRate,
+        float healing, float healingRate, float barrier, float barrierRate)
+    {
+        run.ViewMetrics.Add(new DpsData.RunViewMetrics
+        {
+            View = view, Damage = damage, DamageRate = damageRate,
+            Healing = healing, HealingRate = healingRate,
+            Barrier = barrier, BarrierRate = barrierRate
+        });
+    }
+
+    private void CapturePersonalViewRows(DpsData.RunRecord run, string view, bool cumulative)
+    {
+        IReadOnlyList<DpsData.BreakdownRow> skills = cumulative ? _data.CumulativePersonalSkillRows : _data.CurrentPersonalSkillRows;
+        for (int i = 0; i < skills.Count; i++)
+        {
+            DpsData.BreakdownRow row = skills[i];
+            DpsData.RunBreakdownRow saved = CreateRunBreakdownRow("DAMAGE", "SKILL", row.Identity, row.Name, row.Amount,
+                cumulative ? _data.GetCumulativeSkillElement(row.Identity) : _data.GetCurrentSkillElement(row.Identity),
+                cumulative ? _data.GetCumulativeSkillScaling(row.Identity) : _data.GetCurrentSkillScaling(row.Identity),
+                _data.GetSkillIcon(row.Identity));
+            saved.View = view;
+            run.ViewRows.Add(saved);
+        }
+
+        IReadOnlyList<KeyValuePair<string, float>> other = cumulative ? _data.CumulativePersonalOther : _data.CurrentPersonalOther;
+        for (int i = 0; i < other.Count; i++)
+        {
+            KeyValuePair<string, float> row = other[i];
+            Sprite icon = row.Key == "Basic Attack" && _overlay != null
+                ? _overlay.GetBasicAttackIconForHistory()
+                : _data.GetCurrentOtherIcon(row.Key);
+            DpsData.RunBreakdownRow saved = CreateRunBreakdownRow("DAMAGE", "OTHER", row.Key, row.Key, row.Value,
+                null, cumulative ? _data.GetCumulativeOtherScaling(row.Key) : _data.GetCurrentOtherScaling(row.Key), icon);
+            saved.View = view;
+            run.ViewRows.Add(saved);
+        }
+
+        IReadOnlyList<KeyValuePair<string, float>> essences = cumulative ? _data.CumulativePersonalEssences : _data.CurrentPersonalEssences;
+        for (int i = 0; i < essences.Count; i++)
+        {
+            KeyValuePair<string, float> row = essences[i];
+            DpsData.RunBreakdownRow saved = CreateRunBreakdownRow("DAMAGE", "ESSENCE", row.Key, _data.GetEssenceDisplayName(row.Key), row.Value,
+                cumulative ? _data.GetCumulativeEssenceElement(row.Key) : _data.GetCurrentEssenceElement(row.Key),
+                cumulative ? _data.GetCumulativeEssenceScaling(row.Key) : _data.GetCurrentEssenceScaling(row.Key),
+                cumulative ? _data.GetCumulativeEssenceIcon(row.Key) : _data.GetCurrentEssenceIcon(row.Key));
+            saved.View = view;
+            run.ViewRows.Add(saved);
+        }
+
+        IReadOnlyList<DpsData.BreakdownRow> healing = cumulative ? _data.CumulativeHealingRows : _data.CurrentPersonalHealingRows;
+        for (int i = 0; i < healing.Count; i++)
+        {
+            DpsData.BreakdownRow row = healing[i];
+            DpsData.RunBreakdownRow saved = CreateRunBreakdownRow("HEALING", "HEALING", row.Identity, row.Name, row.Amount,
+                null, DpsData.DamageScalingType.None,
+                cumulative ? _data.GetCumulativeHealingIcon(row.Identity) : _data.GetCurrentHealingIcon(row.Identity));
+            saved.View = view;
+            run.ViewRows.Add(saved);
+        }
+
+        IReadOnlyList<DpsData.BreakdownRow> barrier = cumulative ? _data.CumulativeBarrierRows : _data.CurrentPersonalBarrierRows;
+        for (int i = 0; i < barrier.Count; i++)
+        {
+            DpsData.BreakdownRow row = barrier[i];
+            DpsData.RunBreakdownRow saved = CreateRunBreakdownRow("BARRIER", "BARRIER", row.Identity, row.Name, row.Amount,
+                null, DpsData.DamageScalingType.None,
+                cumulative ? _data.GetCumulativeBarrierIcon(row.Identity) : _data.GetCurrentBarrierIcon(row.Identity));
+            saved.View = view;
+            run.ViewRows.Add(saved);
+        }
+    }
+
+    private void CapturePartyViewRows(DpsData.RunRecord run, string view, bool cumulative)
+    {
+        IReadOnlyList<KeyValuePair<string, float>> damage = cumulative ? _data.CumulativeParty : _data.CurrentParty;
+        for (int i = 0; i < damage.Count; i++)
+            AddPartyViewRow(run, view, "DAMAGE", "PARTY_DAMAGE", damage[i]);
+
+        IReadOnlyList<KeyValuePair<string, float>> healing = cumulative ? _data.CumulativePartyHealingRows : _data.CurrentPartyHealing;
+        for (int i = 0; i < healing.Count; i++)
+            AddPartyViewRow(run, view, "HEALING", "PARTY_HEALING", healing[i]);
+
+        IReadOnlyList<KeyValuePair<string, float>> barrier = cumulative ? _data.CumulativePartyBarrierRows : _data.CurrentPartyBarrier;
+        for (int i = 0; i < barrier.Count; i++)
+            AddPartyViewRow(run, view, "BARRIER", "PARTY_BARRIER", barrier[i]);
+    }
+
+    private static void AddPartyViewRow(
+        DpsData.RunRecord run, string view, string category, string sourceType,
+        KeyValuePair<string, float> pair)
+    {
+        run.ViewRows.Add(new DpsData.RunBreakdownRow
+        {
+            View = view, Category = category, SourceType = sourceType,
+            Identity = pair.Key, Name = pair.Key, Amount = pair.Value,
+            Scaling = DpsData.DamageScalingType.None.ToString()
+        });
+    }
+
     private static DpsData.RunBreakdownRow CreateRunBreakdownRow(
         string category, string sourceType, string identity, string name, float amount,
         ElementalType? elemental, DpsData.DamageScalingType scaling, Sprite icon)
@@ -366,6 +508,35 @@ public sealed class DPSMeter : ModBehaviour
                         MapsVisited = source.MapsVisited,
                         CompletedAt = source.CompletedAt
                     };
+                    if (source.ViewMetrics != null)
+                    {
+                        for (int j = 0; j < source.ViewMetrics.Count; j++)
+                        {
+                            RunHistoryViewMetrics metric = source.ViewMetrics[j];
+                            if (metric != null)
+                                record.ViewMetrics.Add(new DpsData.RunViewMetrics
+                                {
+                                    View = metric.View, Damage = metric.Damage, DamageRate = metric.DamageRate,
+                                    Healing = metric.Healing, HealingRate = metric.HealingRate,
+                                    Barrier = metric.Barrier, BarrierRate = metric.BarrierRate
+                                });
+                        }
+                    }
+                    if (source.ViewRows != null)
+                    {
+                        for (int j = 0; j < source.ViewRows.Count; j++)
+                        {
+                            RunHistoryBreakdownRow row = source.ViewRows[j];
+                            if (row != null)
+                                record.ViewRows.Add(new DpsData.RunBreakdownRow
+                                {
+                                    View = row.View, Category = row.Category, SourceType = row.SourceType,
+                                    Identity = row.Identity, Name = row.Name, Amount = row.Amount,
+                                    Elemental = row.Elemental, Scaling = row.Scaling,
+                                    IconName = row.IconName, IconTextureName = row.IconTextureName
+                                });
+                        }
+                    }
                     if (source.BreakdownRows != null)
                     {
                         for (int j = 0; j < source.BreakdownRows.Count; j++)
@@ -374,6 +545,7 @@ public sealed class DPSMeter : ModBehaviour
                             if (row != null)
                                 record.BreakdownRows.Add(new DpsData.RunBreakdownRow
                                 {
+                                    View = row.View,
                                     Category = row.Category,
                                     SourceType = row.SourceType,
                                     Identity = row.Identity,
@@ -422,6 +594,35 @@ public sealed class DPSMeter : ModBehaviour
                     MapsVisited = source.MapsVisited,
                     CompletedAt = source.CompletedAt
                 };
+                if (source.ViewMetrics != null)
+                {
+                    for (int j = 0; j < source.ViewMetrics.Count; j++)
+                    {
+                        DpsData.RunViewMetrics metric = source.ViewMetrics[j];
+                        if (metric != null)
+                            record.ViewMetrics.Add(new RunHistoryViewMetrics
+                            {
+                                View = metric.View, Damage = metric.Damage, DamageRate = metric.DamageRate,
+                                Healing = metric.Healing, HealingRate = metric.HealingRate,
+                                Barrier = metric.Barrier, BarrierRate = metric.BarrierRate
+                            });
+                    }
+                }
+                if (source.ViewRows != null)
+                {
+                    for (int j = 0; j < source.ViewRows.Count; j++)
+                    {
+                        DpsData.RunBreakdownRow row = source.ViewRows[j];
+                        if (row != null)
+                            record.ViewRows.Add(new RunHistoryBreakdownRow
+                            {
+                                View = row.View, Category = row.Category, SourceType = row.SourceType,
+                                Identity = row.Identity, Name = row.Name, Amount = row.Amount,
+                                Elemental = row.Elemental, Scaling = row.Scaling,
+                                IconName = row.IconName, IconTextureName = row.IconTextureName
+                            });
+                    }
+                }
                 if (source.BreakdownRows != null)
                 {
                     for (int j = 0; j < source.BreakdownRows.Count; j++)
@@ -430,6 +631,7 @@ public sealed class DPSMeter : ModBehaviour
                         if (row != null)
                             record.BreakdownRows.Add(new RunHistoryBreakdownRow
                             {
+                                View = row.View,
                                 Category = row.Category,
                                 SourceType = row.SourceType,
                                 Identity = row.Identity,
