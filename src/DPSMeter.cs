@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v8.900";
+    public const string DevelopmentVersion = "v9.000";
 
     // One-shot diagnostic: enumerate ClientEventManager event/delegate members.
     private bool _clientEventManagerDiagnosticsWritten;
@@ -98,6 +98,7 @@ public sealed class DPSMeter : ModBehaviour
         _clientEvents = currentManager;
 
         DiagnoseClientEventManagerMembers(currentManager);
+        DiagnoseGameResultManagerType();
 
         _clientEvents.OnTakeDamage += OnTakeDamage;
         _clientEvents.OnTakeHeal += OnTakeHeal;
@@ -159,6 +160,117 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             current = current.BaseType;
+        }
+    }
+
+    private void DiagnoseGameResultManagerType()
+    {
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.Static |
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+        bool found = false;
+
+        try
+        {
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                Type[] types;
+                try
+                {
+                    types = assemblies[i].GetTypes();
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    types = ex.Types;
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < types.Length; j++)
+                {
+                    Type type = types[j];
+                    if (type == null || type.Name.IndexOf("GameResultManager", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+
+                    found = true;
+                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER type=" + type.FullName
+                        + " assembly=" + type.Assembly.GetName().Name);
+
+                    try
+                    {
+                        EventInfo[] events = type.GetEvents(BindingFlags.Instance | BindingFlags.Static |
+                            BindingFlags.Public | BindingFlags.NonPublic);
+                        for (int k = 0; k < events.Length; k++)
+                        {
+                            EventInfo item = events[k];
+                            MethodInfo handler = item.EventHandlerType == null ? null :
+                                item.EventHandlerType.GetMethod("Invoke");
+                            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER event="
+                                + item.Name + " delegate="
+                                + (item.EventHandlerType == null ? "<unknown>" : item.EventHandlerType.FullName)
+                                + " signature=" + (handler == null ? "<unknown>" : handler.ToString()));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER events-error="
+                            + ex.GetType().Name);
+                    }
+
+                    Type current = type;
+                    while (current != null)
+                    {
+                        MethodInfo[] methods = current.GetMethods(flags);
+                        for (int k = 0; k < methods.Length; k++)
+                        {
+                            string name = methods[k].Name;
+                            if (name.IndexOf("result", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                name.IndexOf("gameover", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                name.IndexOf("finish", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                name.IndexOf("complete", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                name.IndexOf("end", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                name.IndexOf("score", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER method="
+                                    + current.Name + "." + methods[k]);
+                            }
+                        }
+
+                        FieldInfo[] fields = current.GetFields(flags);
+                        for (int k = 0; k < fields.Length; k++)
+                        {
+                            FieldInfo field = fields[k];
+                            if (typeof(Delegate).IsAssignableFrom(field.FieldType) ||
+                                field.Name.IndexOf("result", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                field.Name.IndexOf("gameover", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                field.Name.IndexOf("finish", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                field.Name.IndexOf("complete", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                field.Name.IndexOf("end", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                field.Name.IndexOf("score", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER field="
+                                    + current.Name + "." + field.Name + " type=" + field.FieldType.FullName);
+                            }
+                        }
+
+                        current = current.BaseType;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER scan-error="
+                + ex.GetType().Name);
+        }
+
+        if (!found)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER type-not-found");
         }
     }
 
