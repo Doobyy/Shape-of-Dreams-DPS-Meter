@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v8.800";
+    public const string DevelopmentVersion = "v8.900";
 
     // One-shot diagnostic: enumerate ClientEventManager event/delegate members.
     private bool _clientEventManagerDiagnosticsWritten;
