@@ -874,7 +874,7 @@ public sealed class DPSMeter : ModBehaviour
             return;
 
         UnityEngine.Object unityObject = target as UnityEngine.Object;
-        if (unityObject != null && !(target is Sprite))
+        if (unityObject != null && !(target is Sprite) && depth > 0)
             return;
 
         visited.Add(target);
