@@ -430,6 +430,21 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.DrawTexture(line, _whiteTexture);
     }
 
+    private Color GetRunCharacterOutlineColor(DpsData.RunRecord run)
+    {
+        if (run == null || !run.HasCharacterMainColor)
+            return DefaultBarOutlineColor;
+
+        if (string.Equals(run.CharacterName, "Cetus", StringComparison.OrdinalIgnoreCase))
+            return IceBarOutlineColor;
+
+        return new Color(
+            Mathf.Clamp01(run.CharacterMainColorR) * 0.32f,
+            Mathf.Clamp01(run.CharacterMainColorG) * 0.32f,
+            Mathf.Clamp01(run.CharacterMainColorB) * 0.32f,
+            1f);
+    }
+
     private void DrawRunHistoryRow(Rect rect, DpsData.RunRecord run, string line1, string line2, bool isCurrent, bool drawSeparator)
     {
         bool selected = isCurrent ? _selectedRunRecord == null : ReferenceEquals(_selectedRunRecord, run);
@@ -488,6 +503,24 @@ public sealed class DpsOverlay : MonoBehaviour
                 GUI.color = selected ? Color.white : hovered
                     ? new Color(0.72f, 0.72f, 0.72f, 1f)
                     : new Color(0.55f, 0.55f, 0.55f, 1f);
+            }
+
+            if (selected)
+            {
+                // Draw a restrained, low-alpha halo using this character's bar-outline color.
+                // Only selected rows use it, so the extra sprite draws stay limited to one emblem.
+                Color glowColor = GetRunCharacterOutlineColor(run);
+                const float glowOffset = 1.25f;
+                glowColor.a = 0.24f;
+                GUI.color = glowColor;
+                DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y, iconRect.width, iconRect.height));
+                DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y, iconRect.width, iconRect.height));
+                DrawSprite(characterIcon, new Rect(iconRect.x, iconRect.y - glowOffset, iconRect.width, iconRect.height));
+                DrawSprite(characterIcon, new Rect(iconRect.x, iconRect.y + glowOffset, iconRect.width, iconRect.height));
+                DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y - glowOffset, iconRect.width, iconRect.height));
+                DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y - glowOffset, iconRect.width, iconRect.height));
+                DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y + glowOffset, iconRect.width, iconRect.height));
+                DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y + glowOffset, iconRect.width, iconRect.height));
             }
 
             DrawSprite(characterIcon, iconRect);
