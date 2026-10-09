@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v9.800";
+    public const string DevelopmentVersion = "v9.900";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -26,6 +26,15 @@ public sealed class DPSMeter : ModBehaviour
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
     private readonly HashSet<string> _essenceScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
+    private readonly HashSet<string> _activeRunWorlds = new HashSet<string>();
+    private readonly HashSet<string> _activeRunMaps = new HashSet<string>();
+    private bool _runActive;
+    private bool _awaitingNextRunEvent;
+    private float _runStartGameElapsed = -1f;
+    private float _runStartRealtime;
+    private float _activeRunTotalDamage;
+    private string _runHistoryPath;
+    private DpsData.RunRecord _activeRunRecord;
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -64,6 +73,8 @@ public sealed class DPSMeter : ModBehaviour
         ClearDebugLog();
         Instance = this;
         _data = new DpsData();
+        _runHistoryPath = Path.Combine(Application.persistentDataPath, "DPSMeter-run-history.json");
+        LoadRunHistory();
         _overlay = gameObject.AddComponent<DpsOverlay>();
         _overlay.Initialize(_data);
         _travelInterruptHandler = OnTravelToNodeInterrupt;
@@ -185,7 +196,190 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnGameConcluded()
     {
-        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION EVENT FIRED");
+        if (!_runActive || _activeRunRecord == null) return;
+
+        RefreshActiveRunSummary();
+        _activeRunRecord.Outcome = "Concluded";
+        _activeRunRecord.CompletedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        _data.ArchiveRun(_activeRunRecord);
+        SaveRunHistory();
+
+        _runActive = false;
+        _awaitingNextRunEvent = true;
+        _activeRunRecord = null;
+        _activeRunTotalDamage = 0f;
+        _activeRunWorlds.Clear();
+        _activeRunMaps.Clear();
+    }
+
+    private void LoadRunHistory()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_runHistoryPath) || !File.Exists(_runHistoryPath)) return;
+            DpsData.RunHistorySaveData saved =
+                JsonUtility.FromJson<DpsData.RunHistorySaveData>(File.ReadAllText(_runHistoryPath));
+            if (saved != null) _data.LoadCompletedRuns(saved.Runs);
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY load-error=" + ex.GetType().Name);
+        }
+    }
+
+    private void SaveRunHistory()
+    {
+        try
+        {
+            DpsData.RunHistorySaveData saved = new DpsData.RunHistorySaveData();
+            for (int i = 0; i < _data.CompletedRuns.Count; i++) saved.Runs.Add(_data.CompletedRuns[i]);
+            File.WriteAllText(_runHistoryPath, JsonUtility.ToJson(saved, true));
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY save-error=" + ex.GetType().Name);
+        }
+    }
+
+    private void EnsureRunStarted(bool captureCurrentLocation)
+    {
+        if (_runActive)
+        {
+            if (captureCurrentLocation) RecordCurrentRunLocation();
+            RefreshActiveRunSummary();
+            return;
+        }
+
+        _runActive = true;
+        _awaitingNextRunEvent = false;
+        _activeRunTotalDamage = 0f;
+        _activeRunWorlds.Clear();
+        _activeRunMaps.Clear();
+        _runStartRealtime = Time.realtimeSinceStartup;
+        float elapsed;
+        _runStartGameElapsed = TryGetGameElapsedTime(out elapsed) ? elapsed : -1f;
+        _activeRunRecord = new DpsData.RunRecord
+        {
+            CharacterName = GetLocalHeroDisplayName(),
+            Outcome = "In Progress",
+            TotalDamage = 0f,
+            DurationSeconds = 0f,
+            WorldsVisited = 0,
+            MapsVisited = 0
+        };
+        _data.SetActiveRun(_activeRunRecord);
+        if (captureCurrentLocation) RecordCurrentRunLocation();
+        RefreshActiveRunSummary();
+    }
+
+    private void RecordCurrentRunLocation()
+    {
+        ZoneManager manager = _zoneManager != null ? _zoneManager : ZoneManager.instance;
+        if (manager == null) return;
+        string world = manager.currentZone == null ? null : manager.currentZone.name;
+        RecordRunWorld(world);
+        if (manager.currentNodeIndex >= 0 && !string.IsNullOrEmpty(world))
+            RecordRunMap(world, manager.currentNodeIndex);
+    }
+
+    private void RecordRunWorld(string worldName)
+    {
+        if (!_runActive || string.IsNullOrEmpty(worldName)) return;
+        string key = NormalizeRunWorldKey(worldName);
+        if (key.Length == 0) return;
+        _activeRunWorlds.Add(key);
+        RefreshActiveRunSummary();
+    }
+
+    private void RecordRunMap(string worldName, int nodeIndex)
+    {
+        if (!_runActive || string.IsNullOrEmpty(worldName) || nodeIndex < 0) return;
+        string worldKey = NormalizeRunWorldKey(worldName);
+        if (worldKey.Length == 0) return;
+        _activeRunMaps.Add(worldKey + "|" + nodeIndex.ToString());
+        RefreshActiveRunSummary();
+    }
+
+    private static string NormalizeRunWorldKey(string worldName)
+    {
+        string key = worldName.Trim();
+        const string cloneSuffix = "(Clone)";
+        if (key.EndsWith(cloneSuffix, StringComparison.Ordinal))
+            key = key.Substring(0, key.Length - cloneSuffix.Length);
+        if (key.StartsWith("Zone_", StringComparison.OrdinalIgnoreCase))
+            key = key.Substring(5);
+        return key.Replace(" ", "").Replace("_", "").ToLowerInvariant();
+    }
+
+    public void RefreshActiveRunSummaryForDisplay()
+    {
+        RefreshActiveRunSummary();
+    }
+
+    private void RefreshActiveRunSummary()
+    {
+        if (!_runActive || _activeRunRecord == null) return;
+        if (string.IsNullOrEmpty(_activeRunRecord.CharacterName))
+            _activeRunRecord.CharacterName = GetLocalHeroDisplayName();
+
+        _activeRunRecord.TotalDamage = _activeRunTotalDamage;
+        _activeRunRecord.WorldsVisited = _activeRunWorlds.Count;
+        _activeRunRecord.MapsVisited = _activeRunMaps.Count;
+
+        float elapsed;
+        if (_runStartGameElapsed >= 0f && TryGetGameElapsedTime(out elapsed) && elapsed >= _runStartGameElapsed)
+            _activeRunRecord.DurationSeconds = elapsed - _runStartGameElapsed;
+        else
+            _activeRunRecord.DurationSeconds = Mathf.Max(0f, Time.realtimeSinceStartup - _runStartRealtime);
+
+        _data.SetActiveRun(_activeRunRecord);
+    }
+
+    private bool TryGetGameElapsedTime(out float elapsed)
+    {
+        elapsed = 0f;
+        if (_gameManager == null) return false;
+        try
+        {
+            Type type = _gameManager.GetType();
+            PropertyInfo property = type.GetProperty("elapsedGameTime",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (property != null && property.GetIndexParameters().Length == 0)
+            {
+                object value = property.GetValue(_gameManager, null);
+                if (value is float)
+                {
+                    elapsed = (float)value;
+                    return true;
+                }
+            }
+
+            FieldInfo field = type.GetField("elapsedGameTime",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (field != null)
+            {
+                object value = field.GetValue(_gameManager);
+                if (value is float)
+                {
+                    elapsed = (float)value;
+                    return true;
+                }
+            }
+        }
+        catch (Exception) { }
+        return false;
+    }
+
+    private static string GetLocalHeroDisplayName()
+    {
+        DewPlayer local = DewPlayer.local;
+        if (local == null || local.hero == null) return "Unknown Character";
+        string typeName = local.hero.GetType().Name;
+        const string prefix = "Hero_";
+        if (typeName.StartsWith(prefix, StringComparison.Ordinal))
+            typeName = typeName.Substring(prefix.Length);
+        typeName = typeName.Replace("_", " ").Trim();
+        return string.IsNullOrEmpty(typeName) ? "Unknown Character" : typeName;
     }
 
     private void DetachFromGameManager()
@@ -249,6 +443,12 @@ public sealed class DPSMeter : ModBehaviour
     {
         _data.ResetCurrentInstance();
 
+        if (!_awaitingNextRunEvent)
+        {
+            EnsureRunStarted(false);
+            RecordRunWorld(info.to);
+        }
+
         _currentHero = null;
 
         // A new run can recreate the networked event manager. Re-check the
@@ -264,6 +464,16 @@ public sealed class DPSMeter : ModBehaviour
         {
             _data.ResetCurrentInstance();
             Debug.Log("[DPS Meter] Reset current damage window for node travel " + info.from + " -> " + info.to + ".");
+        }
+
+        if (!_awaitingNextRunEvent)
+        {
+            EnsureRunStarted(true);
+            string world = info.newZone == null
+                ? (_zoneManager == null || _zoneManager.currentZone == null ? null : _zoneManager.currentZone.name)
+                : info.newZone.name;
+            RecordRunWorld(world);
+            RecordRunMap(world, info.to);
         }
 
         return false;
@@ -289,6 +499,8 @@ public sealed class DPSMeter : ModBehaviour
         {
             return;
         }
+
+        EnsureRunStarted(true);
 
         // Healing Essences can report their heal through an AbilityInstance
         // whose first trigger belongs to the host Memory. Resolve the Gem from
@@ -391,6 +603,8 @@ public sealed class DPSMeter : ModBehaviour
         {
             return;
         }
+
+        EnsureRunStarted(true);
 
         string sourceIdentity;
         string sourceName;
@@ -1717,6 +1931,13 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         }
 
         string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
+
+        EnsureRunStarted(true);
+        if (isLocalPlayer)
+        {
+            _activeRunTotalDamage += producedDamage;
+            RefreshActiveRunSummary();
+        }
 
         _data.AddDamage(
             producedDamage,

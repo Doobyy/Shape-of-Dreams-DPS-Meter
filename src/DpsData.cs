@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,24 @@ public sealed class DpsData
         public float Amount;
     }
 
+    [Serializable]
+    public sealed class RunRecord
+    {
+        public string CharacterName;
+        public string Outcome;
+        public float TotalDamage;
+        public float DurationSeconds;
+        public int WorldsVisited;
+        public int MapsVisited;
+        public string CompletedAt;
+    }
+
+    [Serializable]
+    public sealed class RunHistorySaveData
+    {
+        public List<RunRecord> Runs = new List<RunRecord>();
+    }
+
     public sealed class HealingRecord
     {
         public int Index;
@@ -25,6 +44,32 @@ public sealed class DpsData
     }
 
     private readonly List<HealingRecord> _healingRecords = new List<HealingRecord>();
+    private readonly List<RunRecord> _completedRuns = new List<RunRecord>();
+    public RunRecord ActiveRun { get; private set; }
+    public IReadOnlyList<RunRecord> CompletedRuns => _completedRuns;
+
+    public void SetActiveRun(RunRecord run)
+    {
+        ActiveRun = run;
+    }
+
+    public void ArchiveRun(RunRecord run)
+    {
+        if (run == null) return;
+        _completedRuns.Insert(0, run);
+        while (_completedRuns.Count > 10) _completedRuns.RemoveAt(_completedRuns.Count - 1);
+    }
+
+    public void LoadCompletedRuns(List<RunRecord> runs)
+    {
+        _completedRuns.Clear();
+        if (runs == null) return;
+        for (int i = 0; i < runs.Count && i < 10; i++)
+        {
+            if (runs[i] != null) _completedRuns.Add(runs[i]);
+        }
+    }
+
     private const int MaxHealingRecords = 10000;
     private int _nextHealingRecordIndex = 1;
 

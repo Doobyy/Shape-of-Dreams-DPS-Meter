@@ -73,6 +73,10 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _rowRight;
     private Texture2D _whiteTexture;
     private Sprite _basicAttackIcon;
+    private Vector2 _historyScroll;
+    private DpsData.RunRecord _selectedRunRecord;
+    private const float HistoryPanelWidth = 270f;
+    private const float HistoryPanelHeight = 360f;
 
     public bool Visible { get; set; } = true;
 
@@ -221,6 +225,102 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             DrawSettingsWindow();
         }
+
+        DrawRunHistoryPanel();
+    }
+
+    private void DrawRunHistoryPanel()
+    {
+        if (DPSMeter.Instance != null)
+        {
+            DPSMeter.Instance.RefreshActiveRunSummaryForDisplay();
+        }
+
+        float panelX = _windowRect.xMax + 8f;
+        if (panelX + HistoryPanelWidth > Screen.width - 4f)
+        {
+            panelX = _windowRect.x - HistoryPanelWidth - 8f;
+        }
+        panelX = Mathf.Clamp(panelX, 4f, Mathf.Max(4f, Screen.width - HistoryPanelWidth - 4f));
+        float panelY = Mathf.Clamp(_windowRect.y, 4f, Mathf.Max(4f, Screen.height - HistoryPanelHeight - 4f));
+        float panelHeight = Mathf.Min(HistoryPanelHeight, Mathf.Max(240f, Screen.height - panelY - 4f));
+        Rect panel = new Rect(panelX, panelY, HistoryPanelWidth, panelHeight);
+        GUI.Box(panel, GUIContent.none);
+
+        GUI.Label(new Rect(panel.x + 10f, panel.y + 7f, 150f, 20f), "RUN HISTORY", _header);
+        if (_selectedRunRecord != null && GUI.Button(new Rect(panel.xMax - 78f, panel.y + 7f, 68f, 20f), "Live Run"))
+        {
+            _selectedRunRecord = null;
+        }
+
+        DpsData.RunRecord active = _data.ActiveRun;
+        float currentY = panel.y + 31f;
+        GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 18f), "CURRENT RUN", _header);
+        currentY += 19f;
+        GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
+            "Character: " + (active == null || string.IsNullOrEmpty(active.CharacterName) ? "—" : active.CharacterName), _small);
+        currentY += 16f;
+        GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
+            "Visited: " + (active == null ? 0 : active.WorldsVisited) + " Worlds  " +
+            (active == null ? 0 : active.MapsVisited) + " Maps", _small);
+        currentY += 16f;
+        GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
+            "Damage: " + FormatNumber(active == null ? 0f : active.TotalDamage), _small);
+        currentY += 16f;
+        GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
+            "Duration: " + FormatDuration(active == null ? 0f : active.DurationSeconds), _small);
+
+        float listHeaderY = currentY + 21f;
+        GUI.Label(new Rect(panel.x + 10f, listHeaderY, panel.width - 20f, 18f),
+            "COMPLETED RUNS (" + _data.CompletedRuns.Count + "/10)", _header);
+        float detailsHeight = _selectedRunRecord == null ? 0f : 62f;
+        float listY = listHeaderY + 20f;
+        float listHeight = Mathf.Max(50f, panel.yMax - listY - 10f - detailsHeight);
+        Rect listRect = new Rect(panel.x + 7f, listY, panel.width - 14f, listHeight);
+        float rowHeight = 43f;
+        float contentHeight = Mathf.Max(listRect.height, _data.CompletedRuns.Count * rowHeight);
+        Rect viewRect = new Rect(0f, 0f, listRect.width - 16f, contentHeight);
+        _historyScroll = GUI.BeginScrollView(listRect, _historyScroll, viewRect);
+        for (int i = 0; i < _data.CompletedRuns.Count; i++)
+        {
+            DpsData.RunRecord run = _data.CompletedRuns[i];
+            if (run == null) continue;
+            Rect row = new Rect(0f, i * rowHeight, viewRect.width, rowHeight - 3f);
+            string character = string.IsNullOrEmpty(run.CharacterName) ? "Unknown Character" : run.CharacterName;
+            string label = character + "  |  " + FormatNumber(run.TotalDamage) +
+                "\n" + FormatDuration(run.DurationSeconds) + "  •  Visited: " +
+                run.WorldsVisited + " Worlds  " + run.MapsVisited + " Maps";
+            if (GUI.Button(row, label))
+            {
+                _selectedRunRecord = run;
+            }
+        }
+        GUI.EndScrollView();
+
+        if (_selectedRunRecord != null)
+        {
+            float detailY = panel.yMax - detailsHeight - 5f;
+            GUI.Label(new Rect(panel.x + 10f, detailY, panel.width - 20f, 16f),
+                (_selectedRunRecord.CharacterName ?? "Unknown Character") + " — " +
+                (_selectedRunRecord.Outcome ?? "Concluded"), _header);
+            GUI.Label(new Rect(panel.x + 10f, detailY + 17f, panel.width - 20f, 16f),
+                "Damage: " + FormatNumber(_selectedRunRecord.TotalDamage) +
+                "   Time: " + FormatDuration(_selectedRunRecord.DurationSeconds), _small);
+            GUI.Label(new Rect(panel.x + 10f, detailY + 33f, panel.width - 20f, 16f),
+                "Visited: " + _selectedRunRecord.WorldsVisited + " Worlds  " +
+                _selectedRunRecord.MapsVisited + " Maps", _small);
+        }
+    }
+
+    private static string FormatDuration(float seconds)
+    {
+        int totalSeconds = Mathf.Max(0, Mathf.FloorToInt(seconds));
+        int hours = totalSeconds / 3600;
+        int minutes = (totalSeconds / 60) % 60;
+        int remainingSeconds = totalSeconds % 60;
+        return hours > 0
+            ? hours + ":" + minutes.ToString("00") + ":" + remainingSeconds.ToString("00")
+            : minutes + ":" + remainingSeconds.ToString("00");
     }
 
     private void HandleWindowInput()
