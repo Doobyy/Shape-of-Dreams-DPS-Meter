@@ -343,7 +343,99 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.Label(new Rect(rect.x, rect.y + 16f, rect.width, 17f), line2, _row);
     }
 
+    private string GetSelectedRunViewName()
+    {
+        switch (_mode)
+        {
+            case DisplayMode.CurrentDps: return "CURRENT";
+            case DisplayMode.DamageTotal: return "TOTAL";
+            case DisplayMode.PartyDps: return "PARTY";
+            case DisplayMode.PartyTotal: return "PARTY_TOTAL";
+            default: return "CURRENT";
+        }
+    }
+
+    private DpsData.RunViewMetrics GetSelectedRunMetrics(DpsData.RunRecord run, string view)
+    {
+        if (run == null || run.ViewMetrics == null) return null;
+        for (int i = 0; i < run.ViewMetrics.Count; i++)
+            if (run.ViewMetrics[i] != null && string.Equals(run.ViewMetrics[i].View, view, StringComparison.Ordinal))
+                return run.ViewMetrics[i];
+        return null;
+    }
+
+    private List<DpsData.RunBreakdownRow> GetSelectedRunViewRows(
+        DpsData.RunRecord run, string view, string category)
+    {
+        List<DpsData.RunBreakdownRow> rows = new List<DpsData.RunBreakdownRow>();
+        if (run == null || run.ViewRows == null) return rows;
+        for (int i = 0; i < run.ViewRows.Count; i++)
+        {
+            DpsData.RunBreakdownRow row = run.ViewRows[i];
+            if (row != null &&
+                string.Equals(row.View, view, StringComparison.Ordinal) &&
+                string.Equals(row.Category, category, StringComparison.Ordinal))
+                rows.Add(row);
+        }
+        rows.Sort((a, b) => b.Amount.CompareTo(a.Amount));
+        return rows;
+    }
+
+    private static List<KeyValuePair<string, float>> ToPartyRows(List<DpsData.RunBreakdownRow> rows)
+    {
+        List<KeyValuePair<string, float>> result = new List<KeyValuePair<string, float>>();
+        for (int i = 0; i < rows.Count; i++)
+            result.Add(new KeyValuePair<string, float>(rows[i].Name, rows[i].Amount));
+        return result;
+    }
+
     private void DrawSelectedRunLog()
+    {
+        DpsData.RunRecord run = _selectedRunRecord;
+        if (run == null) return;
+        if (run.ViewRows == null || run.ViewRows.Count == 0)
+        {
+            DrawLegacySelectedRunLog();
+            return;
+        }
+
+        string view = GetSelectedRunViewName();
+        DpsData.RunViewMetrics metrics = GetSelectedRunMetrics(run, view);
+        if (metrics == null) return;
+
+        List<DpsData.RunBreakdownRow> rows = GetSelectedRunViewRows(run, view, "DAMAGE");
+        if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
+        {
+            DrawParty(ToPartyRows(rows), metrics.Damage, metrics.DamageRate, "DPS");
+            return;
+        }
+
+        float maxAmount = GetSelectedRunMax(rows);
+        if (rows.Count == 0)
+        {
+            GUILayout.Label("No damage recorded yet.", _small);
+            return;
+        }
+
+        for (int i = 0; i < rows.Count; i++)
+        {
+            DpsData.RunBreakdownRow row = rows[i];
+            ElementalType? elemental = null;
+            ElementalType parsedElement;
+            if (!string.IsNullOrEmpty(row.Elemental) && Enum.TryParse<ElementalType>(row.Elemental, out parsedElement))
+                elemental = parsedElement;
+
+            DpsData.DamageScalingType scaling = DpsData.DamageScalingType.None;
+            DpsData.DamageScalingType parsedScaling;
+            if (!string.IsNullOrEmpty(row.Scaling) && Enum.TryParse<DpsData.DamageScalingType>(row.Scaling, out parsedScaling))
+                scaling = parsedScaling;
+
+            DrawDamageRow(StripRichTextTags(row.Name), row.Amount, metrics.Damage,
+                maxAmount, i, elemental, scaling, ResolveRunHistoryIcon(row));
+        }
+    }
+
+    private void DrawLegacySelectedRunLog()
     {
         DpsData.RunRecord run = _selectedRunRecord;
         if (run == null) return;
@@ -463,6 +555,70 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private void DrawSelectedRunHealing(DpsData.RunRecord run)
     {
+        if (run.ViewRows == null || run.ViewRows.Count == 0)
+        {
+            DrawLegacySelectedRunHealing(run);
+            return;
+        }
+        string view = GetSelectedRunViewName();
+        DpsData.RunViewMetrics metrics = GetSelectedRunMetrics(run, view);
+        if (metrics == null) return;
+        List<DpsData.RunBreakdownRow> rows = GetSelectedRunViewRows(run, view, "HEALING");
+        if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
+        {
+            DrawParty(ToPartyRows(rows), metrics.Healing, metrics.HealingRate, "HPS",
+                _mode == DisplayMode.PartyDps
+                    ? "HPS: " + FormatNumber(metrics.HealingRate)
+                    : "HEAL: " + FormatNumber(metrics.Healing));
+            return;
+        }
+        GUILayout.Label(_mode == DisplayMode.CurrentDps
+            ? "HPS: " + FormatNumber(metrics.HealingRate)
+            : "HEAL: " + FormatNumber(metrics.Healing), _headerRight);
+        float max = GetSelectedRunMax(rows);
+        if (rows.Count == 0)
+        {
+            GUILayout.Label("No healing recorded yet.", _small);
+            return;
+        }
+        for (int i = 0; i < rows.Count; i++)
+            DrawHealingRow(rows[i].Name, rows[i].Amount, metrics.Healing, max, ResolveRunHistoryIcon(rows[i]));
+    }
+
+    private void DrawSelectedRunBarrier(DpsData.RunRecord run)
+    {
+        if (run.ViewRows == null || run.ViewRows.Count == 0)
+        {
+            DrawLegacySelectedRunBarrier(run);
+            return;
+        }
+        string view = GetSelectedRunViewName();
+        DpsData.RunViewMetrics metrics = GetSelectedRunMetrics(run, view);
+        if (metrics == null) return;
+        List<DpsData.RunBreakdownRow> rows = GetSelectedRunViewRows(run, view, "BARRIER");
+        if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
+        {
+            DrawParty(ToPartyRows(rows), metrics.Barrier, metrics.BarrierRate, "BPS",
+                _mode == DisplayMode.PartyDps
+                    ? "BPS: " + FormatNumber(metrics.BarrierRate)
+                    : "BARRIER: " + FormatNumber(metrics.Barrier));
+            return;
+        }
+        GUILayout.Label(_mode == DisplayMode.CurrentDps
+            ? "BPS: " + FormatNumber(metrics.BarrierRate)
+            : "BARRIER: " + FormatNumber(metrics.Barrier), _headerRight);
+        float max = GetSelectedRunMax(rows);
+        if (rows.Count == 0)
+        {
+            GUILayout.Label("No barrier generated yet.", _small);
+            return;
+        }
+        for (int i = 0; i < rows.Count; i++)
+            DrawBarrierRow(rows[i].Name, rows[i].Amount, metrics.Barrier, max, ResolveRunHistoryIcon(rows[i]));
+    }
+
+    private void DrawLegacySelectedRunHealing(DpsData.RunRecord run)
+    {
         List<DpsData.RunBreakdownRow> rows = GetSelectedRunRows(run, "HEALING");
         float total = run.TotalHealing > 0f ? run.TotalHealing : GetSelectedRunTotal(rows);
         GUILayout.Label("HEAL: " + FormatNumber(total), _headerRight);
@@ -472,12 +628,11 @@ public sealed class DpsOverlay : MonoBehaviour
             GUILayout.Label("No healing recorded for this run.", _small);
             return;
         }
-
         for (int i = 0; i < rows.Count; i++)
             DrawHealingRow(rows[i].Name, rows[i].Amount, total, max, ResolveRunHistoryIcon(rows[i]));
     }
 
-    private void DrawSelectedRunBarrier(DpsData.RunRecord run)
+    private void DrawLegacySelectedRunBarrier(DpsData.RunRecord run)
     {
         List<DpsData.RunBreakdownRow> rows = GetSelectedRunRows(run, "BARRIER");
         float total = run.TotalBarrier > 0f ? run.TotalBarrier : GetSelectedRunTotal(rows);
@@ -488,7 +643,6 @@ public sealed class DpsOverlay : MonoBehaviour
             GUILayout.Label("No barrier generated for this run.", _small);
             return;
         }
-
         for (int i = 0; i < rows.Count; i++)
             DrawBarrierRow(rows[i].Name, rows[i].Amount, total, max, ResolveRunHistoryIcon(rows[i]));
     }
@@ -1114,8 +1268,26 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (_selectedRunRecord != null)
         {
-            title = _selectedRunRecord.CharacterName ?? "RUN";
-            metric = "DMG: " + FormatNumber(_selectedRunRecord.TotalDamage);
+            DpsData.RunViewMetrics selectedMetrics = GetSelectedRunMetrics(_selectedRunRecord, GetSelectedRunViewName());
+            switch (_mode)
+            {
+                case DisplayMode.CurrentDps:
+                    title = "CURRENT";
+                    metric = "DPS: " + FormatNumber(selectedMetrics == null ? 0f : selectedMetrics.DamageRate);
+                    break;
+                case DisplayMode.DamageTotal:
+                    title = "TOTAL";
+                    metric = "DMG: " + FormatNumber(selectedMetrics == null ? 0f : selectedMetrics.Damage);
+                    break;
+                case DisplayMode.PartyDps:
+                    title = "PARTY DPS";
+                    metric = "DPS: " + FormatNumber(selectedMetrics == null ? 0f : selectedMetrics.DamageRate);
+                    break;
+                case DisplayMode.PartyTotal:
+                    title = "PARTY TOTAL";
+                    metric = "DMG: " + FormatNumber(selectedMetrics == null ? 0f : selectedMetrics.Damage);
+                    break;
+            }
         }
 
         float metricWidth = headerRect.width * 0.45f;
