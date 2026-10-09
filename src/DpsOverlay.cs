@@ -230,6 +230,8 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             DrawRunHistoryPanel();
         }
+
+        InterceptUiPointerEvent();
     }
 
     private void DrawRunHistoryPanel()
@@ -243,7 +245,7 @@ public sealed class DpsOverlay : MonoBehaviour
             Mathf.Max(4f, Screen.width - HistoryPanelWidth - 4f));
         float panelY = Mathf.Clamp(_windowRect.y, 4f,
             Mathf.Max(4f, Screen.height - HistoryPanelHeight - 4f));
-        Rect panel = new Rect(panelX, panelY, HistoryPanelWidth, HistoryPanelHeight);
+        Rect panel = GetRunHistoryPanelRect();
         GUI.Box(panel, GUIContent.none);
 
         const float padding = 6f;
@@ -286,6 +288,53 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         GUI.EndScrollView();
+    }
+
+    private Rect GetRunHistoryPanelRect()
+    {
+        float panelX = Mathf.Clamp(_windowRect.xMax + 4f, 4f,
+            Mathf.Max(4f, Screen.width - HistoryPanelWidth - 4f));
+        float panelY = Mathf.Clamp(_windowRect.y, 4f,
+            Mathf.Max(4f, Screen.height - HistoryPanelHeight - 4f));
+        return new Rect(panelX, panelY, HistoryPanelWidth, HistoryPanelHeight);
+    }
+
+    private bool IsPointerOverUi(Vector2 position, bool includeContextMenu)
+    {
+        if (_windowRect.Contains(position))
+        {
+            return true;
+        }
+
+        if (_showRunHistory && GetRunHistoryPanelRect().Contains(position))
+        {
+            return true;
+        }
+
+        if (_settingsOpen && _settingsRect.Contains(position))
+        {
+            return true;
+        }
+
+        return includeContextMenu && _contextMenuOpen &&
+            _contextMenuRect.Contains(position);
+    }
+
+    private void InterceptUiPointerEvent()
+    {
+        Event e = Event.current;
+        if (e.type != EventType.MouseDown &&
+            e.type != EventType.MouseUp &&
+            e.type != EventType.MouseDrag &&
+            e.type != EventType.ScrollWheel)
+        {
+            return;
+        }
+
+        if (IsPointerOverUi(e.mousePosition, true))
+        {
+            e.Use();
+        }
     }
 
     private static string FormatDuration(float seconds)
@@ -420,19 +469,21 @@ public sealed class DpsOverlay : MonoBehaviour
             return;
         }
 
-        if (_contextMenuOpen)
+        if (_contextMenuOpen && e.type == EventType.MouseDown)
         {
-            bool mouseEvent =
-                e.type == EventType.MouseDown;
-
-            if (mouseEvent)
+            if (_contextMenuRect.Contains(e.mousePosition))
             {
-                if (_contextMenuRect.Contains(e.mousePosition))
-                {
-                    return;
-                }
+                return;
+            }
 
-                _contextMenuOpen = false;
+            _contextMenuOpen = false;
+
+            // Clicking another part of the meter dismisses the menu without
+            // activating the control underneath it. Outside clicks go to the game.
+            if (IsPointerOverUi(e.mousePosition, false))
+            {
+                e.Use();
+                return;
             }
         }
 
