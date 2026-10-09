@@ -373,9 +373,9 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (selected || hovered)
         {
-            // Inset the highlight so it stays clear of the separator between adjacent entries.
-            Rect highlightRect = new Rect(rect.x + 1f, rect.y + 1f,
-                Mathf.Max(0f, rect.width - 2f), Mathf.Max(0f, rect.height - 4f));
+            // Fill the row width and meet the top edge; keep the bottom clear of the separator.
+            Rect highlightRect = new Rect(rect.x, rect.y,
+                rect.width, Mathf.Max(0f, rect.height - 4f));
             GUI.color = new Color(1f, 1f, 1f, hovered ? 0.18f : 0.10f);
             GUI.DrawTexture(highlightRect, _whiteTexture);
             GUI.color = Color.white;
@@ -384,8 +384,8 @@ public sealed class DpsOverlay : MonoBehaviour
         if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
             _selectedRunRecord = isCurrent ? null : run;
 
-        GUI.Label(new Rect(rect.x, rect.y, rect.width, 17f), line1, _row);
-        GUI.Label(new Rect(rect.x, rect.y + 16f, rect.width, 17f), line2, _row);
+        GUI.Label(new Rect(rect.x + 2f, rect.y, Mathf.Max(0f, rect.width - 4f), 17f), line1, _row);
+        GUI.Label(new Rect(rect.x + 2f, rect.y + 16f, Mathf.Max(0f, rect.width - 4f), 17f), line2, _row);
 
         if (drawSeparator)
         {
