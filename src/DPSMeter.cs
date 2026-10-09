@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v11.000";
+    public const string DevelopmentVersion = "v11.100";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -249,14 +249,30 @@ public sealed class DPSMeter : ModBehaviour
     {
         try
         {
-            if (string.IsNullOrEmpty(_runHistoryPath) || !File.Exists(_runHistoryPath)) return;
-            DpsData.RunHistorySaveData saved =
-                JsonUtility.FromJson<DpsData.RunHistorySaveData>(File.ReadAllText(_runHistoryPath));
+            if (string.IsNullOrEmpty(_runHistoryPath))
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY load-skipped path-empty");
+                return;
+            }
+
+            if (!File.Exists(_runHistoryPath))
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY load-skipped file-missing path=" + _runHistoryPath);
+                return;
+            }
+
+            string json = File.ReadAllText(_runHistoryPath);
+            DpsData.RunHistorySaveData saved = JsonUtility.FromJson<DpsData.RunHistorySaveData>(json);
+            int loadedCount = saved == null || saved.Runs == null ? 0 : saved.Runs.Count;
             if (saved != null) _data.LoadCompletedRuns(saved.Runs);
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY loaded count="
+                + _data.CompletedRuns.Count + " file-count=" + loadedCount + " chars=" + json.Length
+                + " path=" + _runHistoryPath);
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY load-error=" + ex.GetType().Name);
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY load-error="
+                + ex.GetType().Name + ":" + ex.Message);
         }
     }
 
@@ -266,11 +282,40 @@ public sealed class DPSMeter : ModBehaviour
         {
             DpsData.RunHistorySaveData saved = new DpsData.RunHistorySaveData();
             for (int i = 0; i < _data.CompletedRuns.Count; i++) saved.Runs.Add(_data.CompletedRuns[i]);
-            File.WriteAllText(_runHistoryPath, JsonUtility.ToJson(saved, true));
+
+            string json = JsonUtility.ToJson(saved, true);
+            if (!json.Contains("\"Runs\"") ||
+                (saved.Runs.Count > 0 && !json.Contains("\"CharacterName\"")))
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY save-aborted invalid-json"
+                    + " count=" + saved.Runs.Count + " chars=" + json.Length + " path=" + _runHistoryPath);
+                return;
+            }
+
+            if (File.Exists(_runHistoryPath))
+            {
+                string existingJson = File.ReadAllText(_runHistoryPath);
+                DpsData.RunHistorySaveData existing =
+                    JsonUtility.FromJson<DpsData.RunHistorySaveData>(existingJson);
+                int existingCount = existing == null || existing.Runs == null ? 0 : existing.Runs.Count;
+                if (saved.Runs.Count == 0 && existingCount > 0)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY save-aborted"
+                        + " refusing-empty-overwrite existing-count=" + existingCount + " path=" + _runHistoryPath);
+                    return;
+                }
+
+                File.Copy(_runHistoryPath, _runHistoryPath + ".bak", true);
+            }
+
+            File.WriteAllText(_runHistoryPath, json);
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY saved count="
+                + saved.Runs.Count + " chars=" + json.Length + " path=" + _runHistoryPath);
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY save-error=" + ex.GetType().Name);
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY save-error="
+                + ex.GetType().Name + ":" + ex.Message);
         }
     }
 
