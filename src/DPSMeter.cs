@@ -24,6 +24,10 @@ public sealed class RunHistoryRecord
     [DataMember] public string CharacterName;
     [DataMember] public string CharacterIconName;
     [DataMember] public string CharacterIconTextureName;
+    [DataMember] public float CharacterMainColorR;
+    [DataMember] public float CharacterMainColorG;
+    [DataMember] public float CharacterMainColorB;
+    [DataMember] public bool HasCharacterMainColor;
     [DataMember] public string Outcome;
     [DataMember] public float TotalDamage;
     [DataMember] public float TotalHealing;
@@ -66,7 +70,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v16.000";
+    public const string DevelopmentVersion = "v16.100";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -76,7 +80,6 @@ public sealed class DPSMeter : ModBehaviour
     private DpsOverlay _overlay;
     private bool _subscribed;
     private Hero _currentHero;
-    private Hero _lastPartyColorHero;
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
@@ -132,20 +135,8 @@ public sealed class DPSMeter : ModBehaviour
 
     private void Update()
     {
-        DewPlayer local = DewPlayer.local;
-        Hero hero = local == null ? null : local.hero;
-        if (hero == _lastPartyColorHero)
-            return;
-
-        _lastPartyColorHero = hero;
-        if (_overlay == null)
-            return;
-
-        Color mainColor;
-        if (TryGetHeroMainColor(hero, out mainColor))
-            _overlay.SetPartyBarColor(mainColor);
-        else
-            _overlay.ResetPartyBarColor();
+        // Party-bar color is captured when a run starts, not whenever the
+        // lobby/current hero selection changes.
     }
 
     private static bool TryGetHeroMainColor(Hero hero, out Color color)
@@ -555,6 +546,10 @@ public sealed class DPSMeter : ModBehaviour
                         CharacterName = source.CharacterName,
                         CharacterIconName = source.CharacterIconName,
                         CharacterIconTextureName = source.CharacterIconTextureName,
+                        CharacterMainColorR = source.CharacterMainColorR,
+                        CharacterMainColorG = source.CharacterMainColorG,
+                        CharacterMainColorB = source.CharacterMainColorB,
+                        HasCharacterMainColor = source.HasCharacterMainColor,
                         Outcome = source.Outcome,
                         TotalDamage = source.TotalDamage,
                         TotalHealing = source.TotalHealing,
@@ -643,6 +638,10 @@ public sealed class DPSMeter : ModBehaviour
                     CharacterName = source.CharacterName,
                     CharacterIconName = source.CharacterIconName,
                     CharacterIconTextureName = source.CharacterIconTextureName,
+                    CharacterMainColorR = source.CharacterMainColorR,
+                    CharacterMainColorG = source.CharacterMainColorG,
+                    CharacterMainColorB = source.CharacterMainColorB,
+                    HasCharacterMainColor = source.HasCharacterMainColor,
                     Outcome = source.Outcome,
                     TotalDamage = source.TotalDamage,
                     TotalHealing = source.TotalHealing,
@@ -771,11 +770,18 @@ public sealed class DPSMeter : ModBehaviour
         float elapsed;
         _runStartGameElapsed = TryGetGameElapsedTime(out elapsed) ? elapsed : -1f;
         Sprite characterIcon = GetLocalHeroIcon();
+        Hero runHero = DewPlayer.local == null ? null : DewPlayer.local.hero;
+        Color runMainColor;
+        bool hasRunMainColor = TryGetHeroMainColor(runHero, out runMainColor);
         _activeRunRecord = new DpsData.RunRecord
         {
             CharacterName = GetLocalHeroDisplayName(),
             CharacterIconName = characterIcon == null ? null : characterIcon.name,
             CharacterIconTextureName = characterIcon == null || characterIcon.texture == null ? null : characterIcon.texture.name,
+            CharacterMainColorR = hasRunMainColor ? runMainColor.r : 1f,
+            CharacterMainColorG = hasRunMainColor ? runMainColor.g : 1f,
+            CharacterMainColorB = hasRunMainColor ? runMainColor.b : 1f,
+            HasCharacterMainColor = hasRunMainColor,
             Outcome = "In Progress",
             TotalDamage = 0f,
             DurationSeconds = 0f,
@@ -783,6 +789,13 @@ public sealed class DPSMeter : ModBehaviour
             MapsVisited = 0
         };
         _data.SetActiveRun(_activeRunRecord);
+        if (_overlay != null)
+        {
+            if (hasRunMainColor)
+                _overlay.SetPartyBarColor(runMainColor);
+            else
+                _overlay.ResetPartyBarColor();
+        }
         if (captureCurrentLocation) RecordCurrentRunLocation();
         RefreshActiveRunSummary();
     }
