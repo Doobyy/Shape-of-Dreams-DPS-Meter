@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v9.400";
+    public const string DevelopmentVersion = "v9.500";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -200,10 +200,6 @@ public sealed class DPSMeter : ModBehaviour
     private void OnGameResultUpdated(object result)
     {
         _gameResultCallbackCount++;
-        if (_gameResultCallbackCount > 10)
-        {
-            return;
-        }
 
         WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-CALLBACK fired count="
             + _gameResultCallbackCount + " result-type="
