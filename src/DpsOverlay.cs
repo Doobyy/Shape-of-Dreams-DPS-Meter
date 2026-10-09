@@ -91,7 +91,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private Sprite _basicAttackIcon;
     private Vector2 _historyScroll;
     private bool _showRunHistory;
-    private const float HistoryPanelWidth = 192f;
+    private const float HistoryPanelWidth = 184f;
+    private const float HistoryCloseTabWidth = 44f;
 
     public bool Visible { get; set; } = true;
 
@@ -285,6 +286,10 @@ public sealed class DpsOverlay : MonoBehaviour
 
         Rect panel = GetRunHistoryPanelRect();
         GUI.Box(panel, GUIContent.none);
+        Rect closeTabRect = new Rect(panel.xMax - 2f, panel.y, HistoryCloseTabWidth + 2f, 22f);
+        GUI.Box(closeTabRect, GUIContent.none);
+        if (GUI.Button(closeTabRect, "Close", GUIStyle.none))
+            _showRunHistory = false;
         const float padding = 6f;
         const float rowHeight = 38f;
         Rect listRect = new Rect(panel.x + padding, panel.y + 5f,
@@ -339,23 +344,11 @@ public sealed class DpsOverlay : MonoBehaviour
             GUI.color = Color.white;
         }
 
-        Rect clickRect = rect;
-        float closeButtonWidth = isCurrent ? 20f : 0f;
-        if (isCurrent)
-            clickRect.width = Mathf.Max(0f, rect.width - closeButtonWidth);
-
-        if (GUI.Button(clickRect, GUIContent.none, GUIStyle.none))
+        if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
             _selectedRunRecord = isCurrent ? null : run;
 
-        GUI.Label(new Rect(rect.x, rect.y, rect.width - closeButtonWidth, 17f), line1, _row);
+        GUI.Label(new Rect(rect.x, rect.y, rect.width, 17f), line1, _row);
         GUI.Label(new Rect(rect.x, rect.y + 16f, rect.width, 17f), line2, _row);
-
-        if (isCurrent)
-        {
-            Rect closeButtonRect = new Rect(rect.xMax - 18f, rect.y + 1f, 16f, 16f);
-            if (GUI.Button(closeButtonRect, "X"))
-                _showRunHistory = false;
-        }
 
         if (drawSeparator)
         {
@@ -818,7 +811,7 @@ public sealed class DpsOverlay : MonoBehaviour
         SetUiInputBlocker(_mainWindowInputBlocker, visible,
             visible ? _windowRect : new Rect());
         SetUiInputBlocker(_historyInputBlocker, visible && _showRunHistory,
-            visible && _showRunHistory ? GetRunHistoryPanelRect() : new Rect());
+            visible && _showRunHistory ? GetRunHistoryInputRect() : new Rect());
         SetUiInputBlocker(_settingsInputBlocker, visible && _settingsOpen,
             visible && _settingsOpen ? _settingsRect : new Rect());
         SetUiInputBlocker(_contextMenuInputBlocker, visible && _contextMenuOpen,
@@ -832,11 +825,18 @@ public sealed class DpsOverlay : MonoBehaviour
         int entryCount = 1 + (_data == null || _data.CompletedRuns == null ? 0 : _data.CompletedRuns.Count);
         float panelHeight = verticalPadding + (rowHeight * entryCount);
 
+        float totalWidth = HistoryPanelWidth + HistoryCloseTabWidth;
         float panelX = Mathf.Clamp(_windowRect.xMax + 4f, 4f,
-            Mathf.Max(4f, Screen.width - HistoryPanelWidth - 4f));
+            Mathf.Max(4f, Screen.width - totalWidth - 4f));
         float panelY = Mathf.Clamp(_windowRect.y, 4f,
             Mathf.Max(4f, Screen.height - panelHeight - 4f));
         return new Rect(panelX, panelY, HistoryPanelWidth, panelHeight);
+    }
+
+    private Rect GetRunHistoryInputRect()
+    {
+        Rect panel = GetRunHistoryPanelRect();
+        return new Rect(panel.x, panel.y, panel.width + HistoryCloseTabWidth, panel.height);
     }
 
     private bool IsPointerOverUi(Vector2 position, bool includeContextMenu)
@@ -846,7 +846,7 @@ public sealed class DpsOverlay : MonoBehaviour
             return true;
         }
 
-        if (_showRunHistory && GetRunHistoryPanelRect().Contains(position))
+        if (_showRunHistory && GetRunHistoryInputRect().Contains(position))
         {
             return true;
         }
