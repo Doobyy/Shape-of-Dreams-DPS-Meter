@@ -286,7 +286,7 @@ public sealed class DpsOverlay : MonoBehaviour
         Rect panel = GetRunHistoryPanelRect();
         GUI.Box(panel, GUIContent.none);
         const float padding = 6f;
-        const float rowHeight = 34f;
+        const float rowHeight = 38f;
         Rect collapseRect = new Rect(panel.xMax - 22f, panel.y + 3f, 18f, 18f);
         if (GUI.Button(collapseRect, "‹"))
             _showRunHistory = false;
@@ -308,7 +308,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 "Current " + activeCharacter + " " + FormatDuration(active.DurationSeconds),
             active == null ? "Awaiting next run" :
                 "Visited: " + active.WorldsVisited + " Worlds - " + active.MapsVisited + " Maps",
-            true);
+            true, _data.CompletedRuns.Count > 0);
         y += rowHeight;
 
         for (int i = 0; i < _data.CompletedRuns.Count; i++)
@@ -319,14 +319,15 @@ public sealed class DpsOverlay : MonoBehaviour
             Rect rowRect = new Rect(0f, y, viewRect.width, rowHeight);
             DrawRunHistoryRow(rowRect, run,
                 character + " " + FormatNumber(run.TotalDamage) + " - " + FormatDuration(run.DurationSeconds),
-                "Visited: " + run.WorldsVisited + " Worlds - " + run.MapsVisited + " Maps", false);
+                "Visited: " + run.WorldsVisited + " Worlds - " + run.MapsVisited + " Maps",
+                false, i < _data.CompletedRuns.Count - 1);
             y += rowHeight;
         }
 
         GUI.EndScrollView();
     }
 
-    private void DrawRunHistoryRow(Rect rect, DpsData.RunRecord run, string line1, string line2, bool isCurrent)
+    private void DrawRunHistoryRow(Rect rect, DpsData.RunRecord run, string line1, string line2, bool isCurrent, bool drawSeparator)
     {
         bool selected = isCurrent ? _selectedRunRecord == null : ReferenceEquals(_selectedRunRecord, run);
         bool hovered = rect.Contains(Event.current.mousePosition);
@@ -347,6 +348,13 @@ public sealed class DpsOverlay : MonoBehaviour
 
         GUI.Label(new Rect(rect.x, rect.y, rect.width, 17f), line1, _row);
         GUI.Label(new Rect(rect.x, rect.y + 16f, rect.width, 17f), line2, _row);
+
+        if (drawSeparator)
+        {
+            GUI.color = new Color(0.72f, 0.72f, 0.72f, 0.55f);
+            GUI.DrawTexture(new Rect(rect.x, rect.y + 35f, rect.width, 1f), _whiteTexture);
+            GUI.color = Color.white;
+        }
     }
 
     private string GetSelectedRunViewName()
@@ -811,7 +819,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private Rect GetRunHistoryPanelRect()
     {
-        const float rowHeight = 34f;
+        const float rowHeight = 38f;
         const float verticalPadding = 10f;
         int entryCount = 1 + (_data == null || _data.CompletedRuns == null ? 0 : _data.CompletedRuns.Count);
         float panelHeight = verticalPadding + (rowHeight * entryCount);
