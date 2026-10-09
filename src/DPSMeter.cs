@@ -66,7 +66,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v15.000";
+    public const string DevelopmentVersion = "v15.100";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -904,6 +904,11 @@ public sealed class DPSMeter : ModBehaviour
 
                 string objectName = component.gameObject == null ? "<no-game-object>" : component.gameObject.name;
                 string textureName = sprite.texture == null ? "<null>" : sprite.texture.name;
+                if (!IsEmblemRelatedAssetName(typeName)
+                    && !IsEmblemRelatedAssetName(objectName)
+                    && !IsEmblemRelatedAssetName(sprite.name)
+                    && !IsEmblemRelatedAssetName(textureName))
+                    continue;
                 string key = component.GetInstanceID() + "|" + type.FullName + "|" + objectName
                     + "|" + sprite.name + "|" + textureName;
                 if (!_loggedEmblemUiReferences.Add(key))
