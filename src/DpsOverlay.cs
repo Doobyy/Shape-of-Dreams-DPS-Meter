@@ -101,6 +101,12 @@ public sealed class DpsOverlay : MonoBehaviour
         _data = data;
     }
 
+    public void NotifyLiveDataReceived()
+    {
+        if (_selectedRunRecord != null)
+            _selectedRunRecord = null;
+    }
+
     private void Update()
     {
         UpdateUiInputBlockers();
