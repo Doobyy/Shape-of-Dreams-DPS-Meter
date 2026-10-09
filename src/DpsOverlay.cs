@@ -58,6 +58,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Color _partyBarColor = DefaultBarColor;
     private Color _partyBarOutlineColor = DefaultBarOutlineColor;
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
+    private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
     private Vector2 _scroll;
     private DisplayMode _mode;
 
@@ -120,6 +121,14 @@ public sealed class DpsOverlay : MonoBehaviour
     {
         _partyBarColor = DefaultBarColor;
         _partyBarOutlineColor = DefaultBarOutlineColor;
+    }
+
+    public void SetPartyPlayerIcon(string playerName, Sprite icon)
+    {
+        if (string.IsNullOrEmpty(playerName) || icon == null)
+            return;
+
+        _partyPlayerIcons[playerName] = icon;
     }
 
     public void NotifyLiveDataReceived()
@@ -1928,11 +1937,20 @@ public sealed class DpsOverlay : MonoBehaviour
             float valueWidth = _rowRight.CalcSize(new GUIContent(valueText)).x;
             float valueRight = rowRect.xMax - 7f;
             float valueLeft = Mathf.Max(rowRect.x + 7f, valueRight - valueWidth);
-            float nameWidth = Mathf.Max(0f, valueLeft - rowRect.x - 14f);
+            Sprite playerIcon;
+            bool hasPlayerIcon = _partyPlayerIcons.TryGetValue(row.Key, out playerIcon) && playerIcon != null;
+            float nameX = rowRect.x + (hasPlayerIcon ? 28f : 7f);
+            float nameWidth = Mathf.Max(0f, valueLeft - nameX - 7f);
+
+            if (hasPlayerIcon)
+            {
+                GUI.color = Color.white;
+                DrawSprite(playerIcon, new Rect(rowRect.x + 5f, rowRect.y + 2f, 18f, 18f));
+            }
 
             GUI.color = SourceNameColor;
             DrawBarTextWithStroke(
-                new Rect(rowRect.x + 7f, rowRect.y, nameWidth, rowRect.height),
+                new Rect(nameX, rowRect.y, nameWidth, rowRect.height),
                 TruncateTextToWidth(StripRichTextTags(row.Key), nameWidth, _row),
                 _row);
             DrawBarTextWithStroke(
