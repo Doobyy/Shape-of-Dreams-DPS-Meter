@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v10.800";
+    public const string DevelopmentVersion = "v10.900";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -204,6 +204,7 @@ public sealed class DPSMeter : ModBehaviour
         if (!_runActive || _activeRunRecord == null) return;
 
         RefreshActiveRunSummary();
+        CaptureRunBreakdown(_activeRunRecord);
         _activeRunRecord.Outcome = "Concluded";
         _activeRunRecord.CompletedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
         _data.ArchiveRun(_activeRunRecord);
@@ -216,6 +217,32 @@ public sealed class DPSMeter : ModBehaviour
         _activeRunTotalDamage = 0f;
         _activeRunWorlds.Clear();
         _activeRunMaps.Clear();
+    }
+
+    private void CaptureRunBreakdown(DpsData.RunRecord run)
+    {
+        if (run == null || _data == null) return;
+        run.BreakdownRows.Clear();
+
+        IReadOnlyList<DpsData.BreakdownRow> skills = _data.CumulativePersonalSkillRows;
+        for (int i = 0; i < skills.Count; i++)
+            run.BreakdownRows.Add(new DpsData.RunBreakdownRow { Category = "DAMAGE", Name = skills[i].Name, Amount = skills[i].Amount });
+
+        IReadOnlyList<KeyValuePair<string, float>> other = _data.CumulativePersonalOther;
+        for (int i = 0; i < other.Count; i++)
+            run.BreakdownRows.Add(new DpsData.RunBreakdownRow { Category = "DAMAGE", Name = other[i].Key, Amount = other[i].Value });
+
+        IReadOnlyList<KeyValuePair<string, float>> essences = _data.CumulativePersonalEssences;
+        for (int i = 0; i < essences.Count; i++)
+            run.BreakdownRows.Add(new DpsData.RunBreakdownRow { Category = "DAMAGE", Name = _data.GetEssenceDisplayName(essences[i].Key), Amount = essences[i].Value });
+
+        IReadOnlyList<DpsData.BreakdownRow> healing = _data.CumulativeHealingRows;
+        for (int i = 0; i < healing.Count; i++)
+            run.BreakdownRows.Add(new DpsData.RunBreakdownRow { Category = "HEALING", Name = healing[i].Name, Amount = healing[i].Amount });
+
+        IReadOnlyList<DpsData.BreakdownRow> barrier = _data.CumulativeBarrierRows;
+        for (int i = 0; i < barrier.Count; i++)
+            run.BreakdownRows.Add(new DpsData.RunBreakdownRow { Category = "BARRIER", Name = barrier[i].Name, Amount = barrier[i].Amount });
     }
 
     private void LoadRunHistory()
