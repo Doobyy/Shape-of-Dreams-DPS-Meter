@@ -92,7 +92,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Sprite _basicAttackIcon;
     private Vector2 _historyScroll;
     private bool _showRunHistory;
-    private const float HistoryPanelWidth = 184f;
+    private const float HistoryPanelWidth = 224f;
     private const float HistoryCloseTabWidth = 22f;
     private const float HistoryCloseTabHeight = 44f;
 
@@ -367,12 +367,14 @@ public sealed class DpsOverlay : MonoBehaviour
         bool selected = isCurrent ? _selectedRunRecord == null : ReferenceEquals(_selectedRunRecord, run);
         bool hovered = rect.Contains(Event.current.mousePosition);
 
-        // Keep selection and hover highlighting across the full row. Apply
-        // the 2px inset only to the text, not the highlight or click target.
+        // Preserve the two-line text layout while reserving a full-height slot for the class emblem.
+        const float iconSize = 36f;
+        const float iconLeftPadding = 1f;
+        const float textGap = 3f;
         Rect textRect = new Rect(
-            rect.x + 2f,
+            rect.x + iconLeftPadding + iconSize + textGap,
             rect.y + 2f,
-            Mathf.Max(0f, rect.width - 4f),
+            Mathf.Max(0f, rect.width - (iconLeftPadding + iconSize + textGap) - 2f),
             Mathf.Max(0f, rect.height - 4f));
 
         if (selected || hovered)
@@ -384,6 +386,19 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
             _selectedRunRecord = isCurrent ? null : run;
+
+        Sprite characterIcon = ResolveRunCharacterIcon(run);
+        if (characterIcon != null)
+        {
+            Rect iconRect = new Rect(
+                rect.x + iconLeftPadding,
+                rect.y + (rect.height - iconSize) * 0.5f,
+                iconSize,
+                iconSize);
+            GUI.color = selected || hovered ? Color.white : new Color(0.55f, 0.55f, 0.55f, 1f);
+            DrawSprite(characterIcon, iconRect);
+            GUI.color = Color.white;
+        }
 
         GUI.Label(new Rect(textRect.x, textRect.y, textRect.width, 16f), line1, _row);
         GUI.Label(new Rect(textRect.x, textRect.y + 16f, textRect.width, 16f), line2, _row);
@@ -529,6 +544,34 @@ public sealed class DpsOverlay : MonoBehaviour
             DrawDamageRow(StripRichTextTags(row.Name), row.Amount, run.TotalDamage,
                 maxAmount, i, elemental, scaling, ResolveRunHistoryIcon(row));
         }
+    }
+
+
+    private Sprite ResolveRunCharacterIcon(DpsData.RunRecord run)
+    {
+        if (run == null || string.IsNullOrEmpty(run.CharacterIconName))
+            return null;
+
+        string cacheKey = run.CharacterIconName + "|" + (run.CharacterIconTextureName ?? string.Empty);
+        Sprite cached;
+        if (_historyIconCache.TryGetValue(cacheKey, out cached))
+            return cached;
+
+        Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+        for (int i = 0; sprites != null && i < sprites.Length; i++)
+        {
+            Sprite candidate = sprites[i];
+            if (candidate == null || !string.Equals(candidate.name, run.CharacterIconName, StringComparison.Ordinal))
+                continue;
+            if (!string.IsNullOrEmpty(run.CharacterIconTextureName) &&
+                (candidate.texture == null || !string.Equals(candidate.texture.name, run.CharacterIconTextureName, StringComparison.Ordinal)))
+                continue;
+
+            _historyIconCache[cacheKey] = candidate;
+            return candidate;
+        }
+
+        return null;
     }
 
     private Sprite ResolveRunHistoryIcon(DpsData.RunBreakdownRow row)
