@@ -19,8 +19,14 @@ public sealed class DpsData
     public sealed class RunBreakdownRow
     {
         public string Category;
+        public string SourceType;
+        public string Identity;
         public string Name;
         public float Amount;
+        public string Elemental;
+        public string Scaling;
+        public string IconName;
+        public string IconTextureName;
     }
 
     [Serializable]
@@ -104,6 +110,8 @@ public sealed class DpsData
     private readonly Dictionary<string, float> _currentOtherPersonal = new Dictionary<string, float>();
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalSkillScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalOtherScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
+    private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _cumulativePersonalSkillScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
+    private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _cumulativePersonalOtherScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<string, Dictionary<ElementalType, float>> _currentPersonalSkillElements = new Dictionary<string, Dictionary<ElementalType, float>>();
     private readonly Dictionary<string, Dictionary<ElementalType, float>> _cumulativePersonalSkillElements = new Dictionary<string, Dictionary<ElementalType, float>>();
     private readonly Dictionary<string, Dictionary<ElementalType, float>> _currentPersonalEssenceElements = new Dictionary<string, Dictionary<ElementalType, float>>();
@@ -536,6 +544,7 @@ public sealed class DpsData
             Add(_cumulativePersonalSkills, skillIdentity, producedDamage);
             AddElement(_currentPersonalSkillElements, skillIdentity, elemental, producedDamage);
             AddScaling(_currentPersonalSkillScaling, skillIdentity, scalingType, producedDamage);
+            AddScaling(_cumulativePersonalSkillScaling, skillIdentity, scalingType, producedDamage);
             AddElement(_cumulativePersonalSkillElements, skillIdentity, elemental, producedDamage);
             _skillDisplayNames[skillIdentity] = string.IsNullOrEmpty(skillName) ? skillIdentity : skillName;
         }
@@ -543,6 +552,7 @@ public sealed class DpsData
         {
             Add(_currentOtherPersonal, sourceName, producedDamage);
             AddScaling(_currentPersonalOtherScaling, sourceName, scalingType, producedDamage);
+            AddScaling(_cumulativePersonalOtherScaling, sourceName, scalingType, producedDamage);
             Add(_cumulativeOtherPersonal, sourceName, producedDamage);
         }
 
@@ -664,6 +674,8 @@ public sealed class DpsData
         _cumulativePersonalBarrierIcons.Clear();
         _barrierDisplayNames.Clear();
         _cumulativePersonalSkills.Clear();
+        _cumulativePersonalSkillScaling.Clear();
+        _cumulativePersonalOtherScaling.Clear();
         _skillIcons.Clear();
         _skillDisplayNames.Clear();
         _otherIcons.Clear();
@@ -696,6 +708,12 @@ public sealed class DpsData
     public DamageScalingType GetCurrentSkillScaling(string skillIdentity) => GetDominantScaling(_currentPersonalSkillScaling, skillIdentity);
 
     public DamageScalingType GetCurrentOtherScaling(string sourceName) => GetDominantScaling(_currentPersonalOtherScaling, sourceName);
+
+    public ElementalType? GetCumulativeSkillElement(string skillIdentity) => GetDominantElement(_cumulativePersonalSkillElements, skillIdentity);
+
+    public DamageScalingType GetCumulativeSkillScaling(string skillIdentity) => GetDominantScaling(_cumulativePersonalSkillScaling, skillIdentity);
+
+    public DamageScalingType GetCumulativeOtherScaling(string sourceName) => GetDominantScaling(_cumulativePersonalOtherScaling, sourceName);
 
     public DamageScalingType GetCurrentEssenceScaling(string essenceKey) => GetDominantScaling(_currentPersonalEssenceScaling, essenceKey);
 
