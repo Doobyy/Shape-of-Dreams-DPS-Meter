@@ -1032,7 +1032,7 @@ public sealed class DpsOverlay : MonoBehaviour
             if (_windowRect.Contains(e.mousePosition))
             {
                 const float menuWidth = 100f;
-                const float menuHeight = 148f;
+                const float menuHeight = 120f;
                 const float menuGap = 4f;
 
                 _contextMenuOpen = false;
