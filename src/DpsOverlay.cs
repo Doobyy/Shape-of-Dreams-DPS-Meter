@@ -294,7 +294,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.DrawTexture(panel, _whiteTexture);
         GUI.DrawTexture(closeTabRect, _whiteTexture);
         // Keep the contour visible without competing with the brighter row text.
-        GUI.color = new Color(0f, 0f, 0f, 0.62f);
+        GUI.color = new Color(0f, 0f, 0f, 0.48f);
         const float outline = 1.25f;
         DrawHistoryOutlineLine(panel.xMin, panel.yMin, closeTabRect.xMin, panel.yMin, outline);
         DrawHistoryOutlineLine(closeTabRect.xMin, closeTabRect.yMin, closeTabRect.xMax, closeTabRect.yMin, outline);
@@ -373,8 +373,11 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (selected || hovered)
         {
-            GUI.color = new Color(1f, 1f, 1f, hovered ? 0.24f : 0.13f);
-            GUI.DrawTexture(rect, _whiteTexture);
+            // Inset the highlight so it stays clear of the separator between adjacent entries.
+            Rect highlightRect = new Rect(rect.x + 1f, rect.y + 1f,
+                Mathf.Max(0f, rect.width - 2f), Mathf.Max(0f, rect.height - 4f));
+            GUI.color = new Color(1f, 1f, 1f, hovered ? 0.18f : 0.10f);
+            GUI.DrawTexture(highlightRect, _whiteTexture);
             GUI.color = Color.white;
         }
 
