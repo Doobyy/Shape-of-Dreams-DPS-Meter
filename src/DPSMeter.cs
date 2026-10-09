@@ -24,6 +24,8 @@ public sealed class RunHistoryRecord
     [DataMember] public string CharacterName;
     [DataMember] public string Outcome;
     [DataMember] public float TotalDamage;
+    [DataMember] public float TotalHealing;
+    [DataMember] public float TotalBarrier;
     [DataMember] public float DurationSeconds;
     [DataMember] public int WorldsVisited;
     [DataMember] public int MapsVisited;
@@ -47,7 +49,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v11.700";
+    public const string DevelopmentVersion = "v11.800";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -259,6 +261,8 @@ public sealed class DPSMeter : ModBehaviour
     {
         if (run == null || _data == null) return;
         run.BreakdownRows.Clear();
+        run.TotalHealing = _data.CumulativePersonalHealing;
+        run.TotalBarrier = _data.CumulativePersonalBarrier;
 
         IReadOnlyList<DpsData.BreakdownRow> skills = _data.CumulativePersonalSkillRows;
         for (int i = 0; i < skills.Count; i++)
@@ -352,6 +356,8 @@ public sealed class DPSMeter : ModBehaviour
                         CharacterName = source.CharacterName,
                         Outcome = source.Outcome,
                         TotalDamage = source.TotalDamage,
+                        TotalHealing = source.TotalHealing,
+                        TotalBarrier = source.TotalBarrier,
                         DurationSeconds = source.DurationSeconds,
                         WorldsVisited = source.WorldsVisited,
                         MapsVisited = source.MapsVisited,
@@ -406,6 +412,8 @@ public sealed class DPSMeter : ModBehaviour
                     CharacterName = source.CharacterName,
                     Outcome = source.Outcome,
                     TotalDamage = source.TotalDamage,
+                    TotalHealing = source.TotalHealing,
+                    TotalBarrier = source.TotalBarrier,
                     DurationSeconds = source.DurationSeconds,
                     WorldsVisited = source.WorldsVisited,
                     MapsVisited = source.MapsVisited,
