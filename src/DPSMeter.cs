@@ -64,7 +64,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v14.000";
+    public const string DevelopmentVersion = "v14.100";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -88,6 +88,7 @@ public sealed class DPSMeter : ModBehaviour
     private float _activeRunTotalDamage;
     private string _runHistoryPath;
     private DpsData.RunRecord _activeRunRecord;
+    private static bool _classSymbolProbeComplete;
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
 
@@ -2203,6 +2204,138 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
     }
 
 
+
+    private static void TraceClassSymbolCandidates(Hero hero)
+    {
+        if (_classSymbolProbeComplete || hero == null)
+            return;
+
+        _classSymbolProbeComplete = true;
+        Type heroType = hero.GetType();
+        string heroTypeName = heroType.Name;
+        string characterKey = heroTypeName.StartsWith("Hero_", StringComparison.Ordinal)
+            ? heroTypeName.Substring(5)
+            : heroTypeName;
+
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS SYMBOL probe begin heroType="
+            + heroTypeName + " heroName=" + (hero.name ?? "<null>"));
+
+        Type currentType = heroType;
+        int hierarchyDepth = 0;
+        while (currentType != null && hierarchyDepth < 8)
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Static
+                | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+
+            FieldInfo[] fields = currentType.GetFields(flags);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                string memberName = field.Name ?? "";
+                if (memberName.IndexOf("icon", StringComparison.OrdinalIgnoreCase) < 0
+                    && memberName.IndexOf("symbol", StringComparison.OrdinalIgnoreCase) < 0
+                    && memberName.IndexOf("class", StringComparison.OrdinalIgnoreCase) < 0
+                    && field.FieldType != typeof(Sprite)
+                    && field.FieldType != typeof(Texture2D))
+                    continue;
+
+                try
+                {
+                    object value = field.GetValue(field.IsStatic ? null : hero);
+                    if (value != null)
+                    {
+                        UnityEngine.Object unityValue = value as UnityEngine.Object;
+                        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS SYMBOL hero-field "
+                            + currentType.Name + "." + memberName + " type=" + field.FieldType.Name
+                            + " value=" + (unityValue != null ? unityValue.name : value.ToString()));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS SYMBOL hero-field-error "
+                        + currentType.Name + "." + memberName + " " + ex.GetType().Name);
+                }
+            }
+
+            PropertyInfo[] properties = currentType.GetProperties(flags);
+            for (int i = 0; i < properties.Length; i++)
+            {
+                PropertyInfo property = properties[i];
+                string memberName = property.Name ?? "";
+                if (property.GetIndexParameters().Length != 0
+                    || (memberName.IndexOf("icon", StringComparison.OrdinalIgnoreCase) < 0
+                        && memberName.IndexOf("symbol", StringComparison.OrdinalIgnoreCase) < 0
+                        && memberName.IndexOf("class", StringComparison.OrdinalIgnoreCase) < 0
+                        && property.PropertyType != typeof(Sprite)
+                        && property.PropertyType != typeof(Texture2D)))
+                    continue;
+
+                MethodInfo getter = property.GetGetMethod(true);
+                if (getter == null || getter.GetParameters().Length != 0)
+                    continue;
+
+                try
+                {
+                    object value = property.GetValue(getter.IsStatic ? null : hero, null);
+                    if (value != null)
+                    {
+                        UnityEngine.Object unityValue = value as UnityEngine.Object;
+                        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS SYMBOL hero-property "
+                            + currentType.Name + "." + memberName + " type=" + property.PropertyType.Name
+                            + " value=" + (unityValue != null ? unityValue.name : value.ToString()));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS SYMBOL hero-property-error "
+                        + currentType.Name + "." + memberName + " " + ex.GetType().Name);
+                }
+            }
+
+            currentType = currentType.BaseType;
+            hierarchyDepth++;
+        }
+
+        try
+        {
+            UnityEngine.Object[] loadedSprites = Resources.FindObjectsOfTypeAll(typeof(Sprite));
+            int candidateCount = 0;
+            if (loadedSprites != null)
+            {
+                for (int i = 0; i < loadedSprites.Length && candidateCount < 80; i++)
+                {
+                    Sprite sprite = loadedSprites[i] as Sprite;
+                    if (sprite == null || string.IsNullOrEmpty(sprite.name))
+                        continue;
+
+                    string spriteName = sprite.name;
+                    bool matchesCharacter = spriteName.IndexOf(characterKey, StringComparison.OrdinalIgnoreCase) >= 0;
+                    bool matchesSymbol = spriteName.IndexOf("symbol", StringComparison.OrdinalIgnoreCase) >= 0
+                        || spriteName.IndexOf("class", StringComparison.OrdinalIgnoreCase) >= 0;
+                    bool matchesHeroIcon = (spriteName.IndexOf("hero", StringComparison.OrdinalIgnoreCase) >= 0
+                        || spriteName.IndexOf("icon", StringComparison.OrdinalIgnoreCase) >= 0)
+                        && matchesCharacter;
+                    if (!matchesCharacter && !matchesSymbol && !matchesHeroIcon)
+                        continue;
+
+                    candidateCount++;
+                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS SYMBOL sprite-candidate name="
+                        + spriteName + " texture="
+                        + (sprite.texture == null ? "<null>" : sprite.texture.name)
+                        + " size=" + sprite.rect.width + "x" + sprite.rect.height);
+                }
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS SYMBOL probe end loadedSprites="
+                + (loadedSprites == null ? -1 : loadedSprites.Length) + " candidatesLogged=" + candidateCount);
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS SYMBOL sprite-scan-error "
+                + ex.GetType().Name + ":" + ex.Message);
+        }
+    }
+
     private void OnTakeDamage(EventInfoDamage info)
     {
         if (info.actor == null || info.victim == null)
@@ -2224,6 +2357,9 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         {
             return;
         }
+
+        if (info.actor.firstEntity is Hero localHeroForProbe && local.hero == localHeroForProbe)
+            TraceClassSymbolCandidates(localHeroForProbe);
 
         Hero sourceHero = info.actor.firstEntity as Hero;
 
