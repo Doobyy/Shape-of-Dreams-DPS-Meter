@@ -814,10 +814,7 @@ public sealed class DpsOverlay : MonoBehaviour
         const float rowHeight = 34f;
         const float verticalPadding = 10f;
         int entryCount = 1 + (_data == null || _data.CompletedRuns == null ? 0 : _data.CompletedRuns.Count);
-        float panelHeight = Mathf.Max(
-            _windowRect.height,
-            verticalPadding + (rowHeight * entryCount));
-        panelHeight = Mathf.Max(90f, panelHeight);
+        float panelHeight = verticalPadding + (rowHeight * entryCount);
 
         float panelX = Mathf.Clamp(_windowRect.xMax + 4f, 4f,
             Mathf.Max(4f, Screen.width - HistoryPanelWidth - 4f));
