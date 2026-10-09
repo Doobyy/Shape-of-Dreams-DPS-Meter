@@ -11,7 +11,119 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v8.500";
+    public const string DevelopmentVersion = "v8.600";
+
+    // Temporary Phase 1 probe: observe possible score/result screens without
+    // hooking an unverified game lifecycle method.
+    private float _nextScoreScreenProbeAt;
+    private readonly Dictionary<int, bool> _scoreScreenObjectStates = new Dictionary<int, bool>();
+    private bool _scoreScreenCandidateActive;
+    private int _metricEventSequence;
+    private int _lastDamageEventSequence;
+    private int _lastHealEventSequence;
+    private int _lastBarrierEventSequence;
+    private int _scoreScreenProbeSequence;
+
+    private void Update()
+    {
+        float now = Time.realtimeSinceStartup;
+        if (now < _nextScoreScreenProbeAt)
+        {
+            return;
+        }
+
+        _nextScoreScreenProbeAt = now + 1f;
+        _scoreScreenProbeSequence++;
+        ProbeScoreScreenObjects();
+    }
+
+    private void ProbeScoreScreenObjects()
+    {
+        Component[] components = Resources.FindObjectsOfTypeAll<Component>();
+        HashSet<int> foundCandidates = new HashSet<int>();
+
+        for (int i = 0; i < components.Length; i++)
+        {
+            Component component = components[i];
+            if (component == null || component.gameObject == null)
+            {
+                continue;
+            }
+
+            string objectName = component.gameObject.name ?? string.Empty;
+            string typeName = component.GetType().FullName ?? component.GetType().Name;
+            if (!ContainsScoreScreenKeyword(objectName + " " + typeName))
+            {
+                continue;
+            }
+
+            int id = component.gameObject.GetInstanceID();
+            bool active = component.gameObject.activeInHierarchy;
+            // Ignore inactive asset/prefab candidates unless this object was
+            // previously observed active in the live scene.
+            if (!active && !_scoreScreenObjectStates.ContainsKey(id))
+            {
+                continue;
+            }
+
+            foundCandidates.Add(id);
+            bool previous;
+            bool stateChanged = !_scoreScreenObjectStates.TryGetValue(id, out previous) || previous != active;
+            if (stateChanged)
+            {
+                _scoreScreenObjectStates[id] = active;
+                WriteDebugLog("[v8.600][DPS Meter] SCORE-CANDIDATE probe=" + _scoreScreenProbeSequence
+                    + " active=" + active
+                    + " object=" + objectName
+                    + " component=" + typeName
+                    + " instance=" + id
+                    + " lastMetricSeq(damage/heal/barrier)=" + _lastDamageEventSequence + "/" + _lastHealEventSequence + "/" + _lastBarrierEventSequence);
+            }
+        }
+
+        List<int> staleIds = new List<int>();
+        foreach (KeyValuePair<int, bool> entry in _scoreScreenObjectStates)
+        {
+            if (!foundCandidates.Contains(entry.Key))
+            {
+                staleIds.Add(entry.Key);
+            }
+        }
+
+        for (int i = 0; i < staleIds.Count; i++)
+        {
+            _scoreScreenObjectStates.Remove(staleIds[i]);
+        }
+
+        bool anyActiveCandidate = false;
+        foreach (KeyValuePair<int, bool> entry in _scoreScreenObjectStates)
+        {
+            if (entry.Value)
+            {
+                anyActiveCandidate = true;
+                break;
+            }
+        }
+
+        if (_scoreScreenCandidateActive != anyActiveCandidate)
+        {
+            _scoreScreenCandidateActive = anyActiveCandidate;
+            WriteDebugLog("[v8.600][DPS Meter] SCORE-CANDIDATE-STATE probe=" + _scoreScreenProbeSequence
+                + " anyActive=" + anyActiveCandidate);
+        }
+    }
+
+    private static bool ContainsScoreScreenKeyword(string value)
+    {
+        return value.IndexOf("score", StringComparison.OrdinalIgnoreCase) >= 0
+            || value.IndexOf("result", StringComparison.OrdinalIgnoreCase) >= 0
+            || value.IndexOf("victory", StringComparison.OrdinalIgnoreCase) >= 0
+            || value.IndexOf("defeat", StringComparison.OrdinalIgnoreCase) >= 0
+            || value.IndexOf("gameover", StringComparison.OrdinalIgnoreCase) >= 0
+            || value.IndexOf("game over", StringComparison.OrdinalIgnoreCase) >= 0
+            || value.IndexOf("runcomplete", StringComparison.OrdinalIgnoreCase) >= 0
+            || value.IndexOf("run complete", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
 
     public static DPSMeter Instance { get; private set; }
 
@@ -158,6 +270,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeHeal(EventInfoHeal info)
     {
+        _lastHealEventSequence = ++_metricEventSequence;
         DewPlayer local = DewPlayer.local;
 
         if (local == null || local.hero == null || info.actor == null || info.target == null)
@@ -265,6 +378,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeShield(EventInfoShield info)
     {
+        _lastBarrierEventSequence = ++_metricEventSequence;
         DewPlayer local = DewPlayer.local;
 
         if (local == null || local.hero == null || info.target == null)
@@ -1420,6 +1534,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
     private void OnTakeDamage(EventInfoDamage info)
     {
+        _lastDamageEventSequence = ++_metricEventSequence;
 if (info.actor == null || info.victim == null)
         {
             return;
