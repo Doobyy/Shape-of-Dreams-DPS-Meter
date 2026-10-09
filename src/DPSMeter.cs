@@ -70,7 +70,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v16.300";
+    public const string DevelopmentVersion = "v16.400";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -302,6 +302,7 @@ public sealed class DPSMeter : ModBehaviour
         if (!_runActive || _activeRunRecord == null) return;
 
         RefreshActiveRunSummary();
+        CapturePartyPlayerIcons();
         CaptureRunBreakdown(_activeRunRecord);
         CaptureRunViewSnapshots(_activeRunRecord);
         _activeRunRecord.Outcome = "Concluded";
@@ -794,6 +795,7 @@ public sealed class DPSMeter : ModBehaviour
             MapsVisited = 0
         };
         _data.SetActiveRun(_activeRunRecord);
+        CapturePartyPlayerIcons();
         if (_overlay != null)
             _overlay.ShowLiveRun(_activeRunRecord);
         if (captureCurrentLocation) RecordCurrentRunLocation();
@@ -3987,6 +3989,36 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         }
 
         return null;
+    }
+
+    private void CapturePartyPlayerIcons()
+    {
+        if (_overlay == null || DewPlayer.gamePlayers == null)
+            return;
+
+        DewPlayer local = DewPlayer.local;
+        for (int i = 0; i < DewPlayer.gamePlayers.Count; i++)
+        {
+            DewPlayer player = DewPlayer.gamePlayers[i];
+            if (player == null || !player.isHumanPlayer || player.hero == null)
+                continue;
+
+            string playerName = player == local ? "You" : player.playerName;
+            if (string.IsNullOrEmpty(playerName))
+                continue;
+
+            try
+            {
+                Sprite icon = FindSpriteMember(player.hero);
+                if (icon != null)
+                    _overlay.SetPartyPlayerIcon(playerName, icon);
+            }
+            catch (Exception ex)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY party-icon-capture-error"
+                    + " player=" + playerName + " error=" + ex.GetType().Name);
+            }
+        }
     }
 
     [ModBehaviour.ConsoleCommand("Toggle the DPS meter overlay.", "dps_meter")]
