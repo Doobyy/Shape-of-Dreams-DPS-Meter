@@ -66,7 +66,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v14.200";
+    public const string DevelopmentVersion = "v14.300";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -2249,9 +2249,6 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         {
             return;
         }
-
-        if (info.actor.firstEntity is Hero localHeroForProbe && local.hero == localHeroForProbe)
-            TraceClassSymbolCandidates(localHeroForProbe);
 
         Hero sourceHero = info.actor.firstEntity as Hero;
 
