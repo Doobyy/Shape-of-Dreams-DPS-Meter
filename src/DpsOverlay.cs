@@ -96,6 +96,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Rect _iconFinderRect = new Rect(0f, 0f, 700f, 520f);
     private Vector2 _iconFinderScroll;
     private readonly List<Sprite> _iconFinderCandidates = new List<Sprite>();
+    private readonly List<Texture2D> _iconFinderTextureCandidates = new List<Texture2D>();
     private const float HistoryPanelWidth = 224f;
     private const float HistoryCloseTabWidth = 22f;
     private const float HistoryCloseTabHeight = 44f;
@@ -366,13 +367,15 @@ public sealed class DpsOverlay : MonoBehaviour
     private void OpenIconFinder()
     {
         _iconFinderCandidates.Clear();
+        _iconFinderTextureCandidates.Clear();
         Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
-        HashSet<string> seen = new HashSet<string>();
+        Texture2D[] textures = Resources.FindObjectsOfTypeAll<Texture2D>();
+        HashSet<string> seenSprites = new HashSet<string>();
+        HashSet<string> seenTextures = new HashSet<string>();
         List<string> logLines = new List<string>();
         logLines.Add("Shape of Dreams DPS Meter - temporary icon candidate catalog");
-        logLines.Add("Candidates are filtered by sprite/texture names; review the in-game window visually.");
-        logLines.Add("");
-
+        logLines.Add("Sprite candidates:");
+        
         for (int i = 0; sprites != null && i < sprites.Length; i++)
         {
             Sprite sprite = sprites[i];
@@ -381,11 +384,25 @@ public sealed class DpsOverlay : MonoBehaviour
             string textureName = sprite.texture.name ?? string.Empty;
             if (!IsIconFinderCandidateName(spriteName) && !IsIconFinderCandidateName(textureName)) continue;
             string key = spriteName + "|" + textureName + "|" + sprite.rect.width + "x" + sprite.rect.height;
-            if (!seen.Add(key)) continue;
+            if (!seenSprites.Add(key)) continue;
             _iconFinderCandidates.Add(sprite);
             logLines.Add("sprite=" + spriteName + " | texture=" + textureName
                 + " | spriteRect=" + sprite.rect.width + "x" + sprite.rect.height
                 + " | textureSize=" + sprite.texture.width + "x" + sprite.texture.height);
+        }
+
+        logLines.Add("");
+        logLines.Add("Texture2D candidates (shown directly, not only through Sprite wrappers):");
+        for (int i = 0; textures != null && i < textures.Length; i++)
+        {
+            Texture2D texture = textures[i];
+            if (texture == null) continue;
+            string textureName = texture.name ?? string.Empty;
+            if (!IsIconFinderCandidateName(textureName)) continue;
+            string key = textureName + "|" + texture.width + "x" + texture.height;
+            if (!seenTextures.Add(key)) continue;
+            _iconFinderTextureCandidates.Add(texture);
+            logLines.Add("texture=" + textureName + " | size=" + texture.width + "x" + texture.height);
         }
 
         _iconFinderCandidates.Sort((left, right) =>
@@ -397,6 +414,9 @@ public sealed class DpsOverlay : MonoBehaviour
                 right == null || right.texture == null ? string.Empty : right.texture.name,
                 StringComparison.OrdinalIgnoreCase);
         });
+        _iconFinderTextureCandidates.Sort((left, right) =>
+            string.Compare(left == null ? string.Empty : left.name,
+                right == null ? string.Empty : right.name, StringComparison.OrdinalIgnoreCase));
 
         string logPath = Path.Combine(Application.persistentDataPath, "DPSMeter-icon-candidates.log");
         try { File.WriteAllLines(logPath, logLines.ToArray()); }
@@ -427,25 +447,44 @@ public sealed class DpsOverlay : MonoBehaviour
     private void DrawIconFinderWindow(int windowId)
     {
         GUI.Label(new Rect(12f, 28f, _iconFinderRect.width - 24f, 20f),
-            "Candidate sprites: " + _iconFinderCandidates.Count + "    Catalog: DPSMeter-icon-candidates.log");
+            "Sprites: " + _iconFinderCandidates.Count + "   Textures: " + _iconFinderTextureCandidates.Count
+            + "   Catalog: DPSMeter-icon-candidates.log");
         if (GUI.Button(new Rect(_iconFinderRect.width - 76f, 27f, 64f, 24f), "Close"))
             _iconFinderOpen = false;
 
         Rect listRect = new Rect(10f, 56f, _iconFinderRect.width - 20f, _iconFinderRect.height - 66f);
-        float contentHeight = _iconFinderCandidates.Count * 58f;
+        float spriteSectionHeight = 28f + _iconFinderCandidates.Count * 58f;
+        float textureSectionHeight = 28f + _iconFinderTextureCandidates.Count * 58f;
+        float contentHeight = spriteSectionHeight + textureSectionHeight + 12f;
         _iconFinderScroll = GUI.BeginScrollView(listRect, _iconFinderScroll,
             new Rect(0f, 0f, listRect.width - 18f, Mathf.Max(listRect.height, contentHeight)));
+
+        GUI.Label(new Rect(0f, 0f, listRect.width - 20f, 24f), "SPRITES");
         for (int i = 0; i < _iconFinderCandidates.Count; i++)
         {
             Sprite sprite = _iconFinderCandidates[i];
             if (sprite == null) continue;
-            float y = i * 58f;
+            float y = 28f + i * 58f;
             GUI.Box(new Rect(0f, y, listRect.width - 20f, 54f), GUIContent.none);
             DrawSprite(sprite, new Rect(4f, y + 3f, 48f, 48f));
             string textureName = sprite.texture == null ? "<no texture>" : sprite.texture.name;
             GUI.Label(new Rect(60f, y + 4f, listRect.width - 90f, 20f), "Sprite: " + sprite.name);
             GUI.Label(new Rect(60f, y + 25f, listRect.width - 90f, 20f),
                 "Texture: " + textureName + "  |  Rect: " + sprite.rect.width + "x" + sprite.rect.height);
+        }
+
+        float textureStartY = spriteSectionHeight + 8f;
+        GUI.Label(new Rect(0f, textureStartY, listRect.width - 20f, 24f), "TEXTURES (DIRECT)");
+        for (int i = 0; i < _iconFinderTextureCandidates.Count; i++)
+        {
+            Texture2D texture = _iconFinderTextureCandidates[i];
+            if (texture == null) continue;
+            float y = textureStartY + 28f + i * 58f;
+            GUI.Box(new Rect(0f, y, listRect.width - 20f, 54f), GUIContent.none);
+            GUI.DrawTexture(new Rect(4f, y + 3f, 48f, 48f), texture, ScaleMode.ScaleToFit, true);
+            GUI.Label(new Rect(60f, y + 4f, listRect.width - 90f, 20f), "Texture: " + texture.name);
+            GUI.Label(new Rect(60f, y + 25f, listRect.width - 90f, 20f),
+                "Size: " + texture.width + "x" + texture.height);
         }
         GUI.EndScrollView();
         GUI.DragWindow(new Rect(0f, 0f, _iconFinderRect.width - 90f, 24f));
