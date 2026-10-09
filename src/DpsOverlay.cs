@@ -6,8 +6,23 @@ using UnityEngine;
 
 namespace DPSMeter;
 
+[DefaultExecutionOrder(-10000)]
 public sealed class DpsOverlay : MonoBehaviour
 {
+    private sealed class UiInputBlocker
+    {
+        public GameObject GameObject;
+        public RectTransform RectTransform;
+    }
+
+    private GameObject _uiInputCanvasObject;
+    private UiInputBlocker _mainWindowInputBlocker;
+    private UiInputBlocker _historyInputBlocker;
+    private UiInputBlocker _settingsInputBlocker;
+    private UiInputBlocker _contextMenuInputBlocker;
+    private bool _uiInputBlockerInitializationAttempted;
+    private bool _uiInputBlockerFailureLogged;
+
     private enum DisplayMode
     {
         CurrentDps,
@@ -83,6 +98,11 @@ public sealed class DpsOverlay : MonoBehaviour
     public void Initialize(DpsData data)
     {
         _data = data;
+    }
+
+    private void Update()
+    {
+        UpdateUiInputBlockers();
     }
 
     private void OnGUI()
@@ -231,7 +251,7 @@ public sealed class DpsOverlay : MonoBehaviour
             DrawRunHistoryPanel();
         }
 
-        InterceptUiPointerEvent();
+        UpdateUiInputBlockers();
     }
 
     private void DrawRunHistoryPanel()
@@ -290,6 +310,153 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.EndScrollView();
     }
 
+    private static Type FindLoadedType(string fullName)
+    {
+        Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+        for (int i = 0; i < assemblies.Length; i++)
+        {
+            Type type = assemblies[i].GetType(fullName, false);
+            if (type != null)
+            {
+                return type;
+            }
+        }
+
+        return null;
+    }
+
+    private UiInputBlocker CreateUiInputBlocker(Transform parent, Type imageType)
+    {
+        GameObject blockerObject = new GameObject(
+            "DPS Meter Input Blocker",
+            typeof(RectTransform));
+        blockerObject.transform.SetParent(parent, false);
+
+        Component image = blockerObject.AddComponent(imageType);
+        PropertyInfo raycastTarget = imageType.GetProperty("raycastTarget");
+        PropertyInfo color = imageType.GetProperty("color");
+        if (raycastTarget == null || color == null)
+        {
+            throw new MissingMemberException("Unity UI Image raycast properties were not found.");
+        }
+
+        raycastTarget.SetValue(image, true, null);
+        color.SetValue(image, new Color(0f, 0f, 0f, 0f), null);
+
+        RectTransform rectTransform = blockerObject.GetComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(0f, 1f);
+        rectTransform.anchorMax = new Vector2(0f, 1f);
+        rectTransform.pivot = new Vector2(0f, 1f);
+
+        return new UiInputBlocker
+        {
+            GameObject = blockerObject,
+            RectTransform = rectTransform
+        };
+    }
+
+    private void EnsureUiInputBlockers()
+    {
+        if (_uiInputBlockerInitializationAttempted)
+        {
+            return;
+        }
+
+        _uiInputBlockerInitializationAttempted = true;
+
+        try
+        {
+            Type canvasType = FindLoadedType("UnityEngine.Canvas");
+            Type raycasterType = FindLoadedType("UnityEngine.UI.GraphicRaycaster");
+            Type imageType = FindLoadedType("UnityEngine.UI.Image");
+            if (canvasType == null || raycasterType == null || imageType == null)
+            {
+                throw new TypeLoadException("Unity Canvas, GraphicRaycaster, or Image type was not found.");
+            }
+
+            _uiInputCanvasObject = new GameObject(
+                "DPS Meter Input Blockers",
+                typeof(RectTransform));
+            Canvas canvas = (Canvas)_uiInputCanvasObject.AddComponent(canvasType);
+            PropertyInfo renderMode = canvasType.GetProperty("renderMode");
+            PropertyInfo sortingOrder = canvasType.GetProperty("sortingOrder");
+            if (renderMode == null || sortingOrder == null)
+            {
+                throw new MissingMemberException("Unity Canvas render properties were not found.");
+            }
+
+            renderMode.SetValue(canvas, Enum.Parse(renderMode.PropertyType, "ScreenSpaceOverlay"), null);
+            sortingOrder.SetValue(canvas, 32767, null);
+            _uiInputCanvasObject.AddComponent(raycasterType);
+
+            _mainWindowInputBlocker = CreateUiInputBlocker(_uiInputCanvasObject.transform, imageType);
+            _historyInputBlocker = CreateUiInputBlocker(_uiInputCanvasObject.transform, imageType);
+            _settingsInputBlocker = CreateUiInputBlocker(_uiInputCanvasObject.transform, imageType);
+            _contextMenuInputBlocker = CreateUiInputBlocker(_uiInputCanvasObject.transform, imageType);
+        }
+        catch (Exception ex)
+        {
+            if (_uiInputCanvasObject != null)
+            {
+                Destroy(_uiInputCanvasObject);
+                _uiInputCanvasObject = null;
+            }
+
+            _mainWindowInputBlocker = null;
+            _historyInputBlocker = null;
+            _settingsInputBlocker = null;
+            _contextMenuInputBlocker = null;
+
+            if (!_uiInputBlockerFailureLogged)
+            {
+                _uiInputBlockerFailureLogged = true;
+                Debug.LogError("[DPS Meter] Could not initialize UI click blockers: " + ex.GetType().Name);
+            }
+        }
+    }
+
+    private static void SetUiInputBlocker(UiInputBlocker blocker, bool visible, Rect screenRect)
+    {
+        if (blocker == null || blocker.GameObject == null)
+        {
+            return;
+        }
+
+        if (blocker.GameObject.activeSelf != visible)
+        {
+            blocker.GameObject.SetActive(visible);
+        }
+
+        if (!visible)
+        {
+            return;
+        }
+
+        blocker.RectTransform.anchoredPosition = new Vector2(screenRect.x, -screenRect.y);
+        blocker.RectTransform.sizeDelta = new Vector2(
+            Mathf.Max(0f, screenRect.width),
+            Mathf.Max(0f, screenRect.height));
+    }
+
+    private void UpdateUiInputBlockers()
+    {
+        EnsureUiInputBlockers();
+        if (_uiInputCanvasObject == null)
+        {
+            return;
+        }
+
+        bool visible = Visible && _data != null;
+        SetUiInputBlocker(_mainWindowInputBlocker, visible,
+            visible ? _windowRect : new Rect());
+        SetUiInputBlocker(_historyInputBlocker, visible && _showRunHistory,
+            visible && _showRunHistory ? GetRunHistoryPanelRect() : new Rect());
+        SetUiInputBlocker(_settingsInputBlocker, visible && _settingsOpen,
+            visible && _settingsOpen ? _settingsRect : new Rect());
+        SetUiInputBlocker(_contextMenuInputBlocker, visible && _contextMenuOpen,
+            visible && _contextMenuOpen ? _contextMenuRect : new Rect());
+    }
+
     private Rect GetRunHistoryPanelRect()
     {
         float panelX = Mathf.Clamp(_windowRect.xMax + 4f, 4f,
@@ -318,23 +485,6 @@ public sealed class DpsOverlay : MonoBehaviour
 
         return includeContextMenu && _contextMenuOpen &&
             _contextMenuRect.Contains(position);
-    }
-
-    private void InterceptUiPointerEvent()
-    {
-        Event e = Event.current;
-        if (e.type != EventType.MouseDown &&
-            e.type != EventType.MouseUp &&
-            e.type != EventType.MouseDrag &&
-            e.type != EventType.ScrollWheel)
-        {
-            return;
-        }
-
-        if (IsPointerOverUi(e.mousePosition, true))
-        {
-            e.Use();
-        }
     }
 
     private static string FormatDuration(float seconds)

@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v10.500";
+    public const string DevelopmentVersion = "v10.600";
 
     public static DPSMeter Instance { get; private set; }
 
