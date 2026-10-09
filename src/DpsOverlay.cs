@@ -494,8 +494,19 @@ public sealed class DpsOverlay : MonoBehaviour
             GUI.color = Color.white;
         }
 
-        GUI.Label(new Rect(textRect.x, textRect.y, textRect.width, 16f), line1, _row);
-        GUI.Label(new Rect(textRect.x, textRect.y + 16f, textRect.width, 16f), line2, _row);
+        Rect line1Rect = new Rect(textRect.x, textRect.y, textRect.width, 16f);
+        Rect line2Rect = new Rect(textRect.x, textRect.y + 16f, textRect.width, 16f);
+        if (selected || hovered)
+        {
+            // Match the main meter's offset shadow/pop-out treatment while the row is highlighted.
+            DrawBarTextWithStroke(line1Rect, line1, _row);
+            DrawBarTextWithStroke(line2Rect, line2, _row);
+        }
+        else
+        {
+            GUI.Label(line1Rect, line1, _row);
+            GUI.Label(line2Rect, line2, _row);
+        }
 
         if (drawSeparator)
         {
