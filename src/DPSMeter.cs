@@ -64,7 +64,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v13.000";
+    public const string DevelopmentVersion = "v13.100";
 
     public static DPSMeter Instance { get; private set; }
 
