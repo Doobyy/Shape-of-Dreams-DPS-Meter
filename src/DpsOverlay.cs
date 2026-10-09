@@ -447,7 +447,8 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (selected || hovered)
         {
-            GUI.color = new Color(1f, 1f, 1f, hovered ? 0.18f : 0.10f);
+            // Slightly strengthen both states so row text stays readable over busy backgrounds.
+            GUI.color = new Color(1f, 1f, 1f, hovered ? 0.24f : 0.16f);
             GUI.DrawTexture(rect, _whiteTexture);
             GUI.color = Color.white;
         }
