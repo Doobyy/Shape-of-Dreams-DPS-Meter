@@ -4,6 +4,8 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.IO;
 using System.Text;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 
 using UnityEngine;
 
@@ -383,8 +385,8 @@ public sealed class DPSMeter : ModBehaviour
                 serializer.WriteObject(stream, saved);
                 json = Encoding.UTF8.GetString(stream.ToArray());
             }
-            if (!json.Contains("\\"Runs\\\"") ||
-                (saved.Runs.Count > 0 && !json.Contains("\\"CharacterName\\\"")))
+            if (!json.Contains("\"Runs\"") ||
+            if (!json.Contains("\"Runs\"") ||
             {
                 WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY save-aborted invalid-json"
                     + " count=" + saved.Runs.Count + " chars=" + json.Length + " path=" + _runHistoryPath);
