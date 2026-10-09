@@ -11,13 +11,12 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v8.600";
+    public const string DevelopmentVersion = "v8.700";
 
-    // Temporary Phase 1 probe: observe possible score/result screens without
-    // hooking an unverified game lifecycle method.
+    // Temporary QA trigger test: show a dismissible popup when the game-over results UI activates.
     private float _nextScoreScreenProbeAt;
-    private readonly Dictionary<int, bool> _scoreScreenObjectStates = new Dictionary<int, bool>();
-    private bool _scoreScreenCandidateActive;
+    private bool _resultUiWasActive;
+    private bool _showRunEndedQaPopup;
     private int _metricEventSequence;
     private int _lastDamageEventSequence;
     private int _lastHealEventSequence;
@@ -32,97 +31,73 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        _nextScoreScreenProbeAt = now + 1f;
-        _scoreScreenProbeSequence++;
-        ProbeScoreScreenObjects();
+        _nextScoreScreenProbeAt = now + 0.5f;
+        ProbeGameOverResultsTrigger();
     }
 
-    private void ProbeScoreScreenObjects()
+    private void ProbeGameOverResultsTrigger()
     {
-        Component[] components = Resources.FindObjectsOfTypeAll<Component>();
-        HashSet<int> foundCandidates = new HashSet<int>();
+        _scoreScreenProbeSequence++;
+        bool resultUiActive = false;
+        Transform[] transforms = Resources.FindObjectsOfTypeAll<Transform>();
 
-        for (int i = 0; i < components.Length; i++)
+        for (int i = 0; i < transforms.Length; i++)
         {
-            Component component = components[i];
-            if (component == null || component.gameObject == null)
+            Transform candidate = transforms[i];
+            if (candidate == null || candidate.gameObject == null ||
+                !string.Equals(candidate.gameObject.name, "UI_Result_GameOver", StringComparison.Ordinal))
             {
                 continue;
             }
 
-            string objectName = component.gameObject.name ?? string.Empty;
-            string typeName = component.GetType().FullName ?? component.GetType().Name;
-            if (!ContainsScoreScreenKeyword(objectName + " " + typeName))
+            if (candidate.gameObject.activeInHierarchy)
             {
-                continue;
-            }
-
-            int id = component.gameObject.GetInstanceID();
-            bool active = component.gameObject.activeInHierarchy;
-            // Ignore inactive asset/prefab candidates unless this object was
-            // previously observed active in the live scene.
-            if (!active && !_scoreScreenObjectStates.ContainsKey(id))
-            {
-                continue;
-            }
-
-            foundCandidates.Add(id);
-            bool previous;
-            bool stateChanged = !_scoreScreenObjectStates.TryGetValue(id, out previous) || previous != active;
-            if (stateChanged)
-            {
-                _scoreScreenObjectStates[id] = active;
-                WriteDebugLog("[v8.600][DPS Meter] SCORE-CANDIDATE probe=" + _scoreScreenProbeSequence
-                    + " active=" + active
-                    + " object=" + objectName
-                    + " component=" + typeName
-                    + " instance=" + id
-                    + " lastMetricSeq(damage/heal/barrier)=" + _lastDamageEventSequence + "/" + _lastHealEventSequence + "/" + _lastBarrierEventSequence);
-            }
-        }
-
-        List<int> staleIds = new List<int>();
-        foreach (KeyValuePair<int, bool> entry in _scoreScreenObjectStates)
-        {
-            if (!foundCandidates.Contains(entry.Key))
-            {
-                staleIds.Add(entry.Key);
-            }
-        }
-
-        for (int i = 0; i < staleIds.Count; i++)
-        {
-            _scoreScreenObjectStates.Remove(staleIds[i]);
-        }
-
-        bool anyActiveCandidate = false;
-        foreach (KeyValuePair<int, bool> entry in _scoreScreenObjectStates)
-        {
-            if (entry.Value)
-            {
-                anyActiveCandidate = true;
+                resultUiActive = true;
                 break;
             }
         }
 
-        if (_scoreScreenCandidateActive != anyActiveCandidate)
+        if (resultUiActive != _resultUiWasActive)
         {
-            _scoreScreenCandidateActive = anyActiveCandidate;
-            WriteDebugLog("[v8.600][DPS Meter] SCORE-CANDIDATE-STATE probe=" + _scoreScreenProbeSequence
-                + " anyActive=" + anyActiveCandidate);
+            _resultUiWasActive = resultUiActive;
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] QA-RUN-ENDED-TRIGGER active="
+                + resultUiActive
+                + " probe=" + _scoreScreenProbeSequence
+                + " metricSeq(damage/heal/barrier)=" + _lastDamageEventSequence + "/"
+                + _lastHealEventSequence + "/" + _lastBarrierEventSequence);
+
+            if (resultUiActive)
+            {
+                _showRunEndedQaPopup = true;
+            }
         }
     }
 
-    private static bool ContainsScoreScreenKeyword(string value)
+    private void OnGUI()
     {
-        return value.IndexOf("score", StringComparison.OrdinalIgnoreCase) >= 0
-            || value.IndexOf("result", StringComparison.OrdinalIgnoreCase) >= 0
-            || value.IndexOf("victory", StringComparison.OrdinalIgnoreCase) >= 0
-            || value.IndexOf("defeat", StringComparison.OrdinalIgnoreCase) >= 0
-            || value.IndexOf("gameover", StringComparison.OrdinalIgnoreCase) >= 0
-            || value.IndexOf("game over", StringComparison.OrdinalIgnoreCase) >= 0
-            || value.IndexOf("runcomplete", StringComparison.OrdinalIgnoreCase) >= 0
-            || value.IndexOf("run complete", StringComparison.OrdinalIgnoreCase) >= 0;
+        if (!_showRunEndedQaPopup)
+        {
+            return;
+        }
+
+        const float popupWidth = 320f;
+        const float popupHeight = 140f;
+        Rect popupRect = new Rect(
+            (Screen.width - popupWidth) * 0.5f,
+            (Screen.height - popupHeight) * 0.5f,
+            popupWidth,
+            popupHeight);
+
+        GUI.Box(popupRect, "DPS Meter QA");
+        GUI.Label(
+            new Rect(popupRect.x + 20f, popupRect.y + 38f, popupRect.width - 40f, 32f),
+            "Run Ended");
+        if (GUI.Button(
+            new Rect(popupRect.x + 100f, popupRect.y + 82f, 120f, 34f),
+            "OK"))
+        {
+            _showRunEndedQaPopup = false;
+        }
     }
 
     public static DPSMeter Instance { get; private set; }
