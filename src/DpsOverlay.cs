@@ -464,7 +464,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private void DrawSelectedRunHealing(DpsData.RunRecord run)
     {
         List<DpsData.RunBreakdownRow> rows = GetSelectedRunRows(run, "HEALING");
-        float total = GetSelectedRunTotal(rows);
+        float total = run.TotalHealing > 0f ? run.TotalHealing : GetSelectedRunTotal(rows);
         GUILayout.Label("HEAL: " + FormatNumber(total), _headerRight);
         float max = GetSelectedRunMax(rows);
         if (rows.Count == 0)
@@ -480,7 +480,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private void DrawSelectedRunBarrier(DpsData.RunRecord run)
     {
         List<DpsData.RunBreakdownRow> rows = GetSelectedRunRows(run, "BARRIER");
-        float total = GetSelectedRunTotal(rows);
+        float total = run.TotalBarrier > 0f ? run.TotalBarrier : GetSelectedRunTotal(rows);
         GUILayout.Label("BARRIER: " + FormatNumber(total), _headerRight);
         float max = GetSelectedRunMax(rows);
         if (rows.Count == 0)
