@@ -66,7 +66,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v15.500";
+    public const string DevelopmentVersion = "v15.600";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -1104,11 +1104,17 @@ public sealed class DPSMeter : ModBehaviour
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
 
         string healingActorChain = BuildHealingExportActorChain(info.actor);
-        DewPlayer sourcePlayer = FindPlayer(info.actor.firstEntity as Hero);
+        Hero healingHero = info.actor.firstEntity as Hero;
+        DewPlayer sourcePlayer = FindPlayer(healingHero);
         if (sourcePlayer != null && sourcePlayer.isHumanPlayer)
         {
-            _data.AddPartyHealing(healing, sourcePlayer == DewPlayer.local ? "You" : sourcePlayer.playerName);
-            if (_overlay != null) _overlay.NotifyLiveDataReceived();
+            string partyPlayerName = sourcePlayer == DewPlayer.local ? "You" : sourcePlayer.playerName;
+            if (_overlay != null)
+            {
+                _overlay.SetPartyPlayerIcon(partyPlayerName, FindSpriteMember(healingHero));
+                _overlay.NotifyLiveDataReceived();
+            }
+            _data.AddPartyHealing(healing, partyPlayerName);
         }
 
         if (info.target == local.hero)
@@ -1148,8 +1154,13 @@ public sealed class DPSMeter : ModBehaviour
         DewPlayer barrierPlayer = FindPlayer(barrierHero);
         if (barrierPlayer != null && barrierPlayer.isHumanPlayer)
         {
-            _data.AddPartyBarrier(barrier, barrierPlayer == DewPlayer.local ? "You" : barrierPlayer.playerName);
-            if (_overlay != null) _overlay.NotifyLiveDataReceived();
+            string partyPlayerName = barrierPlayer == DewPlayer.local ? "You" : barrierPlayer.playerName;
+            if (_overlay != null)
+            {
+                _overlay.SetPartyPlayerIcon(partyPlayerName, FindSpriteMember(barrierHero));
+                _overlay.NotifyLiveDataReceived();
+            }
+            _data.AddPartyBarrier(barrier, partyPlayerName);
         }
 
         if (info.target == local.hero)
@@ -2321,6 +2332,9 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         }
 
         bool isLocalPlayer = sourcePlayer == local;
+        string partyPlayerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
+        if (_overlay != null)
+            _overlay.SetPartyPlayerIcon(partyPlayerName, FindSpriteMember(sourceHero));
 
 
         SkillTrigger skill = info.actor.firstTrigger as SkillTrigger;
@@ -2465,7 +2479,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
             _data.RegisterOtherIcon(sourceName, otherIcon);
         }
 
-        string playerName = isLocalPlayer ? "You" : sourcePlayer.playerName;
+        string playerName = partyPlayerName;
 
         EnsureRunStarted(true);
         if (isLocalPlayer)
