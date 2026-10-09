@@ -287,9 +287,6 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.Box(panel, GUIContent.none);
         const float padding = 6f;
         const float rowHeight = 34f;
-        Rect collapseRect = new Rect(panel.xMax - 22f, panel.y + 3f, 18f, 18f);
-        if (GUI.Button(collapseRect, "‹"))
-            _showRunHistory = false;
 
         Rect listRect = new Rect(panel.x + padding, panel.y + 5f,
             panel.width - padding * 2f, panel.height - 10f);
@@ -304,11 +301,11 @@ public sealed class DpsOverlay : MonoBehaviour
             ? "Unknown" : active.CharacterName;
         Rect activeRect = new Rect(0f, y, viewRect.width, rowHeight);
         DrawRunHistoryRow(activeRect, active == null ? null : active,
-            active == null ? "Current " + activeCharacter : 
+            active == null ? "Current " + activeCharacter :
                 "Current " + activeCharacter + " " + FormatDuration(active.DurationSeconds),
             active == null ? "Awaiting next run" :
                 "Visited: " + active.WorldsVisited + " Worlds - " + active.MapsVisited + " Maps",
-            true);
+            true, 0);
         y += rowHeight;
 
         for (int i = 0; i < _data.CompletedRuns.Count; i++)
@@ -319,19 +316,20 @@ public sealed class DpsOverlay : MonoBehaviour
             Rect rowRect = new Rect(0f, y, viewRect.width, rowHeight);
             DrawRunHistoryRow(rowRect, run,
                 character + " " + FormatNumber(run.TotalDamage) + " - " + FormatDuration(run.DurationSeconds),
-                "Visited: " + run.WorldsVisited + " Worlds - " + run.MapsVisited + " Maps", false);
+                "Visited: " + run.WorldsVisited + " Worlds - " + run.MapsVisited + " Maps", false, i + 1);
             y += rowHeight;
         }
 
         GUI.EndScrollView();
     }
 
-    private void DrawRunHistoryRow(Rect rect, DpsData.RunRecord run, string line1, string line2, bool isCurrent)
+    private void DrawRunHistoryRow(Rect rect, DpsData.RunRecord run, string line1, string line2, bool isCurrent, int rowIndex)
     {
         bool selected = isCurrent ? _selectedRunRecord == null : ReferenceEquals(_selectedRunRecord, run);
         bool hovered = rect.Contains(Event.current.mousePosition);
+        float textWidth = isCurrent ? Mathf.Max(0f, rect.width - 22f) : rect.width;
 
-        GUI.color = new Color(0.08f, 0.08f, 0.08f, 0.48f);
+        GUI.color = new Color(0.08f, 0.08f, 0.08f, rowIndex % 2 == 0 ? 0.48f : 0.34f);
         GUI.DrawTexture(rect, _whiteTexture);
         GUI.color = Color.white;
 
@@ -342,11 +340,19 @@ public sealed class DpsOverlay : MonoBehaviour
             GUI.color = Color.white;
         }
 
-        if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
+        Rect selectRect = new Rect(rect.x, rect.y, textWidth, rect.height);
+        if (GUI.Button(selectRect, GUIContent.none, GUIStyle.none))
             _selectedRunRecord = isCurrent ? null : run;
 
-        GUI.Label(new Rect(rect.x, rect.y, rect.width, 17f), line1, _row);
-        GUI.Label(new Rect(rect.x, rect.y + 16f, rect.width, 17f), line2, _row);
+        GUI.Label(new Rect(rect.x, rect.y, textWidth, 17f), line1, _row);
+        GUI.Label(new Rect(rect.x, rect.y + 16f, textWidth, 17f), line2, _row);
+
+        if (isCurrent)
+        {
+            Rect closeRect = new Rect(rect.xMax - 20f, rect.y + 7f, 16f, 16f);
+            if (GUI.Button(closeRect, "X"))
+                _showRunHistory = false;
+        }
     }
 
     private string GetSelectedRunViewName()
