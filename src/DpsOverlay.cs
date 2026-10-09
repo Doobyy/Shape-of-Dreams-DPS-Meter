@@ -55,6 +55,8 @@ public sealed class DpsOverlay : MonoBehaviour
 
 
     private DpsData _data;
+    private Color _partyBarColor = DefaultBarColor;
+    private Color _partyBarOutlineColor = DefaultBarOutlineColor;
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
     private Vector2 _scroll;
     private DisplayMode _mode;
@@ -101,6 +103,23 @@ public sealed class DpsOverlay : MonoBehaviour
     public void Initialize(DpsData data)
     {
         _data = data;
+    }
+
+    public void SetPartyBarColor(Color fillColor)
+    {
+        fillColor.a = 1f;
+        _partyBarColor = fillColor;
+        _partyBarOutlineColor = new Color(
+            fillColor.r * 0.32f,
+            fillColor.g * 0.32f,
+            fillColor.b * 0.32f,
+            1f);
+    }
+
+    public void ResetPartyBarColor()
+    {
+        _partyBarColor = DefaultBarColor;
+        _partyBarOutlineColor = DefaultBarOutlineColor;
     }
 
     public void NotifyLiveDataReceived()
@@ -1902,7 +1921,7 @@ public sealed class DpsOverlay : MonoBehaviour
             float ratio = maxAmount > 0f ? Mathf.Clamp01(row.Value / maxAmount) : 0f;
 
             Rect rowRect = GUILayoutUtility.GetRect(0f, 22f, GUILayout.ExpandWidth(true));
-            DrawBar(rowRect, ratio, rateLabel == "DPS" ? DefaultBarColor : HealingBarColor, null, DpsData.DamageScalingType.None);
+            DrawBar(rowRect, ratio, _partyBarColor, null, DpsData.DamageScalingType.None, _partyBarOutlineColor);
 
             string valueText = FormatNumber(playerRate) + " " + rateLabel + " (" +
                 FormatNumber(row.Value) + ", " + percent.ToString("0.0") + "%)";
@@ -2035,7 +2054,7 @@ public sealed class DpsOverlay : MonoBehaviour
         return text.Replace("</color>", string.Empty);
     }
 
-    private void DrawBar(Rect barRect, float ratio, Color fillColor, ElementalType? elemental, DpsData.DamageScalingType scaling)
+    private void DrawBar(Rect barRect, float ratio, Color fillColor, ElementalType? elemental, DpsData.DamageScalingType scaling, Color? outlineColorOverride = null)
     {
         float fillWidth = barRect.width * ratio;
         if (fillWidth <= 0f)
@@ -2047,7 +2066,7 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = fillColor;
         GUI.DrawTexture(fillRect, _whiteTexture);
 
-        Color outlineColor = GetBarOutlineColor(elemental, scaling);
+        Color outlineColor = outlineColorOverride.HasValue ? outlineColorOverride.Value : GetBarOutlineColor(elemental, scaling);
         const float outline = 2f;
         GUI.color = outlineColor;
         GUI.DrawTexture(new Rect(fillRect.x, fillRect.y, fillRect.width, outline), _whiteTexture);
