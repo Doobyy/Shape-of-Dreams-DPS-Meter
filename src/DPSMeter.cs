@@ -66,7 +66,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v14.400";
+    public const string DevelopmentVersion = "v14.500";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -719,7 +719,7 @@ public sealed class DPSMeter : ModBehaviour
         float elapsed;
         _runStartGameElapsed = TryGetGameElapsedTime(out elapsed) ? elapsed : -1f;
         Sprite characterIcon = GetLocalHeroIcon();
-        TraceCharacterEmblemVariants(characterIcon);
+        TraceHeroIconReferences(DewPlayer.local == null ? null : DewPlayer.local.hero, characterIcon);
         _activeRunRecord = new DpsData.RunRecord
         {
             CharacterName = GetLocalHeroDisplayName(),
@@ -843,42 +843,113 @@ public sealed class DPSMeter : ModBehaviour
         return false;
     }
 
-    private static bool _characterEmblemVariantsLogged;
+    private static bool _heroIconReferencesLogged;
 
-    private static void TraceCharacterEmblemVariants(Sprite currentIcon)
+    private static void TraceHeroIconReferences(object hero, Sprite currentIcon)
     {
-        if (_characterEmblemVariantsLogged)
+        if (_heroIconReferencesLogged)
             return;
-        _characterEmblemVariantsLogged = true;
+        _heroIconReferencesLogged = true;
 
-        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS EMBLEM current="
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HERO ICON current="
             + (currentIcon == null ? "<null>" : currentIcon.name)
-            + " texture=" + (currentIcon == null || currentIcon.texture == null ? "<null>" : currentIcon.texture.name));
+            + " texture=" + (currentIcon == null || currentIcon.texture == null ? "<null>" : currentIcon.texture.name)
+            + " heroType=" + (hero == null ? "<null>" : hero.GetType().FullName));
 
-        Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+        if (hero == null)
+            return;
+
+        HashSet<object> visited = new HashSet<object>();
+        TraceHeroIconObject(hero, "hero", 0, visited);
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HERO ICON scan-complete objects=" + visited.Count);
+    }
+
+    private static void TraceHeroIconObject(object target, string path, int depth, HashSet<object> visited)
+    {
+        if (target == null || depth > 2 || visited.Contains(target))
+            return;
+
+        Type type = target.GetType();
+        if (type.IsPrimitive || type.IsEnum || target is string || target is Type)
+            return;
+
+        UnityEngine.Object unityObject = target as UnityEngine.Object;
+        if (unityObject != null && !(target is Sprite))
+            return;
+
+        visited.Add(target);
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         int logged = 0;
-        for (int i = 0; sprites != null && i < sprites.Length; i++)
+
+        FieldInfo[] fields = type.GetFields(flags);
+        for (int i = 0; fields != null && i < fields.Length; i++)
         {
-            Sprite candidate = sprites[i];
-            if (candidate == null)
+            FieldInfo field = fields[i];
+            if (field == null || field.IsStatic)
                 continue;
 
-            string spriteName = candidate.name ?? string.Empty;
-            string textureName = candidate.texture == null ? string.Empty : candidate.texture.name ?? string.Empty;
-            bool matches = spriteName.IndexOf("Bismuth", StringComparison.OrdinalIgnoreCase) >= 0
-                || textureName.IndexOf("Bismuth", StringComparison.OrdinalIgnoreCase) >= 0
-                || spriteName.IndexOf("Emblem", StringComparison.OrdinalIgnoreCase) >= 0
-                || textureName.IndexOf("Emblem", StringComparison.OrdinalIgnoreCase) >= 0;
-            if (!matches)
-                continue;
+            object value;
+            try { value = field.GetValue(target); }
+            catch { continue; }
 
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS EMBLEM candidate sprite="
-                + spriteName + " texture=" + textureName
-                + " size=" + (candidate.texture == null ? "<no-texture>" : candidate.texture.width + "x" + candidate.texture.height));
-            logged++;
+            Sprite sprite = value as Sprite;
+            if (sprite != null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HERO ICON sprite path="
+                    + path + "." + field.Name + " sprite=" + sprite.name
+                    + " texture=" + (sprite.texture == null ? "<null>" : sprite.texture.name));
+                logged++;
+                continue;
+            }
+
+            if (depth < 2 && value != null && ShouldTraceHeroIconMember(field.Name))
+                TraceHeroIconObject(value, path + "." + field.Name, depth + 1, visited);
         }
 
-        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS EMBLEM candidates=" + logged);
+        PropertyInfo[] properties = type.GetProperties(flags);
+        for (int i = 0; properties != null && i < properties.Length; i++)
+        {
+            PropertyInfo property = properties[i];
+            if (property == null || property.GetIndexParameters().Length != 0
+                || property.GetGetMethod(true) == null || property.GetGetMethod(true).IsStatic
+                || property.PropertyType == typeof(string))
+                continue;
+
+            object value;
+            try { value = property.GetValue(target, null); }
+            catch { continue; }
+
+            Sprite sprite = value as Sprite;
+            if (sprite != null)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HERO ICON sprite path="
+                    + path + "." + property.Name + " sprite=" + sprite.name
+                    + " texture=" + (sprite.texture == null ? "<null>" : sprite.texture.name));
+                logged++;
+                continue;
+            }
+
+            if (depth < 2 && value != null && ShouldTraceHeroIconMember(property.Name))
+                TraceHeroIconObject(value, path + "." + property.Name, depth + 1, visited);
+        }
+
+        if (logged == 0 && depth == 0)
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HERO ICON no-direct-sprite-members type=" + type.FullName);
+    }
+
+    private static bool ShouldTraceHeroIconMember(string memberName)
+    {
+        if (string.IsNullOrEmpty(memberName))
+            return false;
+
+        return memberName.IndexOf("icon", StringComparison.OrdinalIgnoreCase) >= 0
+            || memberName.IndexOf("emblem", StringComparison.OrdinalIgnoreCase) >= 0
+            || memberName.IndexOf("portrait", StringComparison.OrdinalIgnoreCase) >= 0
+            || memberName.IndexOf("skin", StringComparison.OrdinalIgnoreCase) >= 0
+            || memberName.IndexOf("character", StringComparison.OrdinalIgnoreCase) >= 0
+            || memberName.IndexOf("hero", StringComparison.OrdinalIgnoreCase) >= 0
+            || memberName.IndexOf("data", StringComparison.OrdinalIgnoreCase) >= 0
+            || memberName.IndexOf("config", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static Sprite GetLocalHeroIcon()
