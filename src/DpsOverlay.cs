@@ -55,6 +55,8 @@ public sealed class DpsOverlay : MonoBehaviour
 
 
     private DpsData _data;
+    private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
+    private readonly HashSet<string> _historyIconLookups = new HashSet<string>();
     private Vector2 _scroll;
     private DisplayMode _mode;
 
@@ -370,9 +372,61 @@ public sealed class DpsOverlay : MonoBehaviour
         for (int i = 0; i < rows.Count; i++)
         {
             DpsData.RunBreakdownRow row = rows[i];
+            ElementalType? elemental = null;
+            ElementalType parsedElement;
+            if (!string.IsNullOrEmpty(row.Elemental) && Enum.TryParse<ElementalType>(row.Elemental, out parsedElement))
+                elemental = parsedElement;
+
+            DpsData.DamageScalingType scaling = DpsData.DamageScalingType.None;
+            DpsData.DamageScalingType parsedScaling;
+            if (!string.IsNullOrEmpty(row.Scaling) && Enum.TryParse<DpsData.DamageScalingType>(row.Scaling, out parsedScaling))
+                scaling = parsedScaling;
+
             DrawDamageRow(StripRichTextTags(row.Name), row.Amount, run.TotalDamage,
-                maxAmount, i, null, DpsData.DamageScalingType.None, null);
+                maxAmount, i, elemental, scaling, ResolveRunHistoryIcon(row));
         }
+    }
+
+    private Sprite ResolveRunHistoryIcon(DpsData.RunBreakdownRow row)
+    {
+        if (row == null) return null;
+        string identity = string.IsNullOrEmpty(row.Identity) ? row.Name : row.Identity;
+
+        if (_data != null)
+        {
+            Sprite liveIcon = null;
+            if (row.SourceType == "SKILL") liveIcon = _data.GetSkillIcon(identity);
+            else if (row.SourceType == "OTHER")
+                liveIcon = string.Equals(row.Name, "Basic Attack", StringComparison.Ordinal)
+                    ? GetBasicAttackIcon()
+                    : _data.GetCurrentOtherIcon(identity);
+            else if (row.SourceType == "ESSENCE") liveIcon = _data.GetCumulativeEssenceIcon(identity);
+            else if (row.SourceType == "HEALING") liveIcon = _data.GetCumulativeHealingIcon(identity);
+            else if (row.SourceType == "BARRIER") liveIcon = _data.GetCumulativeBarrierIcon(identity);
+            if (liveIcon != null) return liveIcon;
+        }
+
+        if (string.IsNullOrEmpty(row.IconName)) return null;
+        string cacheKey = row.IconName + "|" + (row.IconTextureName ?? string.Empty);
+        Sprite cached;
+        if (_historyIconCache.TryGetValue(cacheKey, out cached)) return cached;
+        if (_historyIconLookups.Contains(cacheKey)) return null;
+
+        Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+        for (int i = 0; sprites != null && i < sprites.Length; i++)
+        {
+            Sprite candidate = sprites[i];
+            if (candidate == null || !string.Equals(candidate.name, row.IconName, StringComparison.Ordinal))
+                continue;
+            if (!string.IsNullOrEmpty(row.IconTextureName) &&
+                (candidate.texture == null || !string.Equals(candidate.texture.name, row.IconTextureName, StringComparison.Ordinal)))
+                continue;
+            _historyIconCache[cacheKey] = candidate;
+            return candidate;
+        }
+
+        _historyIconLookups.Add(cacheKey);
+        return null;
     }
 
     private static List<DpsData.RunBreakdownRow> GetSelectedRunRows(
@@ -420,7 +474,7 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         for (int i = 0; i < rows.Count; i++)
-            DrawHealingRow(rows[i].Name, rows[i].Amount, total, max, null);
+            DrawHealingRow(rows[i].Name, rows[i].Amount, total, max, ResolveRunHistoryIcon(rows[i]));
     }
 
     private void DrawSelectedRunBarrier(DpsData.RunRecord run)
@@ -436,7 +490,7 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         for (int i = 0; i < rows.Count; i++)
-            DrawBarrierRow(rows[i].Name, rows[i].Amount, total, max, null);
+            DrawBarrierRow(rows[i].Name, rows[i].Amount, total, max, ResolveRunHistoryIcon(rows[i]));
     }
 
     private static Type FindLoadedType(string fullName)
