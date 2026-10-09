@@ -106,15 +106,17 @@ public sealed class DpsOverlay : MonoBehaviour
         _data = data;
     }
 
-    public void SetPartyBarColor(Color fillColor)
+    public void SetPartyBarColor(Color fillColor, bool useColdOutline = false)
     {
         fillColor.a = 1f;
         _partyBarColor = fillColor;
-        _partyBarOutlineColor = new Color(
-            fillColor.r * 0.32f,
-            fillColor.g * 0.32f,
-            fillColor.b * 0.32f,
-            1f);
+        _partyBarOutlineColor = useColdOutline
+            ? IceBarOutlineColor
+            : new Color(
+                fillColor.r * 0.32f,
+                fillColor.g * 0.32f,
+                fillColor.b * 0.32f,
+                1f);
     }
 
     public void ResetPartyBarColor()
@@ -161,11 +163,12 @@ public sealed class DpsOverlay : MonoBehaviour
     {
         if (run != null && run.HasCharacterMainColor)
         {
+            bool isCetus = string.Equals(run.CharacterName, "Cetus", StringComparison.OrdinalIgnoreCase);
             SetPartyBarColor(new Color(
                 run.CharacterMainColorR,
                 run.CharacterMainColorG,
                 run.CharacterMainColorB,
-                1f));
+                1f), isCetus);
         }
         else
         {
