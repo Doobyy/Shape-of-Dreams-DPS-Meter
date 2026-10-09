@@ -70,7 +70,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v16.200";
+    public const string DevelopmentVersion = "v16.300";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -485,15 +485,18 @@ public sealed class DPSMeter : ModBehaviour
             AddPartyViewRow(run, view, "BARRIER", "PARTY_BARRIER", barrier[i]);
     }
 
-    private static void AddPartyViewRow(
+    private void AddPartyViewRow(
         DpsData.RunRecord run, string view, string category, string sourceType,
         KeyValuePair<string, float> pair)
     {
+        Sprite icon = _overlay == null ? null : _overlay.GetPartyPlayerIconForHistory(pair.Key);
         run.ViewRows.Add(new DpsData.RunBreakdownRow
         {
             View = view, Category = category, SourceType = sourceType,
             Identity = pair.Key, Name = pair.Key, Amount = pair.Value,
-            Scaling = DpsData.DamageScalingType.None.ToString()
+            Scaling = DpsData.DamageScalingType.None.ToString(),
+            IconName = icon == null ? null : icon.name,
+            IconTextureName = icon == null || icon.texture == null ? null : icon.texture.name
         });
     }
 
