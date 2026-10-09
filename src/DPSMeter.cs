@@ -64,7 +64,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v12.100";
+    public const string DevelopmentVersion = "v12.200";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -1032,11 +1032,13 @@ public sealed class DPSMeter : ModBehaviour
         if (sourcePlayer != null && sourcePlayer.isHumanPlayer)
         {
             _data.AddPartyHealing(healing, sourcePlayer == DewPlayer.local ? "You" : sourcePlayer.playerName);
+            if (_overlay != null) _overlay.NotifyLiveDataReceived();
         }
 
         if (info.target == local.hero)
         {
             _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon, healingActorChain);
+            if (_overlay != null) _overlay.NotifyLiveDataReceived();
         }
 
     }
@@ -1071,11 +1073,13 @@ public sealed class DPSMeter : ModBehaviour
         if (barrierPlayer != null && barrierPlayer.isHumanPlayer)
         {
             _data.AddPartyBarrier(barrier, barrierPlayer == DewPlayer.local ? "You" : barrierPlayer.playerName);
+            if (_overlay != null) _overlay.NotifyLiveDataReceived();
         }
 
         if (info.target == local.hero)
         {
             _data.AddBarrier(barrier, sourceIdentity, sourceName, icon);
+            if (_overlay != null) _overlay.NotifyLiveDataReceived();
         }
     }
 
@@ -2405,6 +2409,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
             playerName,
             isDirectEssenceDamage,
             scalingType);
+        if (_overlay != null) _overlay.NotifyLiveDataReceived();
     }
 
     private DpsData.DamageScalingType GetCachedSkillScaling(string skillIdentity, SkillTrigger skill, Actor actor)
