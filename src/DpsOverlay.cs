@@ -424,7 +424,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 rect.y + (rect.height - iconSize) * 0.5f,
                 iconSize,
                 iconSize);
-            GUI.color = selected || hovered ? Color.white : new Color(0.55f, 0.55f, 0.55f, 1f);
+            GUI.color = selected ? Color.white : hovered ? new Color(0.72f, 0.72f, 0.72f, 1f) : new Color(0.55f, 0.55f, 0.55f, 1f);
             DrawSprite(characterIcon, iconRect);
             GUI.color = Color.white;
         }
