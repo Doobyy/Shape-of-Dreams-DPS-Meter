@@ -287,9 +287,23 @@ public sealed class DpsOverlay : MonoBehaviour
             DPSMeter.Instance.RefreshActiveRunSummaryForDisplay();
 
         Rect panel = GetRunHistoryPanelRect();
-        GUI.Box(panel, GUIContent.none);
-        Rect closeTabRect = new Rect(panel.xMax - 2f, panel.y, HistoryCloseTabWidth + 2f, HistoryCloseTabHeight);
-        GUI.Box(closeTabRect, GUIContent.none);
+        Rect closeTabRect = new Rect(panel.xMax - 1f, panel.y, HistoryCloseTabWidth + 1f, HistoryCloseTabHeight);
+
+        // Draw the panel and tab as one folder silhouette so their shared edge is not doubled.
+        GUI.color = WindowFillColor;
+        GUI.DrawTexture(panel, _whiteTexture);
+        GUI.DrawTexture(closeTabRect, _whiteTexture);
+        GUI.color = Color.black;
+        const float outline = 1.25f;
+        DrawHistoryOutlineLine(panel.xMin, panel.yMin, closeTabRect.xMin, panel.yMin, outline);
+        DrawHistoryOutlineLine(closeTabRect.xMin, closeTabRect.yMin, closeTabRect.xMax, closeTabRect.yMin, outline);
+        DrawHistoryOutlineLine(closeTabRect.xMax, closeTabRect.yMin, closeTabRect.xMax, closeTabRect.yMax, outline);
+        DrawHistoryOutlineLine(closeTabRect.xMin, closeTabRect.yMax, panel.xMax, closeTabRect.yMax, outline);
+        DrawHistoryOutlineLine(panel.xMax, closeTabRect.yMax, panel.xMax, panel.yMax, outline);
+        DrawHistoryOutlineLine(panel.xMax, panel.yMax, panel.xMin, panel.yMax, outline);
+        DrawHistoryOutlineLine(panel.xMin, panel.yMax, panel.xMin, panel.yMin, outline);
+        GUI.color = Color.white;
+
         if (GUI.Button(closeTabRect, GUIContent.none, GUIStyle.none))
             _showRunHistory = false;
 
@@ -337,6 +351,14 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         GUI.EndScrollView();
+    }
+
+    private void DrawHistoryOutlineLine(float x1, float y1, float x2, float y2, float thickness)
+    {
+        Rect line = Mathf.Abs(x2 - x1) >= Mathf.Abs(y2 - y1)
+            ? new Rect(Mathf.Min(x1, x2), y1 - thickness * 0.5f, Mathf.Abs(x2 - x1), thickness)
+            : new Rect(x1 - thickness * 0.5f, Mathf.Min(y1, y2), thickness, Mathf.Abs(y2 - y1));
+        GUI.DrawTexture(line, _whiteTexture);
     }
 
     private void DrawRunHistoryRow(Rect rect, DpsData.RunRecord run, string line1, string line2, bool isCurrent, bool drawSeparator)
@@ -2281,7 +2303,7 @@ public sealed class DpsOverlay : MonoBehaviour
             alignment = TextAnchor.MiddleCenter,
             fontSize = 10,
             fontStyle = FontStyle.Bold,
-            normal = { textColor = Color.white },
+            normal = { textColor = new Color(0.88f, 0.88f, 0.88f, 1f) },
             wordWrap = false
         };
 
