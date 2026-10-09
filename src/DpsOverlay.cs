@@ -377,7 +377,7 @@ public sealed class DpsOverlay : MonoBehaviour
             _uiInputCanvasObject = new GameObject(
                 "DPS Meter Input Blockers",
                 typeof(RectTransform));
-            Canvas canvas = (Canvas)_uiInputCanvasObject.AddComponent(canvasType);
+            Component canvas = _uiInputCanvasObject.AddComponent(canvasType);
             PropertyInfo renderMode = canvasType.GetProperty("renderMode");
             PropertyInfo sortingOrder = canvasType.GetProperty("sortingOrder");
             if (renderMode == null || sortingOrder == null)
