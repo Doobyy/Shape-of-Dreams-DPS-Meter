@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v9.500";
+    public const string DevelopmentVersion = "v9.600";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -70,6 +70,7 @@ public sealed class DPSMeter : ModBehaviour
 
         CallOnNetworkedManager<ClientEventManager>(AttachToClientEvents, DetachFromClientEvents);
         CallOnNetworkedManager<ZoneManager>(AttachToZoneManager, DetachFromZoneManager);
+        CallOnNetworkedManager<GameManager>(AttachToGameManager, DetachFromGameManager);
     }
 
     private void AttachToClientEvents()
@@ -93,7 +94,7 @@ public sealed class DPSMeter : ModBehaviour
 
         _clientEvents = currentManager;
 
-        DiagnoseGameResultManagerType();
+        AttachToGameResultManager();
 
         _clientEvents.OnTakeDamage += OnTakeDamage;
         _clientEvents.OnTakeHeal += OnTakeHeal;
@@ -106,9 +107,13 @@ public sealed class DPSMeter : ModBehaviour
     private UnityEngine.Object _gameResultManager;
     private object _gameResultCallback;
     private Delegate _gameResultHandler;
-    private int _gameResultCallbackCount;
+    private object _latestGameResult;
 
-    private void DiagnoseGameResultManagerType()
+    private UnityEngine.Object _gameManager;
+    private object _gameConcludedCallback;
+    private Delegate _gameConcludedHandler;
+
+    private void AttachToGameResultManager()
     {
         Type type = Type.GetType("GameResultManager, Dew.Core");
         if (type == null)
@@ -122,7 +127,6 @@ public sealed class DPSMeter : ModBehaviour
             UnityEngine.Object[] managers = Resources.FindObjectsOfTypeAll(type);
             FieldInfo resultField = type.GetField("onUpdateGameResult",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
             if (managers == null || resultField == null)
             {
                 WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER "
@@ -141,7 +145,6 @@ public sealed class DPSMeter : ModBehaviour
                 object callback = resultField.GetValue(manager);
                 if (callback == null)
                 {
-                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER callback-null");
                     continue;
                 }
 
@@ -153,17 +156,9 @@ public sealed class DPSMeter : ModBehaviour
                 }
 
                 DetachFromGameResultManager();
-
-                Type callbackType = callback.GetType();
-                MethodInfo addMethod = callbackType.GetMethod("Add",
+                MethodInfo addMethod = callback.GetType().GetMethod("Add",
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if (addMethod == null)
-                {
-                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-CALLBACK Add-method-not-found");
-                    return;
-                }
-
-                ParameterInfo[] parameters = addMethod.GetParameters();
+                ParameterInfo[] parameters = addMethod == null ? new ParameterInfo[0] : addMethod.GetParameters();
                 MethodInfo handlerMethod = GetType().GetMethod("OnGameResultUpdated",
                     BindingFlags.Instance | BindingFlags.NonPublic);
                 if (parameters.Length != 1 || handlerMethod == null)
@@ -174,17 +169,12 @@ public sealed class DPSMeter : ModBehaviour
 
                 Delegate handler = Delegate.CreateDelegate(parameters[0].ParameterType, this, handlerMethod);
                 addMethod.Invoke(callback, new object[] { handler });
-
                 _gameResultManager = manager;
                 _gameResultCallback = callback;
                 _gameResultHandler = handler;
-                _gameResultCallbackCount = 0;
 
-                Behaviour behaviour = manager as Behaviour;
-                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-CALLBACK subscribed manager="
-                    + manager.name + " active="
-                    + (behaviour == null ? "<not-behaviour>" : behaviour.isActiveAndEnabled.ToString())
-                    + " delegate=" + parameters[0].ParameterType.FullName);
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-CALLBACK snapshot-listener-subscribed manager="
+                    + manager.name);
                 return;
             }
 
@@ -199,59 +189,144 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnGameResultUpdated(object result)
     {
-        _gameResultCallbackCount++;
+        _latestGameResult = result;
+    }
 
-        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-CALLBACK fired count="
-            + _gameResultCallbackCount + " result-type="
-            + (result == null ? "<null>" : result.GetType().FullName));
-
-        if (result == null)
+    private void AttachToGameManager()
+    {
+        Type type = Type.GetType("GameManager, Dew.Core");
+        if (type == null)
         {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION manager-type-not-found");
             return;
         }
 
-        Type resultType = result.GetType();
-        FieldInfo[] fields = resultType.GetFields(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < fields.Length; i++)
+        try
         {
-            object value = null;
-            string valueText = "<unreadable>";
-            try
+            UnityEngine.Object[] managers = Resources.FindObjectsOfTypeAll(type);
+            FieldInfo eventField = type.GetField("ClientEvent_OnGameConcluded",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (managers == null || eventField == null)
             {
-                value = fields[i].GetValue(result);
-                valueText = FormatGameResultDiagnosticValue(value);
-            }
-            catch (Exception)
-            {
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION "
+                    + (managers == null ? "instances-null" : "event-field-not-found"));
+                return;
             }
 
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-VALUE field="
-                + fields[i].Name + " type=" + fields[i].FieldType.Name + " value=" + valueText);
+            for (int i = 0; i < managers.Length; i++)
+            {
+                UnityEngine.Object manager = managers[i];
+                if (manager == null)
+                {
+                    continue;
+                }
+
+                object callback = eventField.GetValue(manager);
+                if (callback == null)
+                {
+                    continue;
+                }
+
+                if (ReferenceEquals(manager, _gameManager) &&
+                    ReferenceEquals(callback, _gameConcludedCallback) &&
+                    _gameConcludedHandler != null)
+                {
+                    return;
+                }
+
+                DetachFromGameManager();
+                MethodInfo addMethod = callback.GetType().GetMethod("Add",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                ParameterInfo[] parameters = addMethod == null ? new ParameterInfo[0] : addMethod.GetParameters();
+                MethodInfo handlerMethod = GetType().GetMethod("OnGameConcluded",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                if (parameters.Length != 1 || parameters[0].ParameterType != typeof(Action) ||
+                    handlerMethod == null)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION subscription-signature-unexpected");
+                    return;
+                }
+
+                Delegate handler = Delegate.CreateDelegate(parameters[0].ParameterType, this, handlerMethod);
+                addMethod.Invoke(callback, new object[] { handler });
+                _gameManager = manager;
+                _gameConcludedCallback = callback;
+                _gameConcludedHandler = handler;
+
+                Behaviour behaviour = manager as Behaviour;
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION subscribed manager="
+                    + manager.name + " active="
+                    + (behaviour == null ? "<not-behaviour>" : behaviour.isActiveAndEnabled.ToString()));
+                LogGameConclusionState("subscribed");
+                return;
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION manager-instance-not-found");
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION subscription-error="
+                + ex.GetType().Name + ":" + (ex.InnerException == null ? ex.Message : ex.InnerException.Message));
+        }
+    }
+
+    private void OnGameConcluded()
+    {
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION EVENT FIRED");
+        LogGameConclusionState("event");
+    }
+
+    private void LogGameConclusionState(string stage)
+    {
+        object concluded = ReadMemberValue(_gameManager, "isGameConcluded");
+        object runId = ReadMemberValue(_gameManager, "runId");
+        object elapsed = ReadMemberValue(_gameManager, "elapsedGameTime");
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION STATE stage=" + stage
+            + " isGameConcluded=" + FormatGameResultDiagnosticValue(concluded)
+            + " runId=" + FormatGameResultDiagnosticValue(runId)
+            + " elapsedGameTime=" + FormatGameResultDiagnosticValue(elapsed));
+
+        if (_latestGameResult != null)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION RESULT"
+                + " result=" + FormatGameResultDiagnosticValue(ReadMemberValue(_latestGameResult, "result"))
+                + " elapsedGameTimeSeconds=" + FormatGameResultDiagnosticValue(ReadMemberValue(_latestGameResult, "elapsedGameTimeSeconds"))
+                + " visitedWorlds=" + FormatGameResultDiagnosticValue(ReadMemberValue(_latestGameResult, "visitedWorlds"))
+                + " visitedLocations=" + FormatGameResultDiagnosticValue(ReadMemberValue(_latestGameResult, "visitedLocations"))
+                + " runId=" + FormatGameResultDiagnosticValue(ReadMemberValue(_latestGameResult, "runId")));
+        }
+        else
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION RESULT latest-result=<null>");
+        }
+    }
+
+    private static object ReadMemberValue(object target, string name)
+    {
+        if (target == null)
+        {
+            return null;
         }
 
-        PropertyInfo[] properties = resultType.GetProperties(
+        Type type = target.GetType();
+        FieldInfo field = type.GetField(name,
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        for (int i = 0; i < properties.Length; i++)
+        if (field != null)
         {
-            if (properties[i].GetIndexParameters().Length != 0 ||
-                properties[i].GetGetMethod(true) == null ||
-                properties[i].GetGetMethod(true).GetParameters().Length != 0)
-            {
-                continue;
-            }
-
-            try
-            {
-                object value = properties[i].GetValue(result, null);
-                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-VALUE property="
-                    + properties[i].Name + " type=" + properties[i].PropertyType.Name
-                    + " value=" + FormatGameResultDiagnosticValue(value));
-            }
-            catch (Exception)
-            {
-            }
+            try { return field.GetValue(target); }
+            catch (Exception) { return null; }
         }
+
+        PropertyInfo property = type.GetProperty(name,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (property != null && property.GetIndexParameters().Length == 0 &&
+            property.GetGetMethod(true) != null)
+        {
+            try { return property.GetValue(target, null); }
+            catch (Exception) { return null; }
+        }
+
+        return null;
     }
 
     private static string FormatGameResultDiagnosticValue(object value)
@@ -293,6 +368,32 @@ public sealed class DPSMeter : ModBehaviour
         _gameResultManager = null;
         _gameResultCallback = null;
         _gameResultHandler = null;
+        _latestGameResult = null;
+    }
+
+    private void DetachFromGameManager()
+    {
+        if (_gameConcludedCallback != null && _gameConcludedHandler != null)
+        {
+            try
+            {
+                MethodInfo removeMethod = _gameConcludedCallback.GetType().GetMethod("Remove",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (removeMethod != null)
+                {
+                    removeMethod.Invoke(_gameConcludedCallback, new object[] { _gameConcludedHandler });
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION detach-error="
+                    + ex.GetType().Name);
+            }
+        }
+
+        _gameManager = null;
+        _gameConcludedCallback = null;
+        _gameConcludedHandler = null;
     }
 
     private void DetachFromClientEvents()
@@ -339,6 +440,7 @@ public sealed class DPSMeter : ModBehaviour
         // active manager so damage events continue reaching the meter.
         AttachToClientEvents();
         AttachToZoneManager();
+        AttachToGameManager();
     }
 
     private bool OnTravelToNodeInterrupt(EventInfoTravelToNodeInterrupt info)
@@ -3496,6 +3598,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
     {
         DetachFromClientEvents();
         DetachFromZoneManager();
+        DetachFromGameManager();
 
         if (_overlay != null)
         {
