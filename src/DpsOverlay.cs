@@ -131,10 +131,39 @@ public sealed class DpsOverlay : MonoBehaviour
         _partyPlayerIcons[playerName] = icon;
     }
 
-    public void NotifyLiveDataReceived()
+    public void ShowCompletedRun(DpsData.RunRecord run)
+    {
+        SetDisplayedRunRecord(run);
+        _showRunHistory = false;
+    }
+
+    public void ShowLiveRun(DpsData.RunRecord run)
     {
         _selectedRunRecord = null;
         _showRunHistory = false;
+        ApplyRunAppearance(run);
+    }
+
+    private void SetDisplayedRunRecord(DpsData.RunRecord run)
+    {
+        _selectedRunRecord = run;
+        ApplyRunAppearance(run);
+    }
+
+    private void ApplyRunAppearance(DpsData.RunRecord run)
+    {
+        if (run != null && run.HasCharacterMainColor)
+        {
+            SetPartyBarColor(new Color(
+                run.CharacterMainColorR,
+                run.CharacterMainColorG,
+                run.CharacterMainColorB,
+                1f));
+        }
+        else
+        {
+            ResetPartyBarColor();
+        }
     }
 
     private void Update()
@@ -414,7 +443,7 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
-            _selectedRunRecord = isCurrent ? null : run;
+            SetDisplayedRunRecord(isCurrent ? null : run);
 
         Sprite characterIcon = ResolveRunCharacterIcon(run);
         if (characterIcon != null)
