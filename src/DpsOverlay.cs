@@ -505,10 +505,11 @@ public sealed class DpsOverlay : MonoBehaviour
                     : new Color(0.55f, 0.55f, 0.55f, 1f);
             }
 
+            // Preserve the intended emblem tint separately from the outline-colored halo.
+            Color emblemTint = GUI.color;
             if (selected)
             {
-                // Draw a restrained, low-alpha halo using this character's bar-outline color.
-                // Only selected rows use it, so the extra sprite draws stay limited to one emblem.
+                // Draw the halo underneath the original emblem; keep it subtle and selected-only.
                 Color glowColor = GetRunCharacterOutlineColor(run);
                 const float glowOffset = 1.25f;
                 glowColor.a = 0.24f;
@@ -523,6 +524,8 @@ public sealed class DpsOverlay : MonoBehaviour
                 DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y + glowOffset, iconRect.width, iconRect.height));
             }
 
+            // Restore the original selected/hovered/idle tint before drawing the emblem on top.
+            GUI.color = emblemTint;
             DrawSprite(characterIcon, iconRect);
             GUI.color = Color.white;
         }
