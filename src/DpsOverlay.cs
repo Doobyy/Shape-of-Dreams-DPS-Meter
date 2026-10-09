@@ -146,33 +146,40 @@ public sealed class DpsOverlay : MonoBehaviour
             GUILayout.Width(contentRect.width),
             GUILayout.Height(contentRect.height));
 
-        switch (_mode)
+        if (_selectedRunRecord != null)
         {
-            case DisplayMode.CurrentDps:
-                DrawPersonal(
-                    _data.CurrentPersonalSkillRows,
-                    _data.CurrentPersonalOther,
-                    _data.CurrentPersonalEssences,
-                    _data.CurrentInstancePersonalDamage,
-                    false);
-                break;
+            DrawSelectedRunLog();
+        }
+        else
+        {
+            switch (_mode)
+            {
+                case DisplayMode.CurrentDps:
+                    DrawPersonal(
+                        _data.CurrentPersonalSkillRows,
+                        _data.CurrentPersonalOther,
+                        _data.CurrentPersonalEssences,
+                        _data.CurrentInstancePersonalDamage,
+                        false);
+                    break;
 
-            case DisplayMode.DamageTotal:
-                DrawPersonal(
-                    _data.CumulativePersonalSkillRows,
-                    _data.CumulativePersonalOther,
-                    _data.CumulativePersonalEssences,
-                    _data.CumulativePersonalDamage,
-                    true);
-                break;
+                case DisplayMode.DamageTotal:
+                    DrawPersonal(
+                        _data.CumulativePersonalSkillRows,
+                        _data.CumulativePersonalOther,
+                        _data.CumulativePersonalEssences,
+                        _data.CumulativePersonalDamage,
+                        true);
+                    break;
 
-            case DisplayMode.PartyDps:
-                DrawParty(_data.CurrentParty, _data.CurrentInstancePartyDamage, _data.CurrentPartyDps, "DPS");
-                break;
+                case DisplayMode.PartyDps:
+                    DrawParty(_data.CurrentParty, _data.CurrentInstancePartyDamage, _data.CurrentPartyDps, "DPS");
+                    break;
 
-            case DisplayMode.PartyTotal:
-                DrawParty(_data.CumulativeParty, _data.CumulativePartyDamage, _data.CumulativePartyDps, "DPS");
-                break;
+                case DisplayMode.PartyTotal:
+                    DrawParty(_data.CumulativeParty, _data.CumulativePartyDamage, _data.CumulativePartyDps, "DPS");
+                    break;
+            }
         }
 
         GUILayout.EndScrollView();
@@ -254,27 +261,20 @@ public sealed class DpsOverlay : MonoBehaviour
         UpdateUiInputBlockers();
     }
 
+    private DpsData.RunRecord _selectedRunRecord;
+
     private void DrawRunHistoryPanel()
     {
         if (DPSMeter.Instance != null)
-        {
             DPSMeter.Instance.RefreshActiveRunSummaryForDisplay();
-        }
 
-        float panelX = Mathf.Clamp(_windowRect.xMax + 4f, 4f,
-            Mathf.Max(4f, Screen.width - HistoryPanelWidth - 4f));
-        float panelY = Mathf.Clamp(_windowRect.y, 4f,
-            Mathf.Max(4f, Screen.height - HistoryPanelHeight - 4f));
         Rect panel = GetRunHistoryPanelRect();
         GUI.Box(panel, GUIContent.none);
-
         const float padding = 6f;
         const float rowHeight = 34f;
         Rect collapseRect = new Rect(panel.xMax - 22f, panel.y + 3f, 18f, 18f);
         if (GUI.Button(collapseRect, "‹"))
-        {
             _showRunHistory = false;
-        }
 
         Rect listRect = new Rect(panel.x + padding, panel.y + 5f,
             panel.width - padding * 2f, panel.height - 10f);
@@ -287,11 +287,13 @@ public sealed class DpsOverlay : MonoBehaviour
         DpsData.RunRecord active = _data.ActiveRun;
         string activeCharacter = active == null || string.IsNullOrEmpty(active.CharacterName)
             ? "Unknown Character" : active.CharacterName;
-        GUI.Label(new Rect(0f, y, viewRect.width, 17f), "CURRENT  " + activeCharacter, _row);
-        string activeLine2 = active == null ? "Awaiting next run" :
-            FormatNumber(active.TotalDamage) + "  " + FormatDuration(active.DurationSeconds) +
-            "  Visited: " + active.WorldsVisited + " Worlds " + active.MapsVisited + " Maps";
-        GUI.Label(new Rect(0f, y + 16f, viewRect.width, 17f), activeLine2, _row);
+        Rect activeRect = new Rect(0f, y, viewRect.width, rowHeight);
+        DrawRunHistoryRow(activeRect, active == null ? null : active,
+            "CURRENT  " + activeCharacter,
+            active == null ? "Awaiting next run" :
+                FormatNumber(active.TotalDamage) + "  " + FormatDuration(active.DurationSeconds) +
+                "  Visited: " + active.WorldsVisited + " Worlds " + active.MapsVisited + " Maps",
+            true);
         y += rowHeight;
 
         for (int i = 0; i < _data.CompletedRuns.Count; i++)
@@ -299,15 +301,67 @@ public sealed class DpsOverlay : MonoBehaviour
             DpsData.RunRecord run = _data.CompletedRuns[i];
             if (run == null) continue;
             string character = string.IsNullOrEmpty(run.CharacterName) ? "Unknown Character" : run.CharacterName;
-            GUI.Label(new Rect(0f, y, viewRect.width, 17f),
-                character + "  " + FormatNumber(run.TotalDamage), _row);
-            GUI.Label(new Rect(0f, y + 16f, viewRect.width, 17f),
+            Rect rowRect = new Rect(0f, y, viewRect.width, rowHeight);
+            DrawRunHistoryRow(rowRect, run, character + "  " + FormatNumber(run.TotalDamage),
                 FormatDuration(run.DurationSeconds) + "  Visited: " +
-                run.WorldsVisited + " Worlds " + run.MapsVisited + " Maps", _row);
+                run.WorldsVisited + " Worlds " + run.MapsVisited + " Maps", false);
             y += rowHeight;
         }
 
         GUI.EndScrollView();
+    }
+
+    private void DrawRunHistoryRow(Rect rect, DpsData.RunRecord run, string line1, string line2, bool isCurrent)
+    {
+        bool selected = isCurrent ? _selectedRunRecord == null : ReferenceEquals(_selectedRunRecord, run);
+        bool hovered = rect.Contains(Event.current.mousePosition);
+        if (selected || hovered)
+        {
+            if (_contextMenuHighlightTexture == null)
+            {
+                _contextMenuHighlightTexture = new Texture2D(1, 1);
+                _contextMenuHighlightTexture.SetPixel(0, 0, new Color(1f, 1f, 1f, 0.10f));
+                _contextMenuHighlightTexture.Apply();
+            }
+            GUI.DrawTexture(rect, _contextMenuHighlightTexture);
+        }
+
+        if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
+            _selectedRunRecord = isCurrent ? null : run;
+
+        GUI.Label(new Rect(rect.x, rect.y, rect.width, 17f), line1, _row);
+        GUI.Label(new Rect(rect.x, rect.y + 16f, rect.width, 17f), line2, _row);
+    }
+
+    private void DrawSelectedRunLog()
+    {
+        DpsData.RunRecord run = _selectedRunRecord;
+        if (run == null) return;
+        if (run.BreakdownRows == null || run.BreakdownRows.Count == 0)
+        {
+            GUILayout.Label("No detailed breakdown was saved for this run.", _small);
+            GUILayout.Label("Newly completed runs will include damage, healing, and barrier details.", _small);
+            return;
+        }
+
+        GUILayout.Label("RUN SUMMARY", _header);
+        GUILayout.Label("Duration: " + FormatDuration(run.DurationSeconds), _small);
+        GUILayout.Label("Visited: " + run.WorldsVisited + " Worlds " + run.MapsVisited + " Maps", _small);
+        GUILayout.Space(4f);
+
+        string category = null;
+        for (int i = 0; i < run.BreakdownRows.Count; i++)
+        {
+            DpsData.RunBreakdownRow row = run.BreakdownRows[i];
+            if (row == null) continue;
+            if (!string.Equals(category, row.Category, StringComparison.Ordinal))
+            {
+                category = row.Category;
+                GUILayout.Space(3f);
+                GUILayout.Label(category, _headerRight);
+            }
+            GUILayout.Label(row.Name + "  " + FormatNumber(row.Amount), _row);
+        }
     }
 
     private static Type FindLoadedType(string fullName)
@@ -927,6 +981,12 @@ public sealed class DpsOverlay : MonoBehaviour
                 title = "TOTAL";
                 metric = "DMG: " + FormatNumber(_data.CumulativePersonalDamage);
                 break;
+        }
+
+        if (_selectedRunRecord != null)
+        {
+            title = _selectedRunRecord.CharacterName ?? "RUN";
+            metric = "DMG: " + FormatNumber(_selectedRunRecord.TotalDamage);
         }
 
         float metricWidth = headerRect.width * 0.45f;
