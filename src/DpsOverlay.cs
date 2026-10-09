@@ -367,30 +367,32 @@ public sealed class DpsOverlay : MonoBehaviour
         bool selected = isCurrent ? _selectedRunRecord == null : ReferenceEquals(_selectedRunRecord, run);
         bool hovered = rect.Contains(Event.current.mousePosition);
 
-        GUI.color = new Color(0.08f, 0.08f, 0.08f, 0.48f);
-        GUI.DrawTexture(rect, _whiteTexture);
-        GUI.color = Color.white;
+        // Treat each entry as a self-contained item: keep its highlight inside
+        // the row, inset the content consistently, and anchor the separator to
+        // the row's bottom edge instead of compensating with overlapping pixels.
+        Rect contentRect = new Rect(
+            rect.x + 2f,
+            rect.y + 2f,
+            Mathf.Max(0f, rect.width - 4f),
+            Mathf.Max(0f, rect.height - 4f));
 
         if (selected || hovered)
         {
-            // Extend upward to the previous row's separator while preserving the bottom gap.
-            Rect highlightRect = new Rect(rect.x, rect.y - 3f,
-                rect.width, Mathf.Max(0f, rect.height - 1f));
             GUI.color = new Color(1f, 1f, 1f, hovered ? 0.18f : 0.10f);
-            GUI.DrawTexture(highlightRect, _whiteTexture);
+            GUI.DrawTexture(contentRect, _whiteTexture);
             GUI.color = Color.white;
         }
 
         if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
             _selectedRunRecord = isCurrent ? null : run;
 
-        GUI.Label(new Rect(rect.x + 2f, rect.y, Mathf.Max(0f, rect.width - 4f), 17f), line1, _row);
-        GUI.Label(new Rect(rect.x + 2f, rect.y + 16f, Mathf.Max(0f, rect.width - 4f), 17f), line2, _row);
+        GUI.Label(new Rect(contentRect.x, contentRect.y, contentRect.width, 16f), line1, _row);
+        GUI.Label(new Rect(contentRect.x, contentRect.y + 16f, contentRect.width, 16f), line2, _row);
 
         if (drawSeparator)
         {
             GUI.color = new Color(0.72f, 0.72f, 0.72f, 0.55f);
-            GUI.DrawTexture(new Rect(rect.x, rect.y + 35f, rect.width, 1f), _whiteTexture);
+            GUI.DrawTexture(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), _whiteTexture);
             GUI.color = Color.white;
         }
     }
