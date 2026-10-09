@@ -46,6 +46,8 @@ public sealed class DpsData
     public sealed class RunRecord
     {
         public string CharacterName;
+        public string CharacterIconName;
+        public string CharacterIconTextureName;
         public string Outcome;
         public float TotalDamage;
         public float TotalHealing;
