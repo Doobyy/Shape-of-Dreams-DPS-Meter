@@ -216,10 +216,12 @@ public sealed class DPSMeter : ModBehaviour
                                     continue;
                                 }
 
+                                UnityEngine.Object unityObject = managerInstance as UnityEngine.Object;
+                                Behaviour behaviour = managerInstance as Behaviour;
                                 WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER instance="
                                     + managerInstance.GetType().Name + " name="
-                                    + (managerInstance as UnityEngine.Object).name
-                                    + " active=" + (managerInstance as UnityEngine.Object).isActiveAndEnabled);
+                                    + (unityObject == null ? "<not-unity-object>" : unityObject.name)
+                                    + " active=" + (behaviour == null ? "<not-behaviour>" : behaviour.isActiveAndEnabled.ToString()));
 
                                 FieldInfo resultField = type.GetField("onUpdateGameResult",
                                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
