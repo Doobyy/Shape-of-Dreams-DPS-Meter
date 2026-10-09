@@ -38,6 +38,9 @@
     <Reference Include="UnityEngine.CoreModule">
     <HintPath>$(ShapeOfDreamsHome)\Shape of Dreams_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
 </Reference>
+<Reference Include="UnityEngine.JSONSerializeModule">
+    <HintPath>$(ShapeOfDreamsHome)\Shape of Dreams_Data\Managed\UnityEngine.JSONSerializeModule.dll</HintPath>
+</Reference>
 <Reference Include="UnityEngine.TextRenderingModule">
     <HintPath>$(ShapeOfDreamsHome)\Shape of Dreams_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
 </Reference>
