@@ -1,802 +1,477 @@
-[v9.400][DPS Meter] RESULT-CALLBACK subscribed manager=GameResultManager (Networked) active=True delegate=System.Action`1[[DewGameResult, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400][DPS Meter] RESULT-CALLBACK fired count=1 result-type=DewGameResult
-[v9.400][DPS Meter] RESULT-VALUE field=runId type=String value=<null>
-[v9.400][DPS Meter] RESULT-VALUE field=result type=ResultType value=Conceded
-[v9.400][DPS Meter] RESULT-VALUE field=startTimestamp type=Int64 value=0
-[v9.400][DPS Meter] RESULT-VALUE field=elapsedGameTimeSeconds type=Int32 value=15
-[v9.400][DPS Meter] RESULT-VALUE field=visitedWorlds type=Int32 value=1
-[v9.400][DPS Meter] RESULT-VALUE field=visitedLocations type=Int32 value=2
-[v9.400][DPS Meter] RESULT-VALUE field=difficulty type=String value=diffLimbo
-[v9.400][DPS Meter] RESULT-VALUE field=limboDepth type=Int32 value=3
-[v9.400][DPS Meter] RESULT-VALUE field=players type=List`1 value=<List`1>
-[v9.400][DPS Meter] RESULT-CALLBACK fired count=2 result-type=DewGameResult
-[v9.400][DPS Meter] RESULT-VALUE field=runId type=String value=<null>
-[v9.400][DPS Meter] RESULT-VALUE field=result type=ResultType value=Conceded
-[v9.400][DPS Meter] RESULT-VALUE field=startTimestamp type=Int64 value=0
-[v9.400][DPS Meter] RESULT-VALUE field=elapsedGameTimeSeconds type=Int32 value=70
-[v9.400][DPS Meter] RESULT-VALUE field=visitedWorlds type=Int32 value=1
-[v9.400][DPS Meter] RESULT-VALUE field=visitedLocations type=Int32 value=3
-[v9.400][DPS Meter] RESULT-VALUE field=difficulty type=String value=diffLimbo
-[v9.400][DPS Meter] RESULT-VALUE field=limboDepth type=Int32 value=3
-[v9.400][DPS Meter] RESULT-VALUE field=players type=List`1 value=<List`1>
-[v9.400][DPS Meter] RESULT-CALLBACK fired count=3 result-type=DewGameResult
-[v9.400][DPS Meter] RESULT-VALUE field=runId type=String value=<null>
-[v9.400][DPS Meter] RESULT-VALUE field=result type=ResultType value=Conceded
-[v9.400][DPS Meter] RESULT-VALUE field=startTimestamp type=Int64 value=0
-[v9.400][DPS Meter] RESULT-VALUE field=elapsedGameTimeSeconds type=Int32 value=118
-[v9.400][DPS Meter] RESULT-VALUE field=visitedWorlds type=Int32 value=1
-[v9.400][DPS Meter] RESULT-VALUE field=visitedLocations type=Int32 value=4
-[v9.400][DPS Meter] RESULT-VALUE field=difficulty type=String value=diffLimbo
-[v9.400][DPS Meter] RESULT-VALUE field=limboDepth type=Int32 value=3
-[v9.400][DPS Meter] RESULT-VALUE field=players type=List`1 value=<List`1>
-[v9.400][DPS Meter] RESULT-CALLBACK fired count=4 result-type=DewGameResult
-[v9.400][DPS Meter] RESULT-VALUE field=runId type=String value=<null>
-[v9.400][DPS Meter] RESULT-VALUE field=result type=ResultType value=Conceded
-[v9.400][DPS Meter] RESULT-VALUE field=startTimestamp type=Int64 value=0
-[v9.400][DPS Meter] RESULT-VALUE field=elapsedGameTimeSeconds type=Int32 value=146
-[v9.400][DPS Meter] RESULT-VALUE field=visitedWorlds type=Int32 value=1
-[v9.400][DPS Meter] RESULT-VALUE field=visitedLocations type=Int32 value=5
-[v9.400][DPS Meter] RESULT-VALUE field=difficulty type=String value=diffLimbo
-[v9.400][DPS Meter] RESULT-VALUE field=limboDepth type=Int32 value=3
-[v9.400][DPS Meter] RESULT-VALUE field=players type=List`1 value=<List`1>
-[v9.400][DPS Meter] RESULT-CALLBACK fired count=5 result-type=DewGameResult
-[v9.400][DPS Meter] RESULT-VALUE field=runId type=String value=<null>
-[v9.400][DPS Meter] RESULT-VALUE field=result type=ResultType value=Conceded
-[v9.400][DPS Meter] RESULT-VALUE field=startTimestamp type=Int64 value=0
-[v9.400][DPS Meter] RESULT-VALUE field=elapsedGameTimeSeconds type=Int32 value=171
-[v9.400][DPS Meter] RESULT-VALUE field=visitedWorlds type=Int32 value=1
-[v9.400][DPS Meter] RESULT-VALUE field=visitedLocations type=Int32 value=6
-[v9.400][DPS Meter] RESULT-VALUE field=difficulty type=String value=diffLimbo
-[v9.400][DPS Meter] RESULT-VALUE field=limboDepth type=Int32 value=3
-[v9.400][DPS Meter] RESULT-VALUE field=players type=List`1 value=<List`1>
-[v9.400] TARGET MEMORY trace skill=<color=#E4F0F2>Backstep</color> identity=E
-[v9.400] memory runtime depth=0 type=Ai_C_BackStep_Bomb name=Ai_C_BackStep_Bomb(Adjusted)(Clone)
-[v9.400] memory runtime depth=0 scalingField=dmgFactor ad=0 ap=1.68 hp=0 resolved=Ap
-[v9.400] memory runtime depth=1 type=Ai_C_BackStep name=Ai_C_BackStep(Adjusted)(Clone)
-[v9.400] memory runtime depth=1 scalingField=speedAmount ad=0 ap=0 hp=0 resolved=None
-[v9.400] memory runtime depth=2 type=St_C_BackStep name=St_C_BackStep(Clone)
-[v9.400] memory runtime depth=3 type=Hero_Bismuth name=Hero_Bismuth(Clone)
-[v9.400] memory configured root type=Ai_C_BackStep name=Ai_C_BackStep(Adjusted)
-[v9.400] memory configured depth=0 type=Ai_C_BackStep name=Ai_C_BackStep(Adjusted) gem=<null>
-[v9.400] memory configured depth=0 scalingField=speedAmount ad=0 ap=0 hp=0 resolved=None
-[v9.400] BACKSTEP resolver cache=MISS identity=E
-[v9.400] BACKSTEP resolver sourceGem=<null>
-[v9.400] BACKSTEP resolver configuredGem=None
-[v9.400] BACKSTEP resolver configuredAbility=None
-[v9.400] BACKSTEP scaling actor=type=Ai_C_BackStep_Bomb name=Ai_C_BackStep_Bomb(Adjusted)(Clone)
-[v9.400] BACKSTEP scaling damageInstance=<null>
-[v9.400] BACKSTEP runtime depth=0 actor=type=Ai_C_BackStep_Bomb name=Ai_C_BackStep_Bomb(Adjusted)(Clone)
-[v9.400] BACKSTEP runtime depth=0 field=dmgFactor type=ScalingValue
-[v9.400] BACKSTEP runtime depth=0 field=range type=DewCollider
-[v9.400] BACKSTEP runtime depth=0 field=Knockback type=Knockback
-[v9.400] BACKSTEP runtime depth=0 field=procCoefficient type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=hitEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=stunDuration type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=use3DVelocity type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=_initialSpeed type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=_targetSpeed type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=_acceleration type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=enableRandomCurve type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=randomCurveMagnitude type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=ensurePositiveY type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=onEntity type=SafeAction`1[[Projectile+EntityHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=mode type=Projectile+ProjectileMode
-[v9.400] BACKSTEP runtime depth=0 field=endDistance type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=start type=Projectile+StartPositionType
-[v9.400] BACKSTEP runtime depth=0 field=startInFrontDistance type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=endsWithSameHeight type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=customEndHeight type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=rotationType type=Projectile+RotationType
-[v9.400] BACKSTEP runtime depth=0 field=destroyOnComplete type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=killOnDissipate type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=verticalOffsetOverTrajectory type=UnityEngine.AnimationCurve
-[v9.400] BACKSTEP runtime depth=0 field=scaleVerticalOffsetOnLength type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=horizontalOffsetOverTrajectory type=UnityEngine.AnimationCurve
-[v9.400] BACKSTEP runtime depth=0 field=scaleHorizontalOffsetOnLength type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=collisionRadius type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=canCollideMidFlight type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=dissipateOnTerrain type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=collisionTargets type=AbilityTargetValidator
-[v9.400] BACKSTEP runtime depth=0 field=effectOnFly type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=effectOnEntity type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=effectOnComplete type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=preserveCompleteEffectPositionAndRotation type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=effectOnDissipate type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=_hasTrajectoryOffset type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=_estimatedVelocity type=UnityEngine.Vector3
-[v9.400] BACKSTEP runtime depth=0 field=____targetEntityNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=0 field=_skillLevel type=System.Int32
-[v9.400] BACKSTEP runtime depth=0 field=startEffectNoStop type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=startEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=endEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=budgetCost type=System.Int32
-[v9.400] BACKSTEP runtime depth=0 field=chain type=ReactionChain
-[v9.400] BACKSTEP runtime depth=0 field=tvDefaultHarmfulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=0 field=tvDefaultUsefulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=0 field=tvDefaultAllExceptSelf type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=0 field=____gemNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=0 field=children type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=childrenInNetwork type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=_didPrepare type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=_didCallCreate type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=_didCallDestroy type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=persistentData type=System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=0 field=persistentSyncedData type=Mirror.SyncDictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=0 field=ClientEvent_OnPersistentSyncedDataChanged type=SafeAction`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnAbilityInstanceCreated type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnAbilityInstanceBeforePrepare type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnDealDamage type=SafeAction`1[[EventInfoDamage, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnDoHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnDoManaHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnSpendMana type=SafeAction`1[[EventInfoSpentMana, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnKill type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnAttackHit type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnAttackEffectTriggered type=SafeAction`1[[EventInfoAttackEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnSpawnSummon type=SafeAction`1[[EventInfoSummon, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnApplyElemental type=SafeAction`1[[EventInfoApplyElemental, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnGiveShield type=SafeAction`1[[EventInfoShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ClientActorEvent_OnDestroyed type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ClientActorEvent_OnCreate type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtDamageProcessor type=DataProcessorGroup`3[[DamageData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtManaHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtShieldProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtCooldownReductionProcessor type=DataProcessorGroup`3[[CooldownReductionSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtCooldownReductionByRatioProcessor type=DataProcessorGroup`3[[CooldownReductionByRatioSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=spawnedChildVarDefProcessor type=DataProcessorGroup`3[[VariantDef, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.Type, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=0 field=____parentActorNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=0 field=_Mirror_SyncVarHookDelegate__parentActor type=System.Action`2[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=_Mirror_SyncVarHookDelegate__isActive type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=0 field=syncDirection type=Mirror.SyncDirection
-[v9.400] BACKSTEP runtime depth=0 field=syncMode type=Mirror.SyncMode
-[v9.400] BACKSTEP runtime depth=0 field=syncInterval type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=lastSyncTime type=System.Double
-[v9.400] BACKSTEP runtime depth=0 field=syncObjects type=System.Collections.Generic.List`1[[Mirror.SyncObject, Mirror, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=syncObjectDirtyBits type=System.UInt64
-[v9.400] BACKSTEP runtime depth=1 actor=type=Ai_C_BackStep name=Ai_C_BackStep(Adjusted)(Clone)
-[v9.400] BACKSTEP runtime depth=1 field=points type=UnityEngine.GameObject[]
-[v9.400] BACKSTEP runtime depth=1 field=bombCount type=System.Int32
-[v9.400] BACKSTEP runtime depth=1 field=backStepDis type=System.Single
-[v9.400] BACKSTEP runtime depth=1 field=stepDuration type=System.Single
-[v9.400] BACKSTEP runtime depth=1 field=ease type=DewEase
-[v9.400] BACKSTEP runtime depth=1 field=delay type=System.Single
-[v9.400] BACKSTEP runtime depth=1 field=speedAmount type=ScalingValue
-[v9.400] BACKSTEP runtime depth=1 field=speedDuration type=System.Single
-[v9.400] BACKSTEP runtime depth=1 field=_skillLevel type=System.Int32
-[v9.400] BACKSTEP runtime depth=1 field=startEffectNoStop type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=1 field=startEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=1 field=endEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=1 field=budgetCost type=System.Int32
-[v9.400] BACKSTEP runtime depth=1 field=chain type=ReactionChain
-[v9.400] BACKSTEP runtime depth=1 field=tvDefaultHarmfulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=1 field=tvDefaultUsefulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=1 field=tvDefaultAllExceptSelf type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=1 field=____gemNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=1 field=children type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=childrenInNetwork type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=_didPrepare type=System.Boolean
-[v9.400] BACKSTEP runtime depth=1 field=_didCallCreate type=System.Boolean
-[v9.400] BACKSTEP runtime depth=1 field=_didCallDestroy type=System.Boolean
-[v9.400] BACKSTEP runtime depth=1 field=persistentData type=System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=1 field=persistentSyncedData type=Mirror.SyncDictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=1 field=ClientEvent_OnPersistentSyncedDataChanged type=SafeAction`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnAbilityInstanceCreated type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnAbilityInstanceBeforePrepare type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnDealDamage type=SafeAction`1[[EventInfoDamage, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnDoHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnDoManaHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnSpendMana type=SafeAction`1[[EventInfoSpentMana, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnKill type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnAttackHit type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnAttackEffectTriggered type=SafeAction`1[[EventInfoAttackEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnSpawnSummon type=SafeAction`1[[EventInfoSummon, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnApplyElemental type=SafeAction`1[[EventInfoApplyElemental, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnGiveShield type=SafeAction`1[[EventInfoShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ClientActorEvent_OnDestroyed type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ClientActorEvent_OnCreate type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtDamageProcessor type=DataProcessorGroup`3[[DamageData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtManaHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtShieldProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtCooldownReductionProcessor type=DataProcessorGroup`3[[CooldownReductionSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtCooldownReductionByRatioProcessor type=DataProcessorGroup`3[[CooldownReductionByRatioSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=spawnedChildVarDefProcessor type=DataProcessorGroup`3[[VariantDef, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.Type, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=1 field=____parentActorNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=1 field=_Mirror_SyncVarHookDelegate__parentActor type=System.Action`2[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=_Mirror_SyncVarHookDelegate__isActive type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=1 field=syncDirection type=Mirror.SyncDirection
-[v9.400] BACKSTEP runtime depth=1 field=syncMode type=Mirror.SyncMode
-[v9.400] BACKSTEP runtime depth=1 field=syncInterval type=System.Single
-[v9.400] BACKSTEP runtime depth=1 field=lastSyncTime type=System.Double
-[v9.400] BACKSTEP runtime depth=1 field=syncObjects type=System.Collections.Generic.List`1[[Mirror.SyncObject, Mirror, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=syncObjectDirtyBits type=System.UInt64
-[v9.400] BACKSTEP runtime depth=2 actor=type=St_C_BackStep name=St_C_BackStep(Clone)
-[v9.400] BACKSTEP runtime depth=2 field=ClientEvent_OnHandOwnerChanged type=SafeAction`2[[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientEvent_OnTempOwnerChanged type=SafeAction`2[[DewPlayer, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[DewPlayer, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientSkillEvent_OnLevelChange type=SafeAction`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=rarity type=Rarity
-[v9.400] BACKSTEP runtime depth=2 field=type type=SkillType
-[v9.400] BACKSTEP runtime depth=2 field=tags type=DescriptionTags
-[v9.400] BACKSTEP runtime depth=2 field=isLevelUpEnabled type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=useCustomSkillHastePerLevel type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=customSkillHastePerLevel type=System.Single
-[v9.400] BACKSTEP runtime depth=2 field=startEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=2 field=endEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=2 field=excludeFromPool type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=statBonus type=StatBonus
-[v9.400] BACKSTEP runtime depth=2 field=ClientSkillEvent_OnDismantleProgressChanged type=SafeAction`2[[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=_lastDismantler type=Hero
-[v9.400] BACKSTEP runtime depth=2 field=_isSkillBonusDirty type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=___<handOwner>k__BackingFieldNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=2 field=___<tempOwner>k__BackingFieldNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate_<handOwner>k__BackingField type=System.Action`2[[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate_<tempOwner>k__BackingField type=System.Action`2[[DewPlayer, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[DewPlayer, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate__level type=System.Action`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate_<dismantleProgress>k__BackingField type=System.Action`2[[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=takenCooldownReductionProcessor type=DataProcessorGroup`3[[CooldownReductionSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=takenCooldownReductionByRatioProcessor type=DataProcessorGroup`3[[CooldownReductionByRatioSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientTriggerEvent_OnCurrentConfigCharged type=SafeAction
-[v9.400] BACKSTEP runtime depth=2 field=ClientTriggerEvent_OnCurrentConfigCooldownReduced type=SafeAction
-[v9.400] BACKSTEP runtime depth=2 field=ClientTriggerEvent_OnCooldownReduced type=SafeAction`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientTriggerEvent_OnCooldownReducedByRatio type=SafeAction`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientEvent_OnOwnerChanged type=SafeAction`2[[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=currentUnscaledCooldownTimes type=System.Single[]
-[v9.400] BACKSTEP runtime depth=2 field=currentCharges type=System.Int32[]
-[v9.400] BACKSTEP runtime depth=2 field=currentMinimumDelays type=System.Single[]
-[v9.400] BACKSTEP runtime depth=2 field=TriggerEvent_OnCastStart type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=TriggerEvent_OnCastComplete type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=TriggerEvent_OnCastCompleteBeforePrepare type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_isConfigDirty type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=_configCastLocks type=Mirror.SyncList`1[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=_configCooldownLocks type=Mirror.SyncList`1[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=configs type=TriggerConfig[]
-[v9.400] BACKSTEP runtime depth=2 field=tvDefaultHarmfulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=2 field=tvDefaultUsefulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=2 field=tvDefaultAllExceptSelf type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=2 field=____ownerNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=2 field=___<currentPassiveEffect>k__BackingFieldNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate__owner type=System.Action`2[[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate__currentConfigIndex type=System.Action`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=children type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=childrenInNetwork type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_didPrepare type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=_didCallCreate type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=_didCallDestroy type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=persistentData type=System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=persistentSyncedData type=Mirror.SyncDictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientEvent_OnPersistentSyncedDataChanged type=SafeAction`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnAbilityInstanceCreated type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnAbilityInstanceBeforePrepare type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnDealDamage type=SafeAction`1[[EventInfoDamage, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnDoHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnDoManaHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnSpendMana type=SafeAction`1[[EventInfoSpentMana, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnKill type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnAttackHit type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnAttackEffectTriggered type=SafeAction`1[[EventInfoAttackEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnSpawnSummon type=SafeAction`1[[EventInfoSummon, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnApplyElemental type=SafeAction`1[[EventInfoApplyElemental, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnGiveShield type=SafeAction`1[[EventInfoShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientActorEvent_OnDestroyed type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientActorEvent_OnCreate type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtDamageProcessor type=DataProcessorGroup`3[[DamageData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtManaHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtShieldProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtCooldownReductionProcessor type=DataProcessorGroup`3[[CooldownReductionSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtCooldownReductionByRatioProcessor type=DataProcessorGroup`3[[CooldownReductionByRatioSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=spawnedChildVarDefProcessor type=DataProcessorGroup`3[[VariantDef, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.Type, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=____parentActorNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate__parentActor type=System.Action`2[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate__isActive type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=syncDirection type=Mirror.SyncDirection
-[v9.400] BACKSTEP runtime depth=2 field=syncMode type=Mirror.SyncMode
-[v9.400] BACKSTEP runtime depth=2 field=syncInterval type=System.Single
-[v9.400] BACKSTEP runtime depth=2 field=lastSyncTime type=System.Double
-[v9.400] BACKSTEP runtime depth=2 field=syncObjects type=System.Collections.Generic.List`1[[Mirror.SyncObject, Mirror, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=syncObjectDirtyBits type=System.UInt64
-[v9.400] BACKSTEP runtime depth=3 actor=type=Hero_Bismuth name=Hero_Bismuth(Clone)
-[v9.400] BACKSTEP runtime depth=3 field=<book>k__BackingField type=Hero_Bismuth_BookController
-[v9.400] BACKSTEP runtime depth=3 field=_hasSameTravelerMemory type=System.Nullable`1[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnKillOrAssist type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnSkillUse type=SafeAction`1[[EventInfoSkillUse, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnKnockedOut type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnRevive type=SafeAction`1[[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=HeroEvent_OnAbilityInstanceCreatedFromSkill type=SafeAction`1[[EventInfoSkillAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=HeroEvent_OnAbilityInstanceBeforePrepareFromSkill type=SafeAction`1[[EventInfoSkillAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnLevelChanged type=SafeAction`1[[EventInfoHeroLevelUp, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=HeroEvent_OnDismantleItem type=SafeAction`1[[EventInfoDismantle, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dismantleProcessor type=DataProcessorGroup`3[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=accessories type=Mirror.SyncList`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=maxLevelOverride type=System.Nullable`1[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnIsInCombatChanged type=SafeAction`1[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=icon type=UnityEngine.Sprite
-[v9.400] BACKSTEP runtime depth=3 field=mainColor type=UnityEngine.Color
-[v9.400] BACKSTEP runtime depth=3 field=classType type=Hero+HeroClassType
-[v9.400] BACKSTEP runtime depth=3 field=difficulty type=Hero+HeroDifficulty
-[v9.400] BACKSTEP runtime depth=3 field=decoConstellationPrefab type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=3 field=disableDamageOverlay type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=excludeFromPool type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=cDisplayBaseAngle type=System.Single
-[v9.400] BACKSTEP runtime depth=3 field=cDestruction type=HeroConstellationSettings
-[v9.400] BACKSTEP runtime depth=3 field=cLife type=HeroConstellationSettings
-[v9.400] BACKSTEP runtime depth=3 field=cImagination type=HeroConstellationSettings
-[v9.400] BACKSTEP runtime depth=3 field=cFlexible type=HeroConstellationSettings
-[v9.400] BACKSTEP runtime depth=3 field=summons type=System.Collections.Generic.List`1[[Summon, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=isWeaponHolstered type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=_Mirror_SyncVarHookDelegate_<isInCombat>k__BackingField type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientEntityEvent_OnIsSleepingChanged type=SafeAction`1[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=_accumulatedSleepTime type=System.Single
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnTakeManaHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnTakeHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnTakeShield type=SafeAction`1[[EventInfoShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnTakeDamage type=SafeAction`1[[EventInfoDamage, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnDeath type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnGetManaSpent type=SafeAction`1[[EventInfoSpentMana, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackFired type=SafeAction`1[[EventInfoAttackFired, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackFiredBeforePrepare type=SafeAction`1[[EventInfoAttackFired, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackHit type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackTaken type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackMissed type=SafeAction`1[[EventInfoAttackMissed, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackDodged type=SafeAction`1[[EventInfoAttackMissed, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnDamageNegatedByImmunity type=SafeAction`1[[EventInfoDamageNegatedByImmunity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnDamageNegatedByShield type=SafeAction`1[[EventInfoDamageNegatedByShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientEntityEvent_OnStatusEffectAdded type=SafeAction`1[[EventInfoStatusEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientEntityEvent_OnStatusEffectRemoved type=SafeAction`1[[EventInfoStatusEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackEffectTriggered type=SafeAction`1[[EventInfoAttackEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnCastStart type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnCastComplete type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnCastCompleteBeforePrepare type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=takenDamageProcessor type=DataProcessorGroup`3[[DamageData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=takenHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=takenManaHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=takenShieldProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=_staggerSettings type=Entity+StaggerSettings
-[v9.400] BACKSTEP runtime depth=3 field=_sections type=System.Collections.Generic.List`1[[RoomSection, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=_skinSkillProcessor type=DataProcessor`3[[VariantDef, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.Type, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=_skinVisualVariantId type=System.Int32
-[v9.400] BACKSTEP runtime depth=3 field=_wasStuckCounter type=System.Int32
-[v9.400] BACKSTEP runtime depth=3 field=_stuckCheckVersion type=System.Int32
-[v9.400] BACKSTEP runtime depth=3 field=____ownerNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=3 field=_Mirror_SyncVarHookDelegate_<isSleeping>k__BackingField type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=children type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=childrenInNetwork type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=_didPrepare type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=_didCallCreate type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=_didCallDestroy type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=persistentData type=System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=persistentSyncedData type=Mirror.SyncDictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientEvent_OnPersistentSyncedDataChanged type=SafeAction`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnAbilityInstanceCreated type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnAbilityInstanceBeforePrepare type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnDealDamage type=SafeAction`1[[EventInfoDamage, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnDoHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnDoManaHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnSpendMana type=SafeAction`1[[EventInfoSpentMana, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnKill type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnAttackHit type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnAttackEffectTriggered type=SafeAction`1[[EventInfoAttackEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnSpawnSummon type=SafeAction`1[[EventInfoSummon, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnApplyElemental type=SafeAction`1[[EventInfoApplyElemental, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnGiveShield type=SafeAction`1[[EventInfoShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientActorEvent_OnDestroyed type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientActorEvent_OnCreate type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtDamageProcessor type=DataProcessorGroup`3[[DamageData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtManaHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtShieldProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtCooldownReductionProcessor type=DataProcessorGroup`3[[CooldownReductionSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtCooldownReductionByRatioProcessor type=DataProcessorGroup`3[[CooldownReductionByRatioSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=spawnedChildVarDefProcessor type=DataProcessorGroup`3[[VariantDef, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.Type, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=____parentActorNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=3 field=_Mirror_SyncVarHookDelegate__parentActor type=System.Action`2[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=_Mirror_SyncVarHookDelegate__isActive type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=syncDirection type=Mirror.SyncDirection
-[v9.400] BACKSTEP runtime depth=3 field=syncMode type=Mirror.SyncMode
-[v9.400] BACKSTEP runtime depth=3 field=syncInterval type=System.Single
-[v9.400] BACKSTEP runtime depth=3 field=lastSyncTime type=System.Double
-[v9.400] BACKSTEP runtime depth=3 field=syncObjects type=System.Collections.Generic.List`1[[Mirror.SyncObject, Mirror, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=syncObjectDirtyBits type=System.UInt64
-[v9.400] BACKSTEP runtime depth=0 actor=type=Ai_C_BackStep_Bomb name=Ai_C_BackStep_Bomb(Adjusted)(Clone)
-[v9.400] BACKSTEP runtime depth=0 field=dmgFactor type=ScalingValue
-[v9.400] BACKSTEP runtime depth=0 field=range type=DewCollider
-[v9.400] BACKSTEP runtime depth=0 field=Knockback type=Knockback
-[v9.400] BACKSTEP runtime depth=0 field=procCoefficient type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=hitEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=stunDuration type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=use3DVelocity type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=_initialSpeed type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=_targetSpeed type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=_acceleration type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=enableRandomCurve type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=randomCurveMagnitude type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=ensurePositiveY type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=onEntity type=SafeAction`1[[Projectile+EntityHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=mode type=Projectile+ProjectileMode
-[v9.400] BACKSTEP runtime depth=0 field=endDistance type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=start type=Projectile+StartPositionType
-[v9.400] BACKSTEP runtime depth=0 field=startInFrontDistance type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=endsWithSameHeight type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=customEndHeight type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=rotationType type=Projectile+RotationType
-[v9.400] BACKSTEP runtime depth=0 field=destroyOnComplete type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=killOnDissipate type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=verticalOffsetOverTrajectory type=UnityEngine.AnimationCurve
-[v9.400] BACKSTEP runtime depth=0 field=scaleVerticalOffsetOnLength type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=horizontalOffsetOverTrajectory type=UnityEngine.AnimationCurve
-[v9.400] BACKSTEP runtime depth=0 field=scaleHorizontalOffsetOnLength type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=collisionRadius type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=canCollideMidFlight type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=dissipateOnTerrain type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=collisionTargets type=AbilityTargetValidator
-[v9.400] BACKSTEP runtime depth=0 field=effectOnFly type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=effectOnEntity type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=effectOnComplete type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=preserveCompleteEffectPositionAndRotation type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=effectOnDissipate type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=_hasTrajectoryOffset type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=_estimatedVelocity type=UnityEngine.Vector3
-[v9.400] BACKSTEP runtime depth=0 field=____targetEntityNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=0 field=_skillLevel type=System.Int32
-[v9.400] BACKSTEP runtime depth=0 field=startEffectNoStop type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=startEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=endEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=0 field=budgetCost type=System.Int32
-[v9.400] BACKSTEP runtime depth=0 field=chain type=ReactionChain
-[v9.400] BACKSTEP runtime depth=0 field=tvDefaultHarmfulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=0 field=tvDefaultUsefulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=0 field=tvDefaultAllExceptSelf type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=0 field=____gemNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=0 field=children type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=childrenInNetwork type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=_didPrepare type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=_didCallCreate type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=_didCallDestroy type=System.Boolean
-[v9.400] BACKSTEP runtime depth=0 field=persistentData type=System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=0 field=persistentSyncedData type=Mirror.SyncDictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=0 field=ClientEvent_OnPersistentSyncedDataChanged type=SafeAction`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnAbilityInstanceCreated type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnAbilityInstanceBeforePrepare type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnDealDamage type=SafeAction`1[[EventInfoDamage, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnDoHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnDoManaHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnSpendMana type=SafeAction`1[[EventInfoSpentMana, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnKill type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnAttackHit type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnAttackEffectTriggered type=SafeAction`1[[EventInfoAttackEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnSpawnSummon type=SafeAction`1[[EventInfoSummon, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnApplyElemental type=SafeAction`1[[EventInfoApplyElemental, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ActorEvent_OnGiveShield type=SafeAction`1[[EventInfoShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ClientActorEvent_OnDestroyed type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=ClientActorEvent_OnCreate type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtDamageProcessor type=DataProcessorGroup`3[[DamageData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtManaHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtShieldProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtCooldownReductionProcessor type=DataProcessorGroup`3[[CooldownReductionSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=dealtCooldownReductionByRatioProcessor type=DataProcessorGroup`3[[CooldownReductionByRatioSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=spawnedChildVarDefProcessor type=DataProcessorGroup`3[[VariantDef, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.Type, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=0 field=____parentActorNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=0 field=_Mirror_SyncVarHookDelegate__parentActor type=System.Action`2[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=_Mirror_SyncVarHookDelegate__isActive type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=0 field=syncDirection type=Mirror.SyncDirection
-[v9.400] BACKSTEP runtime depth=0 field=syncMode type=Mirror.SyncMode
-[v9.400] BACKSTEP runtime depth=0 field=syncInterval type=System.Single
-[v9.400] BACKSTEP runtime depth=0 field=lastSyncTime type=System.Double
-[v9.400] BACKSTEP runtime depth=0 field=syncObjects type=System.Collections.Generic.List`1[[Mirror.SyncObject, Mirror, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=0 field=syncObjectDirtyBits type=System.UInt64
-[v9.400] BACKSTEP runtime depth=1 actor=type=Ai_C_BackStep name=Ai_C_BackStep(Adjusted)(Clone)
-[v9.400] BACKSTEP runtime depth=1 field=points type=UnityEngine.GameObject[]
-[v9.400] BACKSTEP runtime depth=1 field=bombCount type=System.Int32
-[v9.400] BACKSTEP runtime depth=1 field=backStepDis type=System.Single
-[v9.400] BACKSTEP runtime depth=1 field=stepDuration type=System.Single
-[v9.400] BACKSTEP runtime depth=1 field=ease type=DewEase
-[v9.400] BACKSTEP runtime depth=1 field=delay type=System.Single
-[v9.400] BACKSTEP runtime depth=1 field=speedAmount type=ScalingValue
-[v9.400] BACKSTEP runtime depth=1 field=speedDuration type=System.Single
-[v9.400] BACKSTEP runtime depth=1 field=_skillLevel type=System.Int32
-[v9.400] BACKSTEP runtime depth=1 field=startEffectNoStop type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=1 field=startEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=1 field=endEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=1 field=budgetCost type=System.Int32
-[v9.400] BACKSTEP runtime depth=1 field=chain type=ReactionChain
-[v9.400] BACKSTEP runtime depth=1 field=tvDefaultHarmfulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=1 field=tvDefaultUsefulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=1 field=tvDefaultAllExceptSelf type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=1 field=____gemNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=1 field=children type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=childrenInNetwork type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=_didPrepare type=System.Boolean
-[v9.400] BACKSTEP runtime depth=1 field=_didCallCreate type=System.Boolean
-[v9.400] BACKSTEP runtime depth=1 field=_didCallDestroy type=System.Boolean
-[v9.400] BACKSTEP runtime depth=1 field=persistentData type=System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=1 field=persistentSyncedData type=Mirror.SyncDictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=1 field=ClientEvent_OnPersistentSyncedDataChanged type=SafeAction`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnAbilityInstanceCreated type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnAbilityInstanceBeforePrepare type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnDealDamage type=SafeAction`1[[EventInfoDamage, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnDoHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnDoManaHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnSpendMana type=SafeAction`1[[EventInfoSpentMana, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnKill type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnAttackHit type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnAttackEffectTriggered type=SafeAction`1[[EventInfoAttackEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnSpawnSummon type=SafeAction`1[[EventInfoSummon, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnApplyElemental type=SafeAction`1[[EventInfoApplyElemental, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ActorEvent_OnGiveShield type=SafeAction`1[[EventInfoShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ClientActorEvent_OnDestroyed type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=ClientActorEvent_OnCreate type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtDamageProcessor type=DataProcessorGroup`3[[DamageData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtManaHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtShieldProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtCooldownReductionProcessor type=DataProcessorGroup`3[[CooldownReductionSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=dealtCooldownReductionByRatioProcessor type=DataProcessorGroup`3[[CooldownReductionByRatioSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=spawnedChildVarDefProcessor type=DataProcessorGroup`3[[VariantDef, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.Type, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=1 field=____parentActorNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=1 field=_Mirror_SyncVarHookDelegate__parentActor type=System.Action`2[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=_Mirror_SyncVarHookDelegate__isActive type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=1 field=syncDirection type=Mirror.SyncDirection
-[v9.400] BACKSTEP runtime depth=1 field=syncMode type=Mirror.SyncMode
-[v9.400] BACKSTEP runtime depth=1 field=syncInterval type=System.Single
-[v9.400] BACKSTEP runtime depth=1 field=lastSyncTime type=System.Double
-[v9.400] BACKSTEP runtime depth=1 field=syncObjects type=System.Collections.Generic.List`1[[Mirror.SyncObject, Mirror, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=1 field=syncObjectDirtyBits type=System.UInt64
-[v9.400] BACKSTEP runtime depth=2 actor=type=St_C_BackStep name=St_C_BackStep(Clone)
-[v9.400] BACKSTEP runtime depth=2 field=ClientEvent_OnHandOwnerChanged type=SafeAction`2[[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientEvent_OnTempOwnerChanged type=SafeAction`2[[DewPlayer, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[DewPlayer, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientSkillEvent_OnLevelChange type=SafeAction`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=rarity type=Rarity
-[v9.400] BACKSTEP runtime depth=2 field=type type=SkillType
-[v9.400] BACKSTEP runtime depth=2 field=tags type=DescriptionTags
-[v9.400] BACKSTEP runtime depth=2 field=isLevelUpEnabled type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=useCustomSkillHastePerLevel type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=customSkillHastePerLevel type=System.Single
-[v9.400] BACKSTEP runtime depth=2 field=startEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=2 field=endEffect type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=2 field=excludeFromPool type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=statBonus type=StatBonus
-[v9.400] BACKSTEP runtime depth=2 field=ClientSkillEvent_OnDismantleProgressChanged type=SafeAction`2[[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=_lastDismantler type=Hero
-[v9.400] BACKSTEP runtime depth=2 field=_isSkillBonusDirty type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=___<handOwner>k__BackingFieldNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=2 field=___<tempOwner>k__BackingFieldNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate_<handOwner>k__BackingField type=System.Action`2[[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate_<tempOwner>k__BackingField type=System.Action`2[[DewPlayer, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[DewPlayer, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate__level type=System.Action`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate_<dismantleProgress>k__BackingField type=System.Action`2[[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=takenCooldownReductionProcessor type=DataProcessorGroup`3[[CooldownReductionSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=takenCooldownReductionByRatioProcessor type=DataProcessorGroup`3[[CooldownReductionByRatioSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientTriggerEvent_OnCurrentConfigCharged type=SafeAction
-[v9.400] BACKSTEP runtime depth=2 field=ClientTriggerEvent_OnCurrentConfigCooldownReduced type=SafeAction
-[v9.400] BACKSTEP runtime depth=2 field=ClientTriggerEvent_OnCooldownReduced type=SafeAction`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientTriggerEvent_OnCooldownReducedByRatio type=SafeAction`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientEvent_OnOwnerChanged type=SafeAction`2[[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=currentUnscaledCooldownTimes type=System.Single[]
-[v9.400] BACKSTEP runtime depth=2 field=currentCharges type=System.Int32[]
-[v9.400] BACKSTEP runtime depth=2 field=currentMinimumDelays type=System.Single[]
-[v9.400] BACKSTEP runtime depth=2 field=TriggerEvent_OnCastStart type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=TriggerEvent_OnCastComplete type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=TriggerEvent_OnCastCompleteBeforePrepare type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_isConfigDirty type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=_configCastLocks type=Mirror.SyncList`1[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=_configCooldownLocks type=Mirror.SyncList`1[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=configs type=TriggerConfig[]
-[v9.400] BACKSTEP runtime depth=2 field=tvDefaultHarmfulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=2 field=tvDefaultUsefulEffectTargets type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=2 field=tvDefaultAllExceptSelf type=AbilityTargetValidatorWrapper
-[v9.400] BACKSTEP runtime depth=2 field=____ownerNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=2 field=___<currentPassiveEffect>k__BackingFieldNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate__owner type=System.Action`2[[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate__currentConfigIndex type=System.Action`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=children type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=childrenInNetwork type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_didPrepare type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=_didCallCreate type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=_didCallDestroy type=System.Boolean
-[v9.400] BACKSTEP runtime depth=2 field=persistentData type=System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=persistentSyncedData type=Mirror.SyncDictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientEvent_OnPersistentSyncedDataChanged type=SafeAction`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnAbilityInstanceCreated type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnAbilityInstanceBeforePrepare type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnDealDamage type=SafeAction`1[[EventInfoDamage, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnDoHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnDoManaHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnSpendMana type=SafeAction`1[[EventInfoSpentMana, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnKill type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnAttackHit type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnAttackEffectTriggered type=SafeAction`1[[EventInfoAttackEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnSpawnSummon type=SafeAction`1[[EventInfoSummon, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnApplyElemental type=SafeAction`1[[EventInfoApplyElemental, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ActorEvent_OnGiveShield type=SafeAction`1[[EventInfoShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientActorEvent_OnDestroyed type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=ClientActorEvent_OnCreate type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtDamageProcessor type=DataProcessorGroup`3[[DamageData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtManaHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtShieldProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtCooldownReductionProcessor type=DataProcessorGroup`3[[CooldownReductionSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=dealtCooldownReductionByRatioProcessor type=DataProcessorGroup`3[[CooldownReductionByRatioSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=spawnedChildVarDefProcessor type=DataProcessorGroup`3[[VariantDef, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.Type, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=____parentActorNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate__parentActor type=System.Action`2[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=_Mirror_SyncVarHookDelegate__isActive type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=2 field=syncDirection type=Mirror.SyncDirection
-[v9.400] BACKSTEP runtime depth=2 field=syncMode type=Mirror.SyncMode
-[v9.400] BACKSTEP runtime depth=2 field=syncInterval type=System.Single
-[v9.400] BACKSTEP runtime depth=2 field=lastSyncTime type=System.Double
-[v9.400] BACKSTEP runtime depth=2 field=syncObjects type=System.Collections.Generic.List`1[[Mirror.SyncObject, Mirror, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=2 field=syncObjectDirtyBits type=System.UInt64
-[v9.400] BACKSTEP runtime depth=3 actor=type=Hero_Bismuth name=Hero_Bismuth(Clone)
-[v9.400] BACKSTEP runtime depth=3 field=<book>k__BackingField type=Hero_Bismuth_BookController
-[v9.400] BACKSTEP runtime depth=3 field=_hasSameTravelerMemory type=System.Nullable`1[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnKillOrAssist type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnSkillUse type=SafeAction`1[[EventInfoSkillUse, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnKnockedOut type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnRevive type=SafeAction`1[[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=HeroEvent_OnAbilityInstanceCreatedFromSkill type=SafeAction`1[[EventInfoSkillAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=HeroEvent_OnAbilityInstanceBeforePrepareFromSkill type=SafeAction`1[[EventInfoSkillAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnLevelChanged type=SafeAction`1[[EventInfoHeroLevelUp, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=HeroEvent_OnDismantleItem type=SafeAction`1[[EventInfoDismantle, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dismantleProcessor type=DataProcessorGroup`3[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[Hero, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=accessories type=Mirror.SyncList`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=maxLevelOverride type=System.Nullable`1[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientHeroEvent_OnIsInCombatChanged type=SafeAction`1[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=icon type=UnityEngine.Sprite
-[v9.400] BACKSTEP runtime depth=3 field=mainColor type=UnityEngine.Color
-[v9.400] BACKSTEP runtime depth=3 field=classType type=Hero+HeroClassType
-[v9.400] BACKSTEP runtime depth=3 field=difficulty type=Hero+HeroDifficulty
-[v9.400] BACKSTEP runtime depth=3 field=decoConstellationPrefab type=UnityEngine.GameObject
-[v9.400] BACKSTEP runtime depth=3 field=disableDamageOverlay type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=excludeFromPool type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=cDisplayBaseAngle type=System.Single
-[v9.400] BACKSTEP runtime depth=3 field=cDestruction type=HeroConstellationSettings
-[v9.400] BACKSTEP runtime depth=3 field=cLife type=HeroConstellationSettings
-[v9.400] BACKSTEP runtime depth=3 field=cImagination type=HeroConstellationSettings
-[v9.400] BACKSTEP runtime depth=3 field=cFlexible type=HeroConstellationSettings
-[v9.400] BACKSTEP runtime depth=3 field=summons type=System.Collections.Generic.List`1[[Summon, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=isWeaponHolstered type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=_Mirror_SyncVarHookDelegate_<isInCombat>k__BackingField type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientEntityEvent_OnIsSleepingChanged type=SafeAction`1[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=_accumulatedSleepTime type=System.Single
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnTakeManaHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnTakeHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnTakeShield type=SafeAction`1[[EventInfoShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnTakeDamage type=SafeAction`1[[EventInfoDamage, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnDeath type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnGetManaSpent type=SafeAction`1[[EventInfoSpentMana, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackFired type=SafeAction`1[[EventInfoAttackFired, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackFiredBeforePrepare type=SafeAction`1[[EventInfoAttackFired, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackHit type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackTaken type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackMissed type=SafeAction`1[[EventInfoAttackMissed, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackDodged type=SafeAction`1[[EventInfoAttackMissed, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnDamageNegatedByImmunity type=SafeAction`1[[EventInfoDamageNegatedByImmunity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnDamageNegatedByShield type=SafeAction`1[[EventInfoDamageNegatedByShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientEntityEvent_OnStatusEffectAdded type=SafeAction`1[[EventInfoStatusEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientEntityEvent_OnStatusEffectRemoved type=SafeAction`1[[EventInfoStatusEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnAttackEffectTriggered type=SafeAction`1[[EventInfoAttackEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnCastStart type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnCastComplete type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=EntityEvent_OnCastCompleteBeforePrepare type=SafeAction`1[[EventInfoCast, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=takenDamageProcessor type=DataProcessorGroup`3[[DamageData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=takenHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=takenManaHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=takenShieldProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=_staggerSettings type=Entity+StaggerSettings
-[v9.400] BACKSTEP runtime depth=3 field=_sections type=System.Collections.Generic.List`1[[RoomSection, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=_skinSkillProcessor type=DataProcessor`3[[VariantDef, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.Type, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=_skinVisualVariantId type=System.Int32
-[v9.400] BACKSTEP runtime depth=3 field=_wasStuckCounter type=System.Int32
-[v9.400] BACKSTEP runtime depth=3 field=_stuckCheckVersion type=System.Int32
-[v9.400] BACKSTEP runtime depth=3 field=____ownerNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=3 field=_Mirror_SyncVarHookDelegate_<isSleeping>k__BackingField type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=children type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=childrenInNetwork type=System.Collections.Generic.List`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=_didPrepare type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=_didCallCreate type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=_didCallDestroy type=System.Boolean
-[v9.400] BACKSTEP runtime depth=3 field=persistentData type=System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=persistentSyncedData type=Mirror.SyncDictionary`2[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientEvent_OnPersistentSyncedDataChanged type=SafeAction`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnAbilityInstanceCreated type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnAbilityInstanceBeforePrepare type=SafeAction`1[[EventInfoAbilityInstance, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnDealDamage type=SafeAction`1[[EventInfoDamage, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnDoHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnDoManaHeal type=SafeAction`1[[EventInfoHeal, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnSpendMana type=SafeAction`1[[EventInfoSpentMana, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnKill type=SafeAction`1[[EventInfoKill, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnAttackHit type=SafeAction`1[[EventInfoAttackHit, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnAttackEffectTriggered type=SafeAction`1[[EventInfoAttackEffect, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnSpawnSummon type=SafeAction`1[[EventInfoSummon, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnApplyElemental type=SafeAction`1[[EventInfoApplyElemental, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ActorEvent_OnGiveShield type=SafeAction`1[[EventInfoShield, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientActorEvent_OnDestroyed type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=ClientActorEvent_OnCreate type=SafeAction`1[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtDamageProcessor type=DataProcessorGroup`3[[DamageData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtManaHealProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtShieldProcessor type=DataProcessorGroup`3[[HealData, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Entity, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtCooldownReductionProcessor type=DataProcessorGroup`3[[CooldownReductionSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=dealtCooldownReductionByRatioProcessor type=DataProcessorGroup`3[[CooldownReductionByRatioSettings, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[AbilityTrigger, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=spawnedChildVarDefProcessor type=DataProcessorGroup`3[[VariantDef, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.Type, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=____parentActorNetId type=Mirror.NetworkBehaviourSyncVar
-[v9.400] BACKSTEP runtime depth=3 field=_Mirror_SyncVarHookDelegate__parentActor type=System.Action`2[[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[Actor, Dew.Core, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=_Mirror_SyncVarHookDelegate__isActive type=System.Action`2[[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
-[v9.400] BACKSTEP runtime depth=3 field=syncDirection type=Mirror.SyncDirection
-[v9.400] BACKSTEP runtime depth=3 field=syncMode type=Mirror.SyncMode
-[v9.400] BACKSTEP runtime depth=3 field=syncInterval type=System.Single
-[v9.400] BACKSTEP runtime depth=3 field=lastSyncTime type=System.Double
-[v9.400] BACKSTEP runtime depth=3 field=syncObjects type=System.Collections.Generic.List`1[[Mirror.SyncObject, Mirror, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]
-[v9.400] BACKSTEP runtime depth=3 field=syncObjectDirtyBits type=System.UInt64
-[v9.400] BACKSTEP runtime depth=0 actor=type=Ai_C_BackStep_Bomb name=Ai_C_BackStep_Bomb(Adjusted)(Clone)
-[v9.400] BACKSTEP runtime depth=0 field=dmgFactor type=ScalingValue
-[v9.400] BACKSTEP runtime depth=0 scalingField=dmgFactor ad=0 ap=1.68 hp=0 result=Ap
-[v9.400] BACKSTEP scaling stage=generic result=Ap
-[v9.400] BACKSTEP resolver runtimeFallback=Ap
-[v9.400] BACKSTEP resolver FINAL=Ap cached=YES
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400][DPS Meter] RESULT-CALLBACK fired count=6 result-type=DewGameResult
-[v9.400][DPS Meter] RESULT-VALUE field=runId type=String value=<null>
-[v9.400][DPS Meter] RESULT-VALUE field=result type=ResultType value=Conceded
-[v9.400][DPS Meter] RESULT-VALUE field=startTimestamp type=Int64 value=0
-[v9.400][DPS Meter] RESULT-VALUE field=elapsedGameTimeSeconds type=Int32 value=203
-[v9.400][DPS Meter] RESULT-VALUE field=visitedWorlds type=Int32 value=1
-[v9.400][DPS Meter] RESULT-VALUE field=visitedLocations type=Int32 value=7
-[v9.400][DPS Meter] RESULT-VALUE field=difficulty type=String value=diffLimbo
-[v9.400][DPS Meter] RESULT-VALUE field=limboDepth type=Int32 value=3
-[v9.400][DPS Meter] RESULT-VALUE field=players type=List`1 value=<List`1>
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400] BACKSTEP resolver cache=HIT identity=E value=Ap
-[v9.400][DPS Meter] RESULT-CALLBACK fired count=7 result-type=DewGameResult
-[v9.400][DPS Meter] RESULT-VALUE field=runId type=String value=<null>
-[v9.400][DPS Meter] RESULT-VALUE field=result type=ResultType value=Conceded
-[v9.400][DPS Meter] RESULT-VALUE field=startTimestamp type=Int64 value=0
-[v9.400][DPS Meter] RESULT-VALUE field=elapsedGameTimeSeconds type=Int32 value=239
-[v9.400][DPS Meter] RESULT-VALUE field=visitedWorlds type=Int32 value=1
-[v9.400][DPS Meter] RESULT-VALUE field=visitedLocations type=Int32 value=8
-[v9.400][DPS Meter] RESULT-VALUE field=difficulty type=String value=diffLimbo
-[v9.400][DPS Meter] RESULT-VALUE field=limboDepth type=Int32 value=3
-[v9.400][DPS Meter] RESULT-VALUE field=players type=List`1 value=<List`1>
-[v9.400][DPS Meter] RESULT-CALLBACK fired count=8 result-type=DewGameResult
-[v9.400][DPS Meter] RESULT-VALUE field=runId type=String value=<null>
-[v9.400][DPS Meter] RESULT-VALUE field=result type=ResultType value=Conceded
-[v9.400][DPS Meter] RESULT-VALUE field=startTimestamp type=Int64 value=0
-[v9.400][DPS Meter] RESULT-VALUE field=elapsedGameTimeSeconds type=Int32 value=262
-[v9.400][DPS Meter] RESULT-VALUE field=visitedWorlds type=Int32 value=1
-[v9.400][DPS Meter] RESULT-VALUE field=visitedLocations type=Int32 value=9
-[v9.400][DPS Meter] RESULT-VALUE field=difficulty type=String value=diffLimbo
-[v9.400][DPS Meter] RESULT-VALUE field=limboDepth type=Int32 value=3
-[v9.400][DPS Meter] RESULT-VALUE field=players type=List`1 value=<List`1>
-[v9.400][DPS Meter] RESULT-CALLBACK fired count=9 result-type=DewGameResult
-[v9.400][DPS Meter] RESULT-VALUE field=runId type=String value=<null>
-[v9.400][DPS Meter] RESULT-VALUE field=result type=ResultType value=Conceded
-[v9.400][DPS Meter] RESULT-VALUE field=startTimestamp type=Int64 value=0
-[v9.400][DPS Meter] RESULT-VALUE field=elapsedGameTimeSeconds type=Int32 value=280
-[v9.400][DPS Meter] RESULT-VALUE field=visitedWorlds type=Int32 value=1
-[v9.400][DPS Meter] RESULT-VALUE field=visitedLocations type=Int32 value=10
-[v9.400][DPS Meter] RESULT-VALUE field=difficulty type=String value=diffLimbo
-[v9.400][DPS Meter] RESULT-VALUE field=limboDepth type=Int32 value=3
-[v9.400][DPS Meter] RESULT-VALUE field=players type=List`1 value=<List`1>
-[v9.400][DPS Meter] RESULT-CALLBACK fired count=10 result-type=DewGameResult
-[v9.400][DPS Meter] RESULT-VALUE field=runId type=String value=<null>
-[v9.400][DPS Meter] RESULT-VALUE field=result type=ResultType value=Conceded
-[v9.400][DPS Meter] RESULT-VALUE field=startTimestamp type=Int64 value=0
-[v9.400][DPS Meter] RESULT-VALUE field=elapsedGameTimeSeconds type=Int32 value=315
-[v9.400][DPS Meter] RESULT-VALUE field=visitedWorlds type=Int32 value=1
-[v9.400][DPS Meter] RESULT-VALUE field=visitedLocations type=Int32 value=11
-[v9.400][DPS Meter] RESULT-VALUE field=difficulty type=String value=diffLimbo
-[v9.400][DPS Meter] RESULT-VALUE field=limboDepth type=Int32 value=3
-[v9.400][DPS Meter] RESULT-VALUE field=players type=List`1 value=<List`1>
+[v15.100][DPS Meter] RUN-HISTORY loaded count=8 file-count=8 chars=39570 path=C:/Users/hlai/AppData/LocalLow/Lizard Smoothie/Shape of Dreams\DPSMeter-run-history.json
+[v15.100][DPS Meter] UI input blocker initialized
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemCetus texture=texEmblemCetus rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemHusk texture=texEmblemHusk rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=Tex Emblem Nachia texture=Tex Emblem Nachia rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=Tex Emblem Bismuth texture=Tex Emblem Bismuth rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemAurena texture=texEmblemAurena rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemVesper texture=texEmblemVesper rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemYubar texture=texEmblemYubar rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemLacerta texture=texEmblemLacerta rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Mist sprite=Star_Mist texture=Star_Mist rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Husk sprite=Star_Husk texture=Star_Husk rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Emblem Corner Frame sprite=Emblem coner UI texture=Emblem coner UI rect=511x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Bismuth sprite=Star_Bismuth texture=Star_Bismuth rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Nachia sprite=Star_Nachia texture=Star_Nachia rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Aurena sprite=Star_Aurena texture=Star_Aurena rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Vesper sprite=Star_Vesper texture=Star_Vesper rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Cetus sprite=Star_Cetus texture=Star_Cetus rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Yubar sprite=Star_Yubar texture=Star_Yubar rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Vertical Lines sprite=Emblem vertical UI texture=Emblem vertical UI rect=354x1024 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Emblems sprite=BR_Simple_Background texture=BR_Simple_Background rect=64x64 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Yubar sprite=Star_Yubar texture=Star_Yubar rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Cetus sprite=Star_Cetus texture=Star_Cetus rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Lacerta sprite=Star_Lacerta texture=Star_Lacerta rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Lacerta sprite=Star_Lacerta texture=Star_Lacerta rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Vesper sprite=Star_Vesper texture=Star_Vesper rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Aurena sprite=Star_Aurena texture=Star_Aurena rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Husk sprite=Star_Husk texture=Star_Husk rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Emblems Button sprite=BR_Simple_Background texture=BR_Simple_Background rect=64x64 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Change Character Button sprite=BR_Simple_Background texture=BR_Simple_Background rect=64x64 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Bismuth sprite=Star_Bismuth texture=Star_Bismuth rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Nachia sprite=Star_Nachia texture=Star_Nachia rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Mist sprite=Star_Mist texture=Star_Mist rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=Tex Emblem Bismuth texture=Tex Emblem Bismuth rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI newly-referenced=212
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Emblems sprite=BR_Simple_Background texture=BR_Simple_Background rect=64x64 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Glow sprite=CSL_Character_Selected texture=sactx-0-4096x4096-Crunch-Atlas_InGame-4db2a7cf rect=128x128 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI newly-referenced=6
+[v15.100][DPS Meter] CONCLUSION subscribed manager=PlayGameManager active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=Tex Emblem Bismuth texture=Tex Emblem Bismuth rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Avatar sprite=Tex Emblem Bismuth texture=Tex Emblem Bismuth rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI newly-referenced=2
+[v15.100][DPS Meter] HERO ICON current=Tex Emblem Bismuth spriteRect=512x512 texture=Tex Emblem Bismuth textureSize=512x512 heroType=Hero_Bismuth
+[v15.100][DPS Meter] EMBLEM ASSET sprite=CSL_Character_Selected rect=128x128 texture=sactx-0-4096x4096-Crunch-Atlas_InGame-4db2a7cf textureSize=4096x4096
+[v15.100][DPS Meter] EMBLEM ASSET sprite=CSL_Character_Selected rect=128x128 texture=sactx-0-4096x4096-Crunch-Atlas_InGame-4db2a7cf textureSize=4096x4096
+[v15.100][DPS Meter] EMBLEM ASSET sprite=texEmblemCetus rect=512x512 texture=texEmblemCetus textureSize=512x512
+[v15.100][DPS Meter] EMBLEM ASSET sprite=Tex Emblem Bismuth rect=512x512 texture=Tex Emblem Bismuth textureSize=512x512
+[v15.100][DPS Meter] EMBLEM ASSET sprite=Tex Emblem Nachia rect=512x512 texture=Tex Emblem Nachia textureSize=512x512
+[v15.100][DPS Meter] EMBLEM ASSET sprite=texEmblemYubar rect=512x512 texture=texEmblemYubar textureSize=512x512
+[v15.100][DPS Meter] EMBLEM ASSET sprite=texEmblemHusk rect=512x512 texture=texEmblemHusk textureSize=512x512
+[v15.100][DPS Meter] EMBLEM ASSET sprite=texEmblemLacerta rect=512x512 texture=texEmblemLacerta textureSize=512x512
+[v15.100][DPS Meter] EMBLEM ASSET sprite=texEmblemVesper rect=512x512 texture=texEmblemVesper textureSize=512x512
+[v15.100][DPS Meter] EMBLEM ASSET sprite=texEmblemMist rect=512x512 texture=texEmblemMist textureSize=512x512
+[v15.100][DPS Meter] EMBLEM ASSET sprite=texEmblemAurena rect=512x512 texture=texEmblemAurena textureSize=512x512
+[v15.100][DPS Meter] EMBLEM ASSET sprite=texEmblemMist rect=512x512 texture=texEmblemMist textureSize=512x512
+[v15.100][DPS Meter] EMBLEM ASSET texture=texEmblemCetus size=512x512
+[v15.100][DPS Meter] EMBLEM ASSET texture=Tex Emblem Bismuth size=512x512
+[v15.100][DPS Meter] EMBLEM ASSET texture=Tex Emblem Nachia size=512x512
+[v15.100][DPS Meter] EMBLEM ASSET texture=texEmblemYubar size=512x512
+[v15.100][DPS Meter] EMBLEM ASSET texture=texEmblemHusk size=512x512
+[v15.100][DPS Meter] EMBLEM ASSET texture=texEmblemLacerta size=512x512
+[v15.100][DPS Meter] EMBLEM ASSET texture=texEmblemVesper size=512x512
+[v15.100][DPS Meter] EMBLEM ASSET texture=texEmblemMist size=512x512
+[v15.100][DPS Meter] EMBLEM ASSET texture=texEmblemAurena size=512x512
+[v15.100][DPS Meter] EMBLEM ASSET texture=texEmblemMist size=512x512
+[v15.100][DPS Meter] EMBLEM ASSET scan-complete sprites=1215 matching-sprites=12 textures=2389 matching-textures=10
+[v15.100][DPS Meter] HERO ICON sprite path=hero.icon sprite=Tex Emblem Bismuth texture=Tex Emblem Bismuth
+[v15.100][DPS Meter] HERO ICON scan-complete objects=9
+[v15.100][DPS Meter] RUN-HISTORY saved count=9 chars=45064 path=C:/Users/hlai/AppData/LocalLow/Lizard Smoothie/Shape of Dreams\DPSMeter-run-history.json
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=Tex Emblem Bismuth texture=Tex Emblem Bismuth rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI newly-referenced=1
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Mist sprite=Star_Mist texture=Star_Mist rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Husk sprite=Star_Husk texture=Star_Husk rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Emblem Corner Frame sprite=Emblem coner UI texture=Emblem coner UI rect=511x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Bismuth sprite=Star_Bismuth texture=Star_Bismuth rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Nachia sprite=Star_Nachia texture=Star_Nachia rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Aurena sprite=Star_Aurena texture=Star_Aurena rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Vesper sprite=Star_Vesper texture=Star_Vesper rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Cetus sprite=Star_Cetus texture=Star_Cetus rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Yubar sprite=Star_Yubar texture=Star_Yubar rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Vertical Lines sprite=Emblem vertical UI texture=Emblem vertical UI rect=354x1024 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Emblems sprite=BR_Simple_Background texture=BR_Simple_Background rect=64x64 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Yubar sprite=Star_Yubar texture=Star_Yubar rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Cetus sprite=Star_Cetus texture=Star_Cetus rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Lacerta sprite=Star_Lacerta texture=Star_Lacerta rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Lacerta sprite=Star_Lacerta texture=Star_Lacerta rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Vesper sprite=Star_Vesper texture=Star_Vesper rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Aurena sprite=Star_Aurena texture=Star_Aurena rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Husk sprite=Star_Husk texture=Star_Husk rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Emblems Button sprite=BR_Simple_Background texture=BR_Simple_Background rect=64x64 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Change Character Button sprite=BR_Simple_Background texture=BR_Simple_Background rect=64x64 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Bismuth sprite=Star_Bismuth texture=Star_Bismuth rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Nachia sprite=Star_Nachia texture=Star_Nachia rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Hero_Mist sprite=Star_Mist texture=Star_Mist rect=2048x2048 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=False
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemMist texture=texEmblemMist rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI newly-referenced=211
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemCetus texture=texEmblemCetus rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemHusk texture=texEmblemHusk rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=Tex Emblem Nachia texture=Tex Emblem Nachia rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=Tex Emblem Bismuth texture=Tex Emblem Bismuth rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemAurena texture=texEmblemAurena rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemVesper texture=texEmblemVesper rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemYubar texture=texEmblemYubar rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=texEmblemLacerta texture=texEmblemLacerta rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI component=UnityEngine.UI.Image object=Icon sprite=Tex Emblem Bismuth texture=Tex Emblem Bismuth rect=512x512 active=True
+[v15.100][DPS Meter] EMBLEM UI newly-referenced=9
