@@ -513,7 +513,8 @@ public sealed class DpsOverlay : MonoBehaviour
                 Color glowColor = GetRunCharacterOutlineColor(run);
                 Color.RGBToHSV(glowColor, out float glowHue, out float glowSaturation, out float glowValue);
                 // Raise brightness without blending toward white, preserving the outline's hue.
-                glowColor = Color.HSVToRGB(glowHue, glowSaturation, Mathf.Max(glowValue, 0.78f));
+                // Keep the glow darker than neon character colors so it adds edge contrast rather than haze.
+                glowColor = Color.HSVToRGB(glowHue, glowSaturation, Mathf.Min(glowValue, 0.55f));
                 GUI.color = glowColor;
 
                 // Several offset rings create a soft, broader halo rather than a thin edge stroke.
