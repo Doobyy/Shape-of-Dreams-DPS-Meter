@@ -185,8 +185,9 @@ public sealed class DpsOverlay : MonoBehaviour
         GUILayout.EndScrollView();
         GUILayout.EndArea();
 
-        if (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal ||
-            _mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
+        if (_selectedRunRecord == null &&
+            (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal ||
+             _mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal))
         {
             Rect breakdownRect = new Rect(
                 _windowRect.x + 6f,
