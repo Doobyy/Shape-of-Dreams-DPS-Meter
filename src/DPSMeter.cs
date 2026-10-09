@@ -66,7 +66,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v15.300";
+    public const string DevelopmentVersion = "v15.400";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -76,6 +76,7 @@ public sealed class DPSMeter : ModBehaviour
     private DpsOverlay _overlay;
     private bool _subscribed;
     private Hero _currentHero;
+    private Hero _lastCharacterColorProbeHero;
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
@@ -126,6 +127,122 @@ public sealed class DPSMeter : ModBehaviour
         {
             Debug.Log("[DPS Meter] Failed to clear debug log: " + ex.GetType().Name);
         }
+    }
+
+
+    private void Update()
+    {
+        DewPlayer local = DewPlayer.local;
+        Hero hero = local == null ? null : local.hero;
+        if (hero == null || hero == _lastCharacterColorProbeHero)
+            return;
+
+        _lastCharacterColorProbeHero = hero;
+        TraceCharacterColorData(hero);
+    }
+
+    private static void TraceCharacterColorData(Hero hero)
+    {
+        if (hero == null)
+            return;
+
+        string label = "[" + DevelopmentVersion + "][DPS Meter] CHARACTER-COLOR";
+        WriteDebugLog(label + " begin heroType=" + hero.GetType().FullName
+            + " objectName=" + hero.name
+            + " displayName=" + GetLocalHeroDisplayName()
+            + " expectedBismuthReference=#D86EFE");
+
+        int logged = 0;
+        HashSet<object> visited = new HashSet<object>();
+        TraceCharacterColorMembers(hero, label, ref logged, visited);
+
+        Component heroComponent = hero as Component;
+        if (heroComponent != null && heroComponent.gameObject != null)
+        {
+            Component[] components = heroComponent.gameObject.GetComponents<Component>();
+            for (int i = 0; components != null && i < components.Length && logged < 60; i++)
+            {
+                Component component = components[i];
+                if (component == null || ReferenceEquals(component, hero))
+                    continue;
+
+                WriteDebugLog(label + " componentType=" + component.GetType().FullName
+                    + " objectName=" + component.name);
+                TraceCharacterColorMembers(component, label, ref logged, visited);
+            }
+        }
+
+        WriteDebugLog(label + " end matchingMembers=" + logged);
+    }
+
+    private static void TraceCharacterColorMembers(object target, string label, ref int logged, HashSet<object> visited)
+    {
+        if (target == null || logged >= 60 || !visited.Add(target))
+            return;
+
+        Type type = target.GetType();
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+        for (Type current = type; current != null && current != typeof(object) && logged < 60; current = current.BaseType)
+        {
+            FieldInfo[] fields;
+            try { fields = current.GetFields(flags); }
+            catch (Exception) { continue; }
+
+            for (int i = 0; fields != null && i < fields.Length && logged < 60; i++)
+            {
+                FieldInfo field = fields[i];
+                if (field == null || field.IsStatic) continue;
+                object value;
+                try { value = field.GetValue(target); }
+                catch (Exception) { continue; }
+                LogCharacterColorMember(field.Name, field.FieldType, value, label, ref logged);
+            }
+
+            PropertyInfo[] properties;
+            try { properties = current.GetProperties(flags); }
+            catch (Exception) { continue; }
+
+            for (int i = 0; properties != null && i < properties.Length && logged < 60; i++)
+            {
+                PropertyInfo property = properties[i];
+                if (property == null || property.GetIndexParameters().Length != 0) continue;
+                MethodInfo getter = property.GetGetMethod(true);
+                if (getter == null || getter.IsStatic || getter.GetParameters().Length != 0) continue;
+
+                bool interestingName = IsColorRelatedName(property.Name);
+                bool interestingType = property.PropertyType == typeof(Color) || property.PropertyType == typeof(Color32);
+                if (!interestingName && !interestingType) continue;
+
+                object value;
+                try { value = property.GetValue(target, null); }
+                catch (Exception) { continue; }
+                LogCharacterColorMember(property.Name, property.PropertyType, value, label, ref logged);
+            }
+        }
+    }
+
+    private static void LogCharacterColorMember(string memberName, Type memberType, object value, string label, ref int logged)
+    {
+        if (logged >= 60 || memberType == null) return;
+        bool colorType = memberType == typeof(Color) || memberType == typeof(Color32);
+        if (!colorType && !IsColorRelatedName(memberName)) return;
+
+        string rendered = value == null ? "<null>" : value.ToString();
+        WriteDebugLog(label + " member=" + memberName
+            + " declaredType=" + memberType.FullName
+            + " value=[" + rendered + "]");
+        logged++;
+    }
+
+    private static bool IsColorRelatedName(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return false;
+        return name.IndexOf("color", StringComparison.OrdinalIgnoreCase) >= 0
+            || name.IndexOf("colour", StringComparison.OrdinalIgnoreCase) >= 0
+            || name.IndexOf("tint", StringComparison.OrdinalIgnoreCase) >= 0
+            || name.IndexOf("accent", StringComparison.OrdinalIgnoreCase) >= 0
+            || name.IndexOf("palette", StringComparison.OrdinalIgnoreCase) >= 0
+            || name.IndexOf("theme", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private void Awake()
