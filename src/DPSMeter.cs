@@ -66,7 +66,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v14.900";
+    public const string DevelopmentVersion = "v15.000";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -845,7 +845,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private static bool _heroIconReferencesLogged;
     private float _nextEmblemAssetProbeTime;
-    private readonly HashSet<string> _loggedEmblemAssetNames = new HashSet<string>();
+    private readonly HashSet<string> _loggedEmblemUiReferences = new HashSet<string>();
 
     private void Update()
     {
@@ -853,70 +853,76 @@ public sealed class DPSMeter : ModBehaviour
             return;
 
         _nextEmblemAssetProbeTime = Time.realtimeSinceStartup + 2f;
-        TraceNewlyLoadedEmblemAssets();
+        TraceRuntimeEmblemReferences();
     }
 
-    private void TraceNewlyLoadedEmblemAssets()
+    private void TraceRuntimeEmblemReferences()
     {
-        int newSprites = 0;
-        int newTextures = 0;
-
+        int newlyLogged = 0;
         try
         {
-            Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
-            for (int i = 0; sprites != null && i < sprites.Length; i++)
+            Component[] components = Resources.FindObjectsOfTypeAll<Component>();
+            for (int i = 0; components != null && i < components.Length; i++)
             {
-                Sprite sprite = sprites[i];
-                if (sprite == null || !IsEmblemRelatedAssetName(sprite.name))
+                Component component = components[i];
+                if (component == null)
                     continue;
 
-                Texture2D texture = sprite.texture;
-                string key = "sprite|" + sprite.name + "|" + (texture == null ? "<null>" : texture.name);
-                if (!_loggedEmblemAssetNames.Add(key))
+                Type type = component.GetType();
+                string typeName = type.Name;
+                if (typeName.IndexOf("Image", StringComparison.OrdinalIgnoreCase) < 0
+                    && typeName.IndexOf("Portrait", StringComparison.OrdinalIgnoreCase) < 0
+                    && typeName.IndexOf("Emblem", StringComparison.OrdinalIgnoreCase) < 0
+                    && typeName.IndexOf("Character", StringComparison.OrdinalIgnoreCase) < 0
+                    && typeName.IndexOf("Hero", StringComparison.OrdinalIgnoreCase) < 0)
                     continue;
 
-                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM LIVE sprite="
-                    + sprite.name + " rect=" + sprite.rect.width + "x" + sprite.rect.height
-                    + " texture=" + (texture == null ? "<null>" : texture.name)
-                    + " textureSize=" + (texture == null ? "<null>" : texture.width + "x" + texture.height));
-                newSprites++;
+                Sprite sprite = null;
+                try
+                {
+                    PropertyInfo spriteProperty = type.GetProperty("sprite",
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (spriteProperty != null && typeof(Sprite).IsAssignableFrom(spriteProperty.PropertyType)
+                        && spriteProperty.GetIndexParameters().Length == 0)
+                        sprite = spriteProperty.GetValue(component, null) as Sprite;
+
+                    if (sprite == null)
+                    {
+                        FieldInfo spriteField = type.GetField("sprite",
+                            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        if (spriteField != null && typeof(Sprite).IsAssignableFrom(spriteField.FieldType))
+                            sprite = spriteField.GetValue(component) as Sprite;
+                    }
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                if (sprite == null)
+                    continue;
+
+                string objectName = component.gameObject == null ? "<no-game-object>" : component.gameObject.name;
+                string textureName = sprite.texture == null ? "<null>" : sprite.texture.name;
+                string key = component.GetInstanceID() + "|" + type.FullName + "|" + objectName
+                    + "|" + sprite.name + "|" + textureName;
+                if (!_loggedEmblemUiReferences.Add(key))
+                    continue;
+
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM UI component="
+                    + type.FullName + " object=" + objectName + " sprite=" + sprite.name
+                    + " texture=" + textureName + " rect=" + sprite.rect.width + "x" + sprite.rect.height
+                    + " active=" + component.gameObject.activeInHierarchy);
+                newlyLogged++;
             }
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM LIVE sprite-scan-error="
-                + ex.GetType().Name);
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM UI scan-error=" + ex.GetType().Name);
         }
 
-        try
-        {
-            Texture2D[] textures = Resources.FindObjectsOfTypeAll<Texture2D>();
-            for (int i = 0; textures != null && i < textures.Length; i++)
-            {
-                Texture2D texture = textures[i];
-                if (texture == null || !IsEmblemRelatedAssetName(texture.name))
-                    continue;
-
-                string key = "texture|" + texture.name + "|" + texture.width + "x" + texture.height;
-                if (!_loggedEmblemAssetNames.Add(key))
-                    continue;
-
-                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM LIVE texture="
-                    + texture.name + " size=" + texture.width + "x" + texture.height);
-                newTextures++;
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM LIVE texture-scan-error="
-                + ex.GetType().Name);
-        }
-
-        if (newSprites > 0 || newTextures > 0)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM LIVE newly-loaded"
-                + " sprites=" + newSprites + " textures=" + newTextures);
-        }
+        if (newlyLogged > 0)
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM UI newly-referenced=" + newlyLogged);
     }
 
     private static void TraceHeroIconReferences(object hero, Sprite currentIcon)
