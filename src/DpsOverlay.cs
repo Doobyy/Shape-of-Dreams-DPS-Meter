@@ -91,7 +91,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Sprite _basicAttackIcon;
     private Vector2 _historyScroll;
     private bool _showRunHistory;
-    private const float HistoryPanelWidth = 210f;
+    private const float HistoryPanelWidth = 192f;
 
     public bool Visible { get; set; } = true;
 
@@ -287,14 +287,10 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.Box(panel, GUIContent.none);
         const float padding = 6f;
         const float rowHeight = 38f;
-        Rect collapseRect = new Rect(panel.xMax - 22f, panel.y + 3f, 18f, 18f);
-        if (GUI.Button(collapseRect, "‹"))
-            _showRunHistory = false;
-
         Rect listRect = new Rect(panel.x + padding, panel.y + 5f,
             panel.width - padding * 2f, panel.height - 10f);
         float contentHeight = rowHeight * (1 + _data.CompletedRuns.Count);
-        Rect viewRect = new Rect(0f, 0f, listRect.width - 14f,
+        Rect viewRect = new Rect(0f, 0f, listRect.width,
             Mathf.Max(listRect.height, contentHeight));
         _historyScroll = GUI.BeginScrollView(listRect, _historyScroll, viewRect);
 
@@ -343,11 +339,23 @@ public sealed class DpsOverlay : MonoBehaviour
             GUI.color = Color.white;
         }
 
-        if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
+        Rect clickRect = rect;
+        float closeButtonWidth = isCurrent ? 20f : 0f;
+        if (isCurrent)
+            clickRect.width = Mathf.Max(0f, rect.width - closeButtonWidth);
+
+        if (GUI.Button(clickRect, GUIContent.none, GUIStyle.none))
             _selectedRunRecord = isCurrent ? null : run;
 
-        GUI.Label(new Rect(rect.x, rect.y, rect.width, 17f), line1, _row);
+        GUI.Label(new Rect(rect.x, rect.y, rect.width - closeButtonWidth, 17f), line1, _row);
         GUI.Label(new Rect(rect.x, rect.y + 16f, rect.width, 17f), line2, _row);
+
+        if (isCurrent)
+        {
+            Rect closeButtonRect = new Rect(rect.xMax - 18f, rect.y + 1f, 16f, 16f);
+            if (GUI.Button(closeButtonRect, "X"))
+                _showRunHistory = false;
+        }
 
         if (drawSeparator)
         {
