@@ -74,9 +74,9 @@ public sealed class DpsOverlay : MonoBehaviour
     private Texture2D _whiteTexture;
     private Sprite _basicAttackIcon;
     private Vector2 _historyScroll;
-    private DpsData.RunRecord _selectedRunRecord;
-    private const float HistoryPanelWidth = 270f;
-    private const float HistoryPanelHeight = 360f;
+    private bool _showRunHistory;
+    private const float HistoryPanelWidth = 210f;
+    private const float HistoryPanelHeight = 180f;
 
     public bool Visible { get; set; } = true;
 
@@ -226,7 +226,10 @@ public sealed class DpsOverlay : MonoBehaviour
             DrawSettingsWindow();
         }
 
-        DrawRunHistoryPanel();
+        if (_showRunHistory)
+        {
+            DrawRunHistoryPanel();
+        }
     }
 
     private void DrawRunHistoryPanel()
@@ -236,86 +239,53 @@ public sealed class DpsOverlay : MonoBehaviour
             DPSMeter.Instance.RefreshActiveRunSummaryForDisplay();
         }
 
-        float panelX = _windowRect.xMax + 8f;
-        if (panelX + HistoryPanelWidth > Screen.width - 4f)
-        {
-            panelX = _windowRect.x - HistoryPanelWidth - 8f;
-        }
-        panelX = Mathf.Clamp(panelX, 4f, Mathf.Max(4f, Screen.width - HistoryPanelWidth - 4f));
-        float panelY = Mathf.Clamp(_windowRect.y, 4f, Mathf.Max(4f, Screen.height - HistoryPanelHeight - 4f));
-        float panelHeight = Mathf.Min(HistoryPanelHeight, Mathf.Max(240f, Screen.height - panelY - 4f));
-        Rect panel = new Rect(panelX, panelY, HistoryPanelWidth, panelHeight);
+        float panelX = Mathf.Clamp(_windowRect.xMax + 4f, 4f,
+            Mathf.Max(4f, Screen.width - HistoryPanelWidth - 4f));
+        float panelY = Mathf.Clamp(_windowRect.y, 4f,
+            Mathf.Max(4f, Screen.height - HistoryPanelHeight - 4f));
+        Rect panel = new Rect(panelX, panelY, HistoryPanelWidth, HistoryPanelHeight);
         GUI.Box(panel, GUIContent.none);
 
-        GUI.Label(new Rect(panel.x + 10f, panel.y + 7f, 150f, 20f), "RUN HISTORY", _header);
-        if (_selectedRunRecord != null && GUI.Button(new Rect(panel.xMax - 78f, panel.y + 7f, 68f, 20f), "Live Run"))
+        const float padding = 6f;
+        const float rowHeight = 34f;
+        Rect collapseRect = new Rect(panel.xMax - 22f, panel.y + 3f, 18f, 18f);
+        if (GUI.Button(collapseRect, "‹"))
         {
-            _selectedRunRecord = null;
+            _showRunHistory = false;
         }
 
-        DpsData.RunRecord active = _data.ActiveRun;
-        float currentY = panel.y + 31f;
-        GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 18f), "CURRENT RUN", _header);
-        currentY += 19f;
-        if (active == null)
-        {
-            GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f), "Awaiting next run", _small);
-        }
-        else
-        {
-            GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
-                "Character: " + (string.IsNullOrEmpty(active.CharacterName) ? "Unknown Character" : active.CharacterName), _small);
-            currentY += 16f;
-            GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
-                "Visited: " + active.WorldsVisited + " Worlds  " + active.MapsVisited + " Maps", _small);
-            currentY += 16f;
-            GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
-                "Damage: " + FormatNumber(active.TotalDamage), _small);
-            currentY += 16f;
-            GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
-                "Duration: " + FormatDuration(active.DurationSeconds), _small);
-        }
-
-        float listHeaderY = panel.y + 135f;
-        GUI.Label(new Rect(panel.x + 10f, listHeaderY, panel.width - 20f, 18f),
-            "COMPLETED RUNS (" + _data.CompletedRuns.Count + "/10)", _header);
-        float detailsHeight = _selectedRunRecord == null ? 0f : 62f;
-        float listY = listHeaderY + 20f;
-        float listHeight = Mathf.Max(50f, panel.yMax - listY - 10f - detailsHeight);
-        Rect listRect = new Rect(panel.x + 7f, listY, panel.width - 14f, listHeight);
-        float rowHeight = 43f;
-        float contentHeight = Mathf.Max(listRect.height, _data.CompletedRuns.Count * rowHeight);
-        Rect viewRect = new Rect(0f, 0f, listRect.width - 16f, contentHeight);
+        Rect listRect = new Rect(panel.x + padding, panel.y + 5f,
+            panel.width - padding * 2f, panel.height - 10f);
+        float contentHeight = rowHeight * (1 + _data.CompletedRuns.Count);
+        Rect viewRect = new Rect(0f, 0f, listRect.width - 14f,
+            Mathf.Max(listRect.height, contentHeight));
         _historyScroll = GUI.BeginScrollView(listRect, _historyScroll, viewRect);
+
+        float y = 0f;
+        DpsData.RunRecord active = _data.ActiveRun;
+        string activeCharacter = active == null || string.IsNullOrEmpty(active.CharacterName)
+            ? "Unknown Character" : active.CharacterName;
+        GUI.Label(new Rect(0f, y, viewRect.width, 17f), "CURRENT  " + activeCharacter, _row);
+        string activeLine2 = active == null ? "Awaiting next run" :
+            FormatNumber(active.TotalDamage) + "  " + FormatDuration(active.DurationSeconds) +
+            "  Visited: " + active.WorldsVisited + " Worlds " + active.MapsVisited + " Maps";
+        GUI.Label(new Rect(0f, y + 16f, viewRect.width, 17f), activeLine2, _row);
+        y += rowHeight;
+
         for (int i = 0; i < _data.CompletedRuns.Count; i++)
         {
             DpsData.RunRecord run = _data.CompletedRuns[i];
             if (run == null) continue;
-            Rect row = new Rect(0f, i * rowHeight, viewRect.width, rowHeight - 3f);
             string character = string.IsNullOrEmpty(run.CharacterName) ? "Unknown Character" : run.CharacterName;
-            string label = character + "  |  " + FormatNumber(run.TotalDamage) +
-                "\n" + FormatDuration(run.DurationSeconds) + "  •  Visited: " +
-                run.WorldsVisited + " Worlds  " + run.MapsVisited + " Maps";
-            if (GUI.Button(row, label))
-            {
-                _selectedRunRecord = run;
-            }
+            GUI.Label(new Rect(0f, y, viewRect.width, 17f),
+                character + "  " + FormatNumber(run.TotalDamage), _row);
+            GUI.Label(new Rect(0f, y + 16f, viewRect.width, 17f),
+                FormatDuration(run.DurationSeconds) + "  Visited: " +
+                run.WorldsVisited + " Worlds " + run.MapsVisited + " Maps", _row);
+            y += rowHeight;
         }
-        GUI.EndScrollView();
 
-        if (_selectedRunRecord != null)
-        {
-            float detailY = panel.yMax - detailsHeight - 5f;
-            GUI.Label(new Rect(panel.x + 10f, detailY, panel.width - 20f, 16f),
-                (_selectedRunRecord.CharacterName ?? "Unknown Character") + " — " +
-                (_selectedRunRecord.Outcome ?? "Concluded"), _header);
-            GUI.Label(new Rect(panel.x + 10f, detailY + 17f, panel.width - 20f, 16f),
-                "Damage: " + FormatNumber(_selectedRunRecord.TotalDamage) +
-                "   Time: " + FormatDuration(_selectedRunRecord.DurationSeconds), _small);
-            GUI.Label(new Rect(panel.x + 10f, detailY + 33f, panel.width - 20f, 16f),
-                "Visited: " + _selectedRunRecord.WorldsVisited + " Worlds  " +
-                _selectedRunRecord.MapsVisited + " Maps", _small);
-        }
+        GUI.EndScrollView();
     }
 
     private static string FormatDuration(float seconds)
@@ -364,8 +334,8 @@ public sealed class DpsOverlay : MonoBehaviour
 
             if (_windowRect.Contains(e.mousePosition))
             {
-                const float menuWidth = 78f;
-                const float menuHeight = 92f;
+                const float menuWidth = 100f;
+                const float menuHeight = 120f;
                 const float menuGap = 4f;
 
                 _contextMenuOpen = false;
@@ -777,7 +747,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
         const float padding = 4f;
         const float rowHeight = 28f;
-        const float rowWidth = 70f;
+        const float rowWidth = 92f;
 
         Rect settingsRect = new Rect(
             _contextMenuRect.x + padding,
@@ -797,11 +767,18 @@ public sealed class DpsOverlay : MonoBehaviour
             rowWidth,
             rowHeight);
 
+        Rect historyRect = new Rect(
+            exportRect.x,
+            exportRect.yMax,
+            rowWidth,
+            rowHeight);
+
         Event e = Event.current;
 
         DrawContextMenuRow(settingsRect, "Settings");
         DrawContextMenuRow(reloadRect, "Reload");
         DrawContextMenuRow(exportRect, "Export");
+        DrawContextMenuRow(historyRect, "Run History");
 
         if (e.type == EventType.MouseDown && e.button == 0)
         {
@@ -821,6 +798,12 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 _contextMenuOpen = false;
                 ExportHealingLog();
+                e.Use();
+            }
+            else if (historyRect.Contains(e.mousePosition))
+            {
+                _contextMenuOpen = false;
+                _showRunHistory = !_showRunHistory;
                 e.Use();
             }
         }
