@@ -9,15 +9,37 @@ using UnityEngine;
 
 namespace DPSMeter;
 
-[Serializable]
+[DataContract]
 public sealed class RunHistorySaveData
 {
-    public List<DpsData.RunRecord> Runs = new List<DpsData.RunRecord>();
+    [DataMember]
+    public List<RunHistoryRecord> Runs = new List<RunHistoryRecord>();
+}
+
+[DataContract]
+public sealed class RunHistoryRecord
+{
+    [DataMember] public string CharacterName;
+    [DataMember] public string Outcome;
+    [DataMember] public float TotalDamage;
+    [DataMember] public float DurationSeconds;
+    [DataMember] public int WorldsVisited;
+    [DataMember] public int MapsVisited;
+    [DataMember] public string CompletedAt;
+    [DataMember] public List<RunHistoryBreakdownRow> BreakdownRows = new List<RunHistoryBreakdownRow>();
+}
+
+[DataContract]
+public sealed class RunHistoryBreakdownRow
+{
+    [DataMember] public string Category;
+    [DataMember] public string Name;
+    [DataMember] public float Amount;
 }
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v11.200";
+    public const string DevelopmentVersion = "v11.300";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -268,11 +290,47 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             string json = File.ReadAllText(_runHistoryPath);
-            RunHistorySaveData saved = JsonUtility.FromJson<RunHistorySaveData>(json);
-            int loadedCount = saved == null || saved.Runs == null ? 0 : saved.Runs.Count;
-            if (saved != null) _data.LoadCompletedRuns(saved.Runs);
+            RunHistorySaveData saved;
+            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                saved = (RunHistorySaveData)new DataContractJsonSerializer(typeof(RunHistorySaveData)).ReadObject(stream);
+
+            List<DpsData.RunRecord> records = new List<DpsData.RunRecord>();
+            if (saved != null && saved.Runs != null)
+            {
+                for (int i = 0; i < saved.Runs.Count; i++)
+                {
+                    RunHistoryRecord source = saved.Runs[i];
+                    if (source == null) continue;
+                    DpsData.RunRecord record = new DpsData.RunRecord
+                    {
+                        CharacterName = source.CharacterName,
+                        Outcome = source.Outcome,
+                        TotalDamage = source.TotalDamage,
+                        DurationSeconds = source.DurationSeconds,
+                        WorldsVisited = source.WorldsVisited,
+                        MapsVisited = source.MapsVisited,
+                        CompletedAt = source.CompletedAt
+                    };
+                    if (source.BreakdownRows != null)
+                    {
+                        for (int j = 0; j < source.BreakdownRows.Count; j++)
+                        {
+                            RunHistoryBreakdownRow row = source.BreakdownRows[j];
+                            if (row != null)
+                                record.BreakdownRows.Add(new DpsData.RunBreakdownRow
+                                {
+                                    Category = row.Category,
+                                    Name = row.Name,
+                                    Amount = row.Amount
+                                });
+                        }
+                    }
+                    records.Add(record);
+                }
+            }
+            _data.LoadCompletedRuns(records);
             WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY loaded count="
-                + _data.CompletedRuns.Count + " file-count=" + loadedCount + " chars=" + json.Length
+                + _data.CompletedRuns.Count + " file-count=" + records.Count + " chars=" + json.Length
                 + " path=" + _runHistoryPath);
         }
         catch (Exception ex)
@@ -287,11 +345,46 @@ public sealed class DPSMeter : ModBehaviour
         try
         {
             RunHistorySaveData saved = new RunHistorySaveData();
-            for (int i = 0; i < _data.CompletedRuns.Count; i++) saved.Runs.Add(_data.CompletedRuns[i]);
+            for (int i = 0; i < _data.CompletedRuns.Count; i++)
+            {
+                DpsData.RunRecord source = _data.CompletedRuns[i];
+                if (source == null) continue;
+                RunHistoryRecord record = new RunHistoryRecord
+                {
+                    CharacterName = source.CharacterName,
+                    Outcome = source.Outcome,
+                    TotalDamage = source.TotalDamage,
+                    DurationSeconds = source.DurationSeconds,
+                    WorldsVisited = source.WorldsVisited,
+                    MapsVisited = source.MapsVisited,
+                    CompletedAt = source.CompletedAt
+                };
+                if (source.BreakdownRows != null)
+                {
+                    for (int j = 0; j < source.BreakdownRows.Count; j++)
+                    {
+                        DpsData.RunBreakdownRow row = source.BreakdownRows[j];
+                        if (row != null)
+                            record.BreakdownRows.Add(new RunHistoryBreakdownRow
+                            {
+                                Category = row.Category,
+                                Name = row.Name,
+                                Amount = row.Amount
+                            });
+                    }
+                }
+                saved.Runs.Add(record);
+            }
 
-            string json = JsonUtility.ToJson(saved, true);
-            if (!json.Contains("\"Runs\"") ||
-                (saved.Runs.Count > 0 && !json.Contains("\"CharacterName\"")))
+            DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(RunHistorySaveData));
+            string json;
+            using (MemoryStream stream = new MemoryStream())
+            {
+                serializer.WriteObject(stream, saved);
+                json = Encoding.UTF8.GetString(stream.ToArray());
+            }
+            if (!json.Contains("\\"Runs\\\"") ||
+                (saved.Runs.Count > 0 && !json.Contains("\\"CharacterName\\\"")))
             {
                 WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY save-aborted invalid-json"
                     + " count=" + saved.Runs.Count + " chars=" + json.Length + " path=" + _runHistoryPath);
@@ -301,8 +394,9 @@ public sealed class DPSMeter : ModBehaviour
             if (File.Exists(_runHistoryPath))
             {
                 string existingJson = File.ReadAllText(_runHistoryPath);
-                RunHistorySaveData existing =
-                    JsonUtility.FromJson<RunHistorySaveData>(existingJson);
+                RunHistorySaveData existing;
+                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(existingJson)))
+                    existing = (RunHistorySaveData)serializer.ReadObject(stream);
                 int existingCount = existing == null || existing.Runs == null ? 0 : existing.Runs.Count;
                 if (saved.Runs.Count == 0 && existingCount > 0)
                 {
