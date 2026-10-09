@@ -35,13 +35,19 @@ public sealed class RunHistoryRecord
 public sealed class RunHistoryBreakdownRow
 {
     [DataMember] public string Category;
+    [DataMember] public string SourceType;
+    [DataMember] public string Identity;
     [DataMember] public string Name;
     [DataMember] public float Amount;
+    [DataMember] public string Elemental;
+    [DataMember] public string Scaling;
+    [DataMember] public string IconName;
+    [DataMember] public string IconTextureName;
 }
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v11.600";
+    public const string DevelopmentVersion = "v11.700";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -256,23 +262,61 @@ public sealed class DPSMeter : ModBehaviour
 
         IReadOnlyList<DpsData.BreakdownRow> skills = _data.CumulativePersonalSkillRows;
         for (int i = 0; i < skills.Count; i++)
-            run.BreakdownRows.Add(new DpsData.RunBreakdownRow { Category = "DAMAGE", Name = skills[i].Name, Amount = skills[i].Amount });
+        {
+            DpsData.BreakdownRow row = skills[i];
+            run.BreakdownRows.Add(CreateRunBreakdownRow("DAMAGE", "SKILL", row.Identity, row.Name, row.Amount,
+                _data.GetCumulativeSkillElement(row.Identity), _data.GetCumulativeSkillScaling(row.Identity), _data.GetSkillIcon(row.Identity)));
+        }
 
         IReadOnlyList<KeyValuePair<string, float>> other = _data.CumulativePersonalOther;
         for (int i = 0; i < other.Count; i++)
-            run.BreakdownRows.Add(new DpsData.RunBreakdownRow { Category = "DAMAGE", Name = other[i].Key, Amount = other[i].Value });
+        {
+            KeyValuePair<string, float> row = other[i];
+            run.BreakdownRows.Add(CreateRunBreakdownRow("DAMAGE", "OTHER", row.Key, row.Key, row.Value,
+                null, _data.GetCumulativeOtherScaling(row.Key), _data.GetCurrentOtherIcon(row.Key)));
+        }
 
         IReadOnlyList<KeyValuePair<string, float>> essences = _data.CumulativePersonalEssences;
         for (int i = 0; i < essences.Count; i++)
-            run.BreakdownRows.Add(new DpsData.RunBreakdownRow { Category = "DAMAGE", Name = _data.GetEssenceDisplayName(essences[i].Key), Amount = essences[i].Value });
+        {
+            KeyValuePair<string, float> row = essences[i];
+            run.BreakdownRows.Add(CreateRunBreakdownRow("DAMAGE", "ESSENCE", row.Key, _data.GetEssenceDisplayName(row.Key), row.Value,
+                _data.GetCumulativeEssenceElement(row.Key), _data.GetCumulativeEssenceScaling(row.Key), _data.GetCumulativeEssenceIcon(row.Key)));
+        }
 
         IReadOnlyList<DpsData.BreakdownRow> healing = _data.CumulativeHealingRows;
         for (int i = 0; i < healing.Count; i++)
-            run.BreakdownRows.Add(new DpsData.RunBreakdownRow { Category = "HEALING", Name = healing[i].Name, Amount = healing[i].Amount });
+        {
+            DpsData.BreakdownRow row = healing[i];
+            run.BreakdownRows.Add(CreateRunBreakdownRow("HEALING", "HEALING", row.Identity, row.Name, row.Amount,
+                null, DpsData.DamageScalingType.None, _data.GetCumulativeHealingIcon(row.Identity)));
+        }
 
         IReadOnlyList<DpsData.BreakdownRow> barrier = _data.CumulativeBarrierRows;
         for (int i = 0; i < barrier.Count; i++)
-            run.BreakdownRows.Add(new DpsData.RunBreakdownRow { Category = "BARRIER", Name = barrier[i].Name, Amount = barrier[i].Amount });
+        {
+            DpsData.BreakdownRow row = barrier[i];
+            run.BreakdownRows.Add(CreateRunBreakdownRow("BARRIER", "BARRIER", row.Identity, row.Name, row.Amount,
+                null, DpsData.DamageScalingType.None, _data.GetCumulativeBarrierIcon(row.Identity)));
+        }
+    }
+
+    private static DpsData.RunBreakdownRow CreateRunBreakdownRow(
+        string category, string sourceType, string identity, string name, float amount,
+        ElementalType? elemental, DpsData.DamageScalingType scaling, Sprite icon)
+    {
+        return new DpsData.RunBreakdownRow
+        {
+            Category = category,
+            SourceType = sourceType,
+            Identity = identity,
+            Name = name,
+            Amount = amount,
+            Elemental = elemental.HasValue ? elemental.Value.ToString() : null,
+            Scaling = scaling.ToString(),
+            IconName = icon == null ? null : icon.name,
+            IconTextureName = icon == null || icon.texture == null ? null : icon.texture.name
+        };
     }
 
     private void LoadRunHistory()
@@ -322,8 +366,14 @@ public sealed class DPSMeter : ModBehaviour
                                 record.BreakdownRows.Add(new DpsData.RunBreakdownRow
                                 {
                                     Category = row.Category,
+                                    SourceType = row.SourceType,
+                                    Identity = row.Identity,
                                     Name = row.Name,
-                                    Amount = row.Amount
+                                    Amount = row.Amount,
+                                    Elemental = row.Elemental,
+                                    Scaling = row.Scaling,
+                                    IconName = row.IconName,
+                                    IconTextureName = row.IconTextureName
                                 });
                         }
                     }
@@ -370,8 +420,14 @@ public sealed class DPSMeter : ModBehaviour
                             record.BreakdownRows.Add(new RunHistoryBreakdownRow
                             {
                                 Category = row.Category,
+                                SourceType = row.SourceType,
+                                Identity = row.Identity,
                                 Name = row.Name,
-                                Amount = row.Amount
+                                Amount = row.Amount,
+                                Elemental = row.Elemental,
+                                Scaling = row.Scaling,
+                                IconName = row.IconName,
+                                IconTextureName = row.IconTextureName
                             });
                     }
                 }
