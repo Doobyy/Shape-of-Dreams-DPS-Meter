@@ -18,6 +18,9 @@ public sealed class DPSMeter : ModBehaviour
     private float _nextScoreScreenProbeAt;
     private readonly Dictionary<int, bool> _scoreScreenObjectStates = new Dictionary<int, bool>();
     private bool _scoreScreenCandidateActive;
+    private float _lastDamageEventAt;
+    private float _lastHealEventAt;
+    private float _lastBarrierEventAt;
 
     private void Update()
     {
@@ -63,7 +66,8 @@ public sealed class DPSMeter : ModBehaviour
                     + " active=" + active
                     + " object=" + objectName
                     + " component=" + typeName
-                    + " instance=" + id);
+                    + " instance=" + id
+                    + " lastMetricTimes(damage/heal/barrier)=" + _lastDamageEventAt.ToString("0.00") + "/" + _lastHealEventAt.ToString("0.00") + "/" + _lastBarrierEventAt.ToString("0.00"));
             }
         }
 
@@ -255,8 +259,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeHeal(EventInfoHeal info)
     {
-        WriteDebugLog("[v8.400][DPS Meter] METRIC heal-event t=" + Time.realtimeSinceStartup.ToString("0.00")
-            + " scoreCandidateActive=" + _scoreScreenCandidateActive);
+        _lastHealEventAt = Time.realtimeSinceStartup;
         DewPlayer local = DewPlayer.local;
 
         if (local == null || local.hero == null || info.actor == null || info.target == null)
@@ -364,8 +367,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeShield(EventInfoShield info)
     {
-        WriteDebugLog("[v8.400][DPS Meter] METRIC barrier-event t=" + Time.realtimeSinceStartup.ToString("0.00")
-            + " scoreCandidateActive=" + _scoreScreenCandidateActive);
+        _lastBarrierEventAt = Time.realtimeSinceStartup;
         DewPlayer local = DewPlayer.local;
 
         if (local == null || local.hero == null || info.target == null)
@@ -1521,8 +1523,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
     private void OnTakeDamage(EventInfoDamage info)
     {
-        WriteDebugLog("[v8.400][DPS Meter] METRIC damage-event t=" + Time.realtimeSinceStartup.ToString("0.00")
-            + " scoreCandidateActive=" + _scoreScreenCandidateActive);
+        _lastDamageEventAt = Time.realtimeSinceStartup;
 if (info.actor == null || info.victim == null)
         {
             return;
