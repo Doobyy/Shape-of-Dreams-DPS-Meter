@@ -49,7 +49,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v11.800";
+    public const string DevelopmentVersion = "v11.900";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -276,8 +276,11 @@ public sealed class DPSMeter : ModBehaviour
         for (int i = 0; i < other.Count; i++)
         {
             KeyValuePair<string, float> row = other[i];
+            Sprite icon = row.Key == "Basic Attack" && _overlay != null
+                ? _overlay.GetBasicAttackIconForHistory()
+                : _data.GetCurrentOtherIcon(row.Key);
             run.BreakdownRows.Add(CreateRunBreakdownRow("DAMAGE", "OTHER", row.Key, row.Key, row.Value,
-                null, _data.GetCumulativeOtherScaling(row.Key), _data.GetCurrentOtherIcon(row.Key)));
+                null, _data.GetCumulativeOtherScaling(row.Key), icon));
         }
 
         IReadOnlyList<KeyValuePair<string, float>> essences = _data.CumulativePersonalEssences;
