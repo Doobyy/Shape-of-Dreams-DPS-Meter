@@ -16,6 +16,14 @@ public sealed class DpsData
     }
 
     [Serializable]
+    public sealed class RunBreakdownRow
+    {
+        public string Category;
+        public string Name;
+        public float Amount;
+    }
+
+    [Serializable]
     public sealed class RunRecord
     {
         public string CharacterName;
@@ -25,6 +33,7 @@ public sealed class DpsData
         public int WorldsVisited;
         public int MapsVisited;
         public string CompletedAt;
+        public List<RunBreakdownRow> BreakdownRows = new List<RunBreakdownRow>();
     }
 
     [Serializable]
