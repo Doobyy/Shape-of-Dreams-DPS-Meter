@@ -18,6 +18,7 @@ public sealed class DpsData
     [Serializable]
     public sealed class RunBreakdownRow
     {
+        public string View;
         public string Category;
         public string SourceType;
         public string Identity;
@@ -27,6 +28,18 @@ public sealed class DpsData
         public string Scaling;
         public string IconName;
         public string IconTextureName;
+    }
+
+    [Serializable]
+    public sealed class RunViewMetrics
+    {
+        public string View;
+        public float Damage;
+        public float DamageRate;
+        public float Healing;
+        public float HealingRate;
+        public float Barrier;
+        public float BarrierRate;
     }
 
     [Serializable]
@@ -42,6 +55,8 @@ public sealed class DpsData
         public int MapsVisited;
         public string CompletedAt;
         public List<RunBreakdownRow> BreakdownRows = new List<RunBreakdownRow>();
+        public List<RunBreakdownRow> ViewRows = new List<RunBreakdownRow>();
+        public List<RunViewMetrics> ViewMetrics = new List<RunViewMetrics>();
     }
 
     [Serializable]
