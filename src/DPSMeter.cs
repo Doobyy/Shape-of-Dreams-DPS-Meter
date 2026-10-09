@@ -66,7 +66,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v14.800";
+    public const string DevelopmentVersion = "v14.900";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -844,6 +844,80 @@ public sealed class DPSMeter : ModBehaviour
     }
 
     private static bool _heroIconReferencesLogged;
+    private float _nextEmblemAssetProbeTime;
+    private readonly HashSet<string> _loggedEmblemAssetNames = new HashSet<string>();
+
+    private void Update()
+    {
+        if (Time.realtimeSinceStartup < _nextEmblemAssetProbeTime)
+            return;
+
+        _nextEmblemAssetProbeTime = Time.realtimeSinceStartup + 2f;
+        TraceNewlyLoadedEmblemAssets();
+    }
+
+    private void TraceNewlyLoadedEmblemAssets()
+    {
+        int newSprites = 0;
+        int newTextures = 0;
+
+        try
+        {
+            Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+            for (int i = 0; sprites != null && i < sprites.Length; i++)
+            {
+                Sprite sprite = sprites[i];
+                if (sprite == null || !IsEmblemRelatedAssetName(sprite.name))
+                    continue;
+
+                Texture2D texture = sprite.texture;
+                string key = "sprite|" + sprite.name + "|" + (texture == null ? "<null>" : texture.name);
+                if (!_loggedEmblemAssetNames.Add(key))
+                    continue;
+
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM LIVE sprite="
+                    + sprite.name + " rect=" + sprite.rect.width + "x" + sprite.rect.height
+                    + " texture=" + (texture == null ? "<null>" : texture.name)
+                    + " textureSize=" + (texture == null ? "<null>" : texture.width + "x" + texture.height));
+                newSprites++;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM LIVE sprite-scan-error="
+                + ex.GetType().Name);
+        }
+
+        try
+        {
+            Texture2D[] textures = Resources.FindObjectsOfTypeAll<Texture2D>();
+            for (int i = 0; textures != null && i < textures.Length; i++)
+            {
+                Texture2D texture = textures[i];
+                if (texture == null || !IsEmblemRelatedAssetName(texture.name))
+                    continue;
+
+                string key = "texture|" + texture.name + "|" + texture.width + "x" + texture.height;
+                if (!_loggedEmblemAssetNames.Add(key))
+                    continue;
+
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM LIVE texture="
+                    + texture.name + " size=" + texture.width + "x" + texture.height);
+                newTextures++;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM LIVE texture-scan-error="
+                + ex.GetType().Name);
+        }
+
+        if (newSprites > 0 || newTextures > 0)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM LIVE newly-loaded"
+                + " sprites=" + newSprites + " textures=" + newTextures);
+        }
+    }
 
     private static void TraceHeroIconReferences(object hero, Sprite currentIcon)
     {
