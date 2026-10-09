@@ -1930,7 +1930,6 @@ public sealed class DpsOverlay : MonoBehaviour
             float ratio = maxAmount > 0f ? Mathf.Clamp01(row.Value / maxAmount) : 0f;
 
             Rect rowRect = GUILayoutUtility.GetRect(0f, 22f, GUILayout.ExpandWidth(true));
-            DrawBar(rowRect, ratio, _partyBarColor, null, DpsData.DamageScalingType.None, _partyBarOutlineColor);
 
             string valueText = FormatNumber(playerRate) + " " + rateLabel + " (" +
                 FormatNumber(row.Value) + ", " + percent.ToString("0.0") + "%)";
@@ -1942,11 +1941,19 @@ public sealed class DpsOverlay : MonoBehaviour
             float nameX = rowRect.x + (hasPlayerIcon ? 28f : 7f);
             float nameWidth = Mathf.Max(0f, valueLeft - nameX - 7f);
 
+            Rect barRect = rowRect;
             if (hasPlayerIcon)
             {
+                Rect iconRect = new Rect(rowRect.x + 5f, rowRect.y + 2f, 18f, 18f);
+                barRect.xMin = iconRect.xMax;
+
+                GUI.color = Color.black;
+                GUI.DrawTexture(iconRect, _whiteTexture);
                 GUI.color = Color.white;
-                DrawSprite(playerIcon, new Rect(rowRect.x + 5f, rowRect.y + 2f, 18f, 18f));
+                DrawSprite(playerIcon, iconRect);
             }
+
+            DrawBar(barRect, ratio, _partyBarColor, null, DpsData.DamageScalingType.None, _partyBarOutlineColor);
 
             GUI.color = SourceNameColor;
             DrawBarTextWithStroke(
