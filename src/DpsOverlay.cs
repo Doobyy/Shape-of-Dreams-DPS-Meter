@@ -509,19 +509,29 @@ public sealed class DpsOverlay : MonoBehaviour
             Color emblemTint = GUI.color;
             if (selected)
             {
-                // Draw the halo underneath the original emblem; keep it subtle and selected-only.
-                Color glowColor = GetRunCharacterOutlineColor(run);
-                const float glowOffset = 1.25f;
-                glowColor.a = 0.24f;
+                // Use the character's outline hue, brightened so the wider halo reads as a glow.
+                Color glowColor = Color.Lerp(GetRunCharacterOutlineColor(run), Color.white, 0.55f);
                 GUI.color = glowColor;
-                DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y, iconRect.width, iconRect.height));
-                DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y, iconRect.width, iconRect.height));
-                DrawSprite(characterIcon, new Rect(iconRect.x, iconRect.y - glowOffset, iconRect.width, iconRect.height));
-                DrawSprite(characterIcon, new Rect(iconRect.x, iconRect.y + glowOffset, iconRect.width, iconRect.height));
-                DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y - glowOffset, iconRect.width, iconRect.height));
-                DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y - glowOffset, iconRect.width, iconRect.height));
-                DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y + glowOffset, iconRect.width, iconRect.height));
-                DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y + glowOffset, iconRect.width, iconRect.height));
+
+                // Several offset rings create a soft, broader halo rather than a thin edge stroke.
+                float[] glowOffsets = { 1.5f, 3f, 4.5f };
+                float[] glowAlphas = { 0.24f, 0.14f, 0.07f };
+                for (int ring = 0; ring < glowOffsets.Length; ring++)
+                {
+                    float glowOffset = glowOffsets[ring];
+                    Color ringColor = glowColor;
+                    ringColor.a = glowAlphas[ring];
+                    GUI.color = ringColor;
+
+                    DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y, iconRect.width, iconRect.height));
+                    DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y, iconRect.width, iconRect.height));
+                    DrawSprite(characterIcon, new Rect(iconRect.x, iconRect.y - glowOffset, iconRect.width, iconRect.height));
+                    DrawSprite(characterIcon, new Rect(iconRect.x, iconRect.y + glowOffset, iconRect.width, iconRect.height));
+                    DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y - glowOffset, iconRect.width, iconRect.height));
+                    DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y - glowOffset, iconRect.width, iconRect.height));
+                    DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y + glowOffset, iconRect.width, iconRect.height));
+                    DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y + glowOffset, iconRect.width, iconRect.height));
+                }
             }
 
             // Restore the original selected/hovered/idle tint before drawing the emblem on top.
