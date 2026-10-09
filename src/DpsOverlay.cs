@@ -447,8 +447,9 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (selected || hovered)
         {
-            // Keep the selected row strongest, with a similarly clear hover highlight.
-            GUI.color = new Color(1f, 1f, 1f, selected ? 0.60f : 0.55f);
+            // Keep selection clearer than hover, with a modest extra lift when both apply.
+            float highlightOpacity = selected && hovered ? 0.45f : selected ? 0.40f : 0.35f;
+            GUI.color = new Color(1f, 1f, 1f, highlightOpacity);
             GUI.DrawTexture(rect, _whiteTexture);
             GUI.color = Color.white;
         }
