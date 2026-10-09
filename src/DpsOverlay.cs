@@ -373,9 +373,9 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (selected || hovered)
         {
-            // Fill the row width and meet the top edge; keep the bottom clear of the separator.
-            Rect highlightRect = new Rect(rect.x, rect.y,
-                rect.width, Mathf.Max(0f, rect.height - 4f));
+            // Extend upward to the previous row's separator while preserving the bottom gap.
+            Rect highlightRect = new Rect(rect.x, rect.y - 3f,
+                rect.width, Mathf.Max(0f, rect.height - 1f));
             GUI.color = new Color(1f, 1f, 1f, hovered ? 0.18f : 0.10f);
             GUI.DrawTexture(highlightRect, _whiteTexture);
             GUI.color = Color.white;
