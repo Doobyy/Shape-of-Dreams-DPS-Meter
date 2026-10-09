@@ -11,94 +11,11 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v8.700";
+    public const string DevelopmentVersion = "v8.800";
 
-    // Temporary QA trigger test: show a dismissible popup when the game-over results UI activates.
-    private float _nextScoreScreenProbeAt;
-    private bool _resultUiWasActive;
-    private bool _showRunEndedQaPopup;
-    private int _metricEventSequence;
-    private int _lastDamageEventSequence;
-    private int _lastHealEventSequence;
-    private int _lastBarrierEventSequence;
-    private int _scoreScreenProbeSequence;
+    // One-shot diagnostic: enumerate ClientEventManager event/delegate members.
+    private bool _clientEventManagerDiagnosticsWritten;
 
-    private void Update()
-    {
-        float now = Time.realtimeSinceStartup;
-        if (now < _nextScoreScreenProbeAt)
-        {
-            return;
-        }
-
-        _nextScoreScreenProbeAt = now + 0.5f;
-        ProbeGameOverResultsTrigger();
-    }
-
-    private void ProbeGameOverResultsTrigger()
-    {
-        _scoreScreenProbeSequence++;
-        bool resultUiActive = false;
-        Transform[] transforms = Resources.FindObjectsOfTypeAll<Transform>();
-
-        for (int i = 0; i < transforms.Length; i++)
-        {
-            Transform candidate = transforms[i];
-            if (candidate == null || candidate.gameObject == null ||
-                !string.Equals(candidate.gameObject.name, "UI_Result_GameOver", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            if (candidate.gameObject.activeInHierarchy)
-            {
-                resultUiActive = true;
-                break;
-            }
-        }
-
-        if (resultUiActive != _resultUiWasActive)
-        {
-            _resultUiWasActive = resultUiActive;
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] QA-RUN-ENDED-TRIGGER active="
-                + resultUiActive
-                + " probe=" + _scoreScreenProbeSequence
-                + " metricSeq(damage/heal/barrier)=" + _lastDamageEventSequence + "/"
-                + _lastHealEventSequence + "/" + _lastBarrierEventSequence);
-
-            if (resultUiActive)
-            {
-                _showRunEndedQaPopup = true;
-            }
-        }
-    }
-
-    private void OnGUI()
-    {
-        if (!_showRunEndedQaPopup)
-        {
-            return;
-        }
-
-        const float popupWidth = 320f;
-        const float popupHeight = 140f;
-        Rect popupRect = new Rect(
-            (Screen.width - popupWidth) * 0.5f,
-            (Screen.height - popupHeight) * 0.5f,
-            popupWidth,
-            popupHeight);
-
-        GUI.Box(popupRect, "DPS Meter QA");
-        GUI.Label(
-            new Rect(popupRect.x + 20f, popupRect.y + 38f, popupRect.width - 40f, 32f),
-            "Run Ended");
-        if (GUI.Button(
-            new Rect(popupRect.x + 100f, popupRect.y + 82f, 120f, 34f),
-            "OK"))
-        {
-            _showRunEndedQaPopup = false;
-        }
-    }
 
     public static DPSMeter Instance { get; private set; }
 
@@ -180,12 +97,69 @@ public sealed class DPSMeter : ModBehaviour
 
         _clientEvents = currentManager;
 
+        DiagnoseClientEventManagerMembers(currentManager);
+
         _clientEvents.OnTakeDamage += OnTakeDamage;
         _clientEvents.OnTakeHeal += OnTakeHeal;
         _clientEvents.OnTakeShield += OnTakeShield;
         _clientEvents.OnLocalHeroAbilityChanged += OnLocalHeroAbilityChanged;
         _subscribed = true;
         Debug.Log("[DPS Meter] Damage event listener attached.");
+    }
+
+    private void DiagnoseClientEventManagerMembers(ClientEventManager manager)
+    {
+        if (_clientEventManagerDiagnosticsWritten || manager == null)
+        {
+            return;
+        }
+
+        _clientEventManagerDiagnosticsWritten = true;
+        Type type = manager.GetType();
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.Static |
+            BindingFlags.Public | BindingFlags.NonPublic;
+
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLIENT-EVENT-MANAGER type="
+            + type.FullName);
+
+        try
+        {
+            EventInfo[] events = type.GetEvents(flags);
+            for (int i = 0; i < events.Length; i++)
+            {
+                EventInfo item = events[i];
+                MethodInfo handler = item.EventHandlerType == null ? null :
+                    item.EventHandlerType.GetMethod("Invoke");
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLIENT-EVENT-MANAGER event="
+                    + item.Name + " delegate="
+                    + (item.EventHandlerType == null ? "<unknown>" : item.EventHandlerType.FullName)
+                    + " signature=" + (handler == null ? "<unknown>" : handler.ToString()));
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLIENT-EVENT-MANAGER events-error="
+                + ex.GetType().Name);
+        }
+
+        Type current = type;
+        while (current != null)
+        {
+            FieldInfo[] fields = current.GetFields(flags | BindingFlags.DeclaredOnly);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                if (!typeof(Delegate).IsAssignableFrom(field.FieldType))
+                {
+                    continue;
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLIENT-EVENT-MANAGER delegate-field="
+                    + current.Name + "." + field.Name + " type=" + field.FieldType.FullName);
+            }
+
+            current = current.BaseType;
+        }
     }
 
     private void DetachFromClientEvents()
@@ -245,7 +219,6 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeHeal(EventInfoHeal info)
     {
-        _lastHealEventSequence = ++_metricEventSequence;
         DewPlayer local = DewPlayer.local;
 
         if (local == null || local.hero == null || info.actor == null || info.target == null)
@@ -353,7 +326,6 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeShield(EventInfoShield info)
     {
-        _lastBarrierEventSequence = ++_metricEventSequence;
         DewPlayer local = DewPlayer.local;
 
         if (local == null || local.hero == null || info.target == null)
@@ -1509,7 +1481,6 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
     private void OnTakeDamage(EventInfoDamage info)
     {
-        _lastDamageEventSequence = ++_metricEventSequence;
 if (info.actor == null || info.victim == null)
         {
             return;
