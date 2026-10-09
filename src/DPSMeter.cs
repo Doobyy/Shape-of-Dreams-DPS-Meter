@@ -9,9 +9,15 @@ using UnityEngine;
 
 namespace DPSMeter;
 
+[Serializable]
+public sealed class RunHistorySaveData
+{
+    public List<DpsData.RunRecord> Runs = new List<DpsData.RunRecord>();
+}
+
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v11.100";
+    public const string DevelopmentVersion = "v11.200";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -262,7 +268,7 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             string json = File.ReadAllText(_runHistoryPath);
-            DpsData.RunHistorySaveData saved = JsonUtility.FromJson<DpsData.RunHistorySaveData>(json);
+            RunHistorySaveData saved = JsonUtility.FromJson<RunHistorySaveData>(json);
             int loadedCount = saved == null || saved.Runs == null ? 0 : saved.Runs.Count;
             if (saved != null) _data.LoadCompletedRuns(saved.Runs);
             WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY loaded count="
@@ -280,7 +286,7 @@ public sealed class DPSMeter : ModBehaviour
     {
         try
         {
-            DpsData.RunHistorySaveData saved = new DpsData.RunHistorySaveData();
+            RunHistorySaveData saved = new RunHistorySaveData();
             for (int i = 0; i < _data.CompletedRuns.Count; i++) saved.Runs.Add(_data.CompletedRuns[i]);
 
             string json = JsonUtility.ToJson(saved, true);
@@ -295,8 +301,8 @@ public sealed class DPSMeter : ModBehaviour
             if (File.Exists(_runHistoryPath))
             {
                 string existingJson = File.ReadAllText(_runHistoryPath);
-                DpsData.RunHistorySaveData existing =
-                    JsonUtility.FromJson<DpsData.RunHistorySaveData>(existingJson);
+                RunHistorySaveData existing =
+                    JsonUtility.FromJson<RunHistorySaveData>(existingJson);
                 int existingCount = existing == null || existing.Runs == null ? 0 : existing.Runs.Count;
                 if (saved.Runs.Count == 0 && existingCount > 0)
                 {
