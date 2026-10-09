@@ -185,9 +185,9 @@ public sealed class DpsOverlay : MonoBehaviour
         GUILayout.EndScrollView();
         GUILayout.EndArea();
 
-        if (_selectedRunRecord == null &&
-            (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal ||
-             _mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal))
+        if (_selectedRunRecord != null ||
+            _mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal ||
+            _mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
         {
             Rect breakdownRect = new Rect(
                 _windowRect.x + 6f,
@@ -197,49 +197,57 @@ public sealed class DpsOverlay : MonoBehaviour
 
             GUILayout.BeginArea(breakdownRect);
 
-            if (_showHealing)
-        {
-            if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
+            if (_selectedRunRecord != null)
             {
-                DrawParty(
-                    _mode == DisplayMode.PartyDps ? _data.CurrentPartyHealing : _data.CumulativePartyHealingRows,
-                    _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyHealing : _data.CumulativePartyHealing,
-                    _mode == DisplayMode.PartyDps ? _data.CurrentPartyHps : _data.TotalPartyHps,
-                    "HPS",
-                    _mode == DisplayMode.PartyDps
-                        ? "HPS: " + FormatNumber(_data.CurrentPartyHps)
-                        : "HEAL: " + FormatNumber(_data.CumulativePartyHealing));
+                if (_showHealing) DrawSelectedRunHealing(_selectedRunRecord);
+                if (_showBarrier) DrawSelectedRunBarrier(_selectedRunRecord);
             }
             else
             {
-                DrawHealingBreakdown(
-                    _mode == DisplayMode.CurrentDps ? _data.CurrentPersonalHealingRows : _data.CumulativeHealingRows,
-                    _mode == DisplayMode.CurrentDps ? _data.CurrentInstancePersonalHealing : _data.CumulativePersonalHealing);
-            }
-        }
+                if (_showHealing)
+                {
+                    if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
+                    {
+                        DrawParty(
+                            _mode == DisplayMode.PartyDps ? _data.CurrentPartyHealing : _data.CumulativePartyHealingRows,
+                            _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyHealing : _data.CumulativePartyHealing,
+                            _mode == DisplayMode.PartyDps ? _data.CurrentPartyHps : _data.TotalPartyHps,
+                            "HPS",
+                            _mode == DisplayMode.PartyDps
+                                ? "HPS: " + FormatNumber(_data.CurrentPartyHps)
+                                : "HEAL: " + FormatNumber(_data.CumulativePartyHealing));
+                    }
+                    else
+                    {
+                        DrawHealingBreakdown(
+                            _mode == DisplayMode.CurrentDps ? _data.CurrentPersonalHealingRows : _data.CumulativeHealingRows,
+                            _mode == DisplayMode.CurrentDps ? _data.CurrentInstancePersonalHealing : _data.CumulativePersonalHealing);
+                    }
+                }
 
-        if (_showBarrier)
-        {
-            if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
-            {
-                DrawParty(
-                    _mode == DisplayMode.PartyDps ? _data.CurrentPartyBarrier : _data.CumulativePartyBarrierRows,
-                    _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyBarrier : _data.CumulativePartyBarrier,
-                    _mode == DisplayMode.PartyDps ? _data.CurrentPartyBps : _data.TotalPartyBps,
-                    "BPS",
-                    _mode == DisplayMode.PartyDps
-                        ? "BPS: " + FormatNumber(_data.CurrentPartyBps)
-                        : "BARRIER: " + FormatNumber(_data.CumulativePartyBarrier));
+                if (_showBarrier)
+                {
+                    if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
+                    {
+                        DrawParty(
+                            _mode == DisplayMode.PartyDps ? _data.CurrentPartyBarrier : _data.CumulativePartyBarrierRows,
+                            _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyBarrier : _data.CumulativePartyBarrier,
+                            _mode == DisplayMode.PartyDps ? _data.CurrentPartyBps : _data.TotalPartyBps,
+                            "BPS",
+                            _mode == DisplayMode.PartyDps
+                                ? "BPS: " + FormatNumber(_data.CurrentPartyBps)
+                                : "BARRIER: " + FormatNumber(_data.CumulativePartyBarrier));
+                    }
+                    else
+                    {
+                        DrawBarrierBreakdown(
+                            _mode == DisplayMode.CurrentDps ? _data.CurrentPersonalBarrierRows : _data.CumulativeBarrierRows,
+                            _mode == DisplayMode.CurrentDps ? _data.CurrentInstancePersonalBarrier : _data.CumulativePersonalBarrier);
+                    }
+                }
             }
-            else
-            {
-                DrawBarrierBreakdown(
-                    _mode == DisplayMode.CurrentDps ? _data.CurrentPersonalBarrierRows : _data.CumulativeBarrierRows,
-                    _mode == DisplayMode.CurrentDps ? _data.CurrentInstancePersonalBarrier : _data.CumulativePersonalBarrier);
-            }
-        }
 
-        GUILayout.EndArea();
+            GUILayout.EndArea();
         }
 
         DrawResizeGrip();
@@ -338,31 +346,97 @@ public sealed class DpsOverlay : MonoBehaviour
     {
         DpsData.RunRecord run = _selectedRunRecord;
         if (run == null) return;
-        if (run.BreakdownRows == null || run.BreakdownRows.Count == 0)
+
+        GUILayout.Label(
+            (string.IsNullOrEmpty(run.CharacterName) ? "Unknown Character" : run.CharacterName) +
+            "  |  " + (string.IsNullOrEmpty(run.Outcome) ? "Completed Run" : run.Outcome),
+            _header);
+        GUILayout.Label(
+            FormatDuration(run.DurationSeconds) + "  |  Visited: " +
+            run.WorldsVisited + " Worlds " + run.MapsVisited + " Maps  |  " +
+            (run.CompletedAt ?? string.Empty),
+            _small);
+        GUILayout.Space(3f);
+        GUILayout.Label("DAMAGE: " + FormatNumber(run.TotalDamage), _headerRight);
+
+        List<DpsData.RunBreakdownRow> rows = GetSelectedRunRows(run, "DAMAGE");
+        float maxAmount = GetSelectedRunMax(rows);
+        if (rows.Count == 0)
         {
-            GUILayout.Label("No detailed breakdown was saved for this run.", _small);
-            GUILayout.Label("Newly completed runs will include damage, healing, and barrier details.", _small);
+            GUILayout.Label("No damage breakdown was saved for this run.", _small);
             return;
         }
 
-        GUILayout.Label("RUN SUMMARY", _header);
-        GUILayout.Label("Duration: " + FormatDuration(run.DurationSeconds), _small);
-        GUILayout.Label("Visited: " + run.WorldsVisited + " Worlds " + run.MapsVisited + " Maps", _small);
-        GUILayout.Space(4f);
+        for (int i = 0; i < rows.Count; i++)
+        {
+            DpsData.RunBreakdownRow row = rows[i];
+            DrawDamageRow(StripRichTextTags(row.Name), row.Amount, run.TotalDamage,
+                maxAmount, i, null, DpsData.DamageScalingType.None, null);
+        }
+    }
 
-        string category = null;
+    private static List<DpsData.RunBreakdownRow> GetSelectedRunRows(
+        DpsData.RunRecord run, string category)
+    {
+        List<DpsData.RunBreakdownRow> rows = new List<DpsData.RunBreakdownRow>();
+        if (run == null || run.BreakdownRows == null) return rows;
+
         for (int i = 0; i < run.BreakdownRows.Count; i++)
         {
             DpsData.RunBreakdownRow row = run.BreakdownRows[i];
-            if (row == null) continue;
-            if (!string.Equals(category, row.Category, StringComparison.Ordinal))
-            {
-                category = row.Category;
-                GUILayout.Space(3f);
-                GUILayout.Label(category, _headerRight);
-            }
-            GUILayout.Label(row.Name + "  " + FormatNumber(row.Amount), _row);
+            if (row != null && string.Equals(row.Category, category, StringComparison.Ordinal))
+                rows.Add(row);
         }
+
+        rows.Sort((a, b) => b.Amount.CompareTo(a.Amount));
+        return rows;
+    }
+
+    private static float GetSelectedRunTotal(List<DpsData.RunBreakdownRow> rows)
+    {
+        float total = 0f;
+        for (int i = 0; i < rows.Count; i++) total += rows[i].Amount;
+        return total;
+    }
+
+    private static float GetSelectedRunMax(List<DpsData.RunBreakdownRow> rows)
+    {
+        float max = 0f;
+        for (int i = 0; i < rows.Count; i++)
+            if (rows[i].Amount > max) max = rows[i].Amount;
+        return max;
+    }
+
+    private void DrawSelectedRunHealing(DpsData.RunRecord run)
+    {
+        List<DpsData.RunBreakdownRow> rows = GetSelectedRunRows(run, "HEALING");
+        float total = GetSelectedRunTotal(rows);
+        GUILayout.Label("HEAL: " + FormatNumber(total), _headerRight);
+        float max = GetSelectedRunMax(rows);
+        if (rows.Count == 0)
+        {
+            GUILayout.Label("No healing recorded for this run.", _small);
+            return;
+        }
+
+        for (int i = 0; i < rows.Count; i++)
+            DrawHealingRow(rows[i].Name, rows[i].Amount, total, max, null);
+    }
+
+    private void DrawSelectedRunBarrier(DpsData.RunRecord run)
+    {
+        List<DpsData.RunBreakdownRow> rows = GetSelectedRunRows(run, "BARRIER");
+        float total = GetSelectedRunTotal(rows);
+        GUILayout.Label("BARRIER: " + FormatNumber(total), _headerRight);
+        float max = GetSelectedRunMax(rows);
+        if (rows.Count == 0)
+        {
+            GUILayout.Label("No barrier generated for this run.", _small);
+            return;
+        }
+
+        for (int i = 0; i < rows.Count; i++)
+            DrawBarrierRow(rows[i].Name, rows[i].Amount, total, max, null);
     }
 
     private static Type FindLoadedType(string fullName)
