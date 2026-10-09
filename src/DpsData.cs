@@ -48,6 +48,10 @@ public sealed class DpsData
         public string CharacterName;
         public string CharacterIconName;
         public string CharacterIconTextureName;
+        public float CharacterMainColorR;
+        public float CharacterMainColorG;
+        public float CharacterMainColorB;
+        public bool HasCharacterMainColor;
         public string Outcome;
         public float TotalDamage;
         public float TotalHealing;
