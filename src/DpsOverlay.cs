@@ -56,7 +56,6 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private DpsData _data;
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
-    private readonly HashSet<string> _historyIconLookups = new HashSet<string>();
     private Vector2 _scroll;
     private DisplayMode _mode;
 
@@ -392,6 +391,27 @@ public sealed class DpsOverlay : MonoBehaviour
         if (row == null) return null;
         string identity = string.IsNullOrEmpty(row.Identity) ? row.Name : row.Identity;
 
+        string cacheKey = row.IconName + "|" + (row.IconTextureName ?? string.Empty);
+        if (!string.IsNullOrEmpty(row.IconName))
+        {
+            Sprite cached;
+            if (_historyIconCache.TryGetValue(cacheKey, out cached)) return cached;
+
+            Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+            for (int i = 0; sprites != null && i < sprites.Length; i++)
+            {
+                Sprite candidate = sprites[i];
+                if (candidate == null || !string.Equals(candidate.name, row.IconName, StringComparison.Ordinal))
+                    continue;
+                if (!string.IsNullOrEmpty(row.IconTextureName) &&
+                    (candidate.texture == null || !string.Equals(candidate.texture.name, row.IconTextureName, StringComparison.Ordinal)))
+                    continue;
+                _historyIconCache[cacheKey] = candidate;
+                return candidate;
+            }
+        }
+
+        // The saved sprite may not be loaded yet. Retry live icon registries as a fallback.
         if (_data != null)
         {
             Sprite liveIcon = null;
@@ -406,11 +426,7 @@ public sealed class DpsOverlay : MonoBehaviour
             if (liveIcon != null) return liveIcon;
         }
 
-        if (string.IsNullOrEmpty(row.IconName)) return null;
-        string cacheKey = row.IconName + "|" + (row.IconTextureName ?? string.Empty);
-        Sprite cached;
-        if (_historyIconCache.TryGetValue(cacheKey, out cached)) return cached;
-        if (_historyIconLookups.Contains(cacheKey)) return null;
+        return null;
 
         Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
         for (int i = 0; sprites != null && i < sprites.Length; i++)
@@ -1866,6 +1882,11 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             _basicAttackIcon = icon;
         }
+    }
+
+    public Sprite GetBasicAttackIconForHistory()
+    {
+        return GetBasicAttackIcon();
     }
 
     private Sprite GetBasicAttackIcon()
