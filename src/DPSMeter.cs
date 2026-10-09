@@ -11,11 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v9.200";
-
-    // One-shot diagnostic: enumerate ClientEventManager event/delegate members.
-    private bool _clientEventManagerDiagnosticsWritten;
-
+    public const string DevelopmentVersion = "v9.300";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -97,7 +93,6 @@ public sealed class DPSMeter : ModBehaviour
 
         _clientEvents = currentManager;
 
-        DiagnoseClientEventManagerMembers(currentManager);
         DiagnoseGameResultManagerType();
 
         _clientEvents.OnTakeDamage += OnTakeDamage;
@@ -108,241 +103,92 @@ public sealed class DPSMeter : ModBehaviour
         Debug.Log("[DPS Meter] Damage event listener attached.");
     }
 
-    private void DiagnoseClientEventManagerMembers(ClientEventManager manager)
+    private void DiagnoseGameResultManagerType()
     {
-        if (_clientEventManagerDiagnosticsWritten || manager == null)
+        Type type = Type.GetType("GameResultManager, Dew.Core");
+        if (type == null)
         {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER type-not-found");
             return;
         }
 
-        _clientEventManagerDiagnosticsWritten = true;
-        Type type = manager.GetType();
-        const BindingFlags flags = BindingFlags.Instance | BindingFlags.Static |
-            BindingFlags.Public | BindingFlags.NonPublic;
-
-        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLIENT-EVENT-MANAGER type="
-            + type.FullName);
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER type="
+            + type.FullName + " assembly=" + type.Assembly.GetName().Name);
 
         try
         {
-            EventInfo[] events = type.GetEvents(flags);
-            for (int i = 0; i < events.Length; i++)
-            {
-                EventInfo item = events[i];
-                MethodInfo handler = item.EventHandlerType == null ? null :
-                    item.EventHandlerType.GetMethod("Invoke");
-                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLIENT-EVENT-MANAGER event="
-                    + item.Name + " delegate="
-                    + (item.EventHandlerType == null ? "<unknown>" : item.EventHandlerType.FullName)
-                    + " signature=" + (handler == null ? "<unknown>" : handler.ToString()));
-            }
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLIENT-EVENT-MANAGER events-error="
-                + ex.GetType().Name);
-        }
+            UnityEngine.Object[] managers = Resources.FindObjectsOfTypeAll(type);
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER instances="
+                + (managers == null ? "<null>" : managers.Length.ToString()));
 
-        Type current = type;
-        while (current != null)
-        {
-            FieldInfo[] fields = current.GetFields(flags | BindingFlags.DeclaredOnly);
-            for (int i = 0; i < fields.Length; i++)
+            if (managers == null)
             {
-                FieldInfo field = fields[i];
-                if (!typeof(Delegate).IsAssignableFrom(field.FieldType))
+                return;
+            }
+
+            FieldInfo resultField = type.GetField("onUpdateGameResult",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < managers.Length; i++)
+            {
+                UnityEngine.Object manager = managers[i];
+                if (manager == null)
                 {
                     continue;
                 }
 
-                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLIENT-EVENT-MANAGER delegate-field="
-                    + current.Name + "." + field.Name + " type=" + field.FieldType.FullName);
-            }
+                Behaviour behaviour = manager as Behaviour;
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER instance="
+                    + manager.GetType().Name + " name=" + manager.name
+                    + " active=" + (behaviour == null ? "<not-behaviour>" : behaviour.isActiveAndEnabled.ToString()));
 
-            current = current.BaseType;
-        }
-    }
-
-    private void DiagnoseGameResultManagerType()
-    {
-        const BindingFlags flags = BindingFlags.Instance | BindingFlags.Static |
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-        bool found = false;
-
-        try
-        {
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            for (int i = 0; i < assemblies.Length; i++)
-            {
-                Type[] types;
-                try
+                if (resultField == null)
                 {
-                    types = assemblies[i].GetTypes();
+                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER onUpdateGameResult-field-not-found");
+                    continue;
                 }
-                catch (ReflectionTypeLoadException ex)
-                {
-                    types = ex.Types;
-                }
-                catch (Exception)
+
+                object callback = resultField.GetValue(manager);
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER onUpdateGameResult="
+                    + (callback == null ? "<null>" : callback.GetType().FullName));
+
+                if (callback == null)
                 {
                     continue;
                 }
 
-                for (int j = 0; j < types.Length; j++)
+                Type callbackType = callback.GetType();
+                MethodInfo[] methods = callbackType.GetMethods(
+                    BindingFlags.Instance | BindingFlags.Static |
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                for (int j = 0; j < methods.Length; j++)
                 {
-                    Type type = types[j];
-                    if (type == null || type.Name.IndexOf("GameResultManager", StringComparison.OrdinalIgnoreCase) < 0)
+                    string name = methods[j].Name;
+                    if (name.IndexOf("add", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("invoke", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("subscribe", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("register", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("remove", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        name.IndexOf("event", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        continue;
+                        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-CALLBACK method="
+                            + callbackType.Name + "." + methods[j]);
                     }
+                }
 
-                    found = true;
-                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER type=" + type.FullName
-                        + " assembly=" + type.Assembly.GetName().Name);
-
-                    try
-                    {
-                        UnityEngine.Object[] managers = Resources.FindObjectsOfTypeAll(type);
-                        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER instances="
-                            + (managers == null ? "<null>" : managers.Length.ToString()));
-
-                        if (managers != null)
-                        {
-                            for (int instanceIndex = 0; instanceIndex < managers.Length; instanceIndex++)
-                            {
-                                object managerInstance = managers[instanceIndex];
-                                if (managerInstance == null)
-                                {
-                                    continue;
-                                }
-
-                                UnityEngine.Object unityObject = managerInstance as UnityEngine.Object;
-                                Behaviour behaviour = managerInstance as Behaviour;
-                                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER instance="
-                                    + managerInstance.GetType().Name + " name="
-                                    + (unityObject == null ? "<not-unity-object>" : unityObject.name)
-                                    + " active=" + (behaviour == null ? "<not-behaviour>" : behaviour.isActiveAndEnabled.ToString()));
-
-                                FieldInfo resultField = type.GetField("onUpdateGameResult",
-                                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                                if (resultField != null)
-                                {
-                                    object callback = resultField.GetValue(managerInstance);
-                                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER onUpdateGameResult="
-                                        + (callback == null ? "<null>" : callback.GetType().FullName));
-
-                                    if (callback != null)
-                                    {
-                                        Type callbackType = callback.GetType();
-                                        MethodInfo[] callbackMethods = callbackType.GetMethods(
-                                            BindingFlags.Instance | BindingFlags.Static |
-                                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-                                        for (int callbackIndex = 0; callbackIndex < callbackMethods.Length; callbackIndex++)
-                                        {
-                                            MethodInfo callbackMethod = callbackMethods[callbackIndex];
-                                            if (callbackMethod.Name.IndexOf("add", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                                callbackMethod.Name.IndexOf("invoke", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                                callbackMethod.Name.IndexOf("subscribe", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                                callbackMethod.Name.IndexOf("register", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                                callbackMethod.Name.IndexOf("remove", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                                callbackMethod.Name.IndexOf("event", StringComparison.OrdinalIgnoreCase) >= 0)
-                                            {
-                                                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-CALLBACK method="
-                                                    + callbackType.Name + "." + callbackMethod);
-                                            }
-                                        }
-
-                                        FieldInfo[] callbackFields = callbackType.GetFields(
-                                            BindingFlags.Instance | BindingFlags.Static |
-                                            BindingFlags.Public | BindingFlags.NonPublic);
-                                        for (int callbackIndex = 0; callbackIndex < callbackFields.Length; callbackIndex++)
-                                        {
-                                            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-CALLBACK field="
-                                                + callbackFields[callbackIndex].Name + " type="
-                                                + callbackFields[callbackIndex].FieldType.FullName);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER instance-error="
-                            + ex.GetType().Name);
-                    }
-
-                    try
-                    {
-                        EventInfo[] events = type.GetEvents(BindingFlags.Instance | BindingFlags.Static |
-                            BindingFlags.Public | BindingFlags.NonPublic);
-                        for (int k = 0; k < events.Length; k++)
-                        {
-                            EventInfo item = events[k];
-                            MethodInfo handler = item.EventHandlerType == null ? null :
-                                item.EventHandlerType.GetMethod("Invoke");
-                            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER event="
-                                + item.Name + " delegate="
-                                + (item.EventHandlerType == null ? "<unknown>" : item.EventHandlerType.FullName)
-                                + " signature=" + (handler == null ? "<unknown>" : handler.ToString()));
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER events-error="
-                            + ex.GetType().Name);
-                    }
-
-                    Type current = type;
-                    while (current != null)
-                    {
-                        MethodInfo[] methods = current.GetMethods(flags);
-                        for (int k = 0; k < methods.Length; k++)
-                        {
-                            string name = methods[k].Name;
-                            if (name.IndexOf("result", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                name.IndexOf("gameover", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                name.IndexOf("finish", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                name.IndexOf("complete", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                name.IndexOf("end", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                name.IndexOf("score", StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER method="
-                                    + current.Name + "." + methods[k]);
-                            }
-                        }
-
-                        FieldInfo[] fields = current.GetFields(flags);
-                        for (int k = 0; k < fields.Length; k++)
-                        {
-                            FieldInfo field = fields[k];
-                            if (typeof(Delegate).IsAssignableFrom(field.FieldType) ||
-                                field.Name.IndexOf("result", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                field.Name.IndexOf("gameover", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                field.Name.IndexOf("finish", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                field.Name.IndexOf("complete", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                field.Name.IndexOf("end", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                field.Name.IndexOf("score", StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER field="
-                                    + current.Name + "." + field.Name + " type=" + field.FieldType.FullName);
-                            }
-                        }
-
-                        current = current.BaseType;
-                    }
+                FieldInfo[] fields = callbackType.GetFields(
+                    BindingFlags.Instance | BindingFlags.Static |
+                    BindingFlags.Public | BindingFlags.NonPublic);
+                for (int j = 0; j < fields.Length; j++)
+                {
+                    WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-CALLBACK field="
+                        + fields[j].Name + " type=" + fields[j].FieldType.FullName);
                 }
             }
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER scan-error="
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER inspection-error="
                 + ex.GetType().Name);
-        }
-
-        if (!found)
-        {
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RESULT-MANAGER type-not-found");
         }
     }
 
