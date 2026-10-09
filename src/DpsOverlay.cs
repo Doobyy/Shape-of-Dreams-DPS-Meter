@@ -131,6 +131,13 @@ public sealed class DpsOverlay : MonoBehaviour
         _partyPlayerIcons[playerName] = icon;
     }
 
+    public Sprite GetPartyPlayerIconForHistory(string playerName)
+    {
+        Sprite icon;
+        return !string.IsNullOrEmpty(playerName) &&
+            _partyPlayerIcons.TryGetValue(playerName, out icon) ? icon : null;
+    }
+
     public void ShowCompletedRun(DpsData.RunRecord run)
     {
         SetDisplayedRunRecord(run);
@@ -532,7 +539,7 @@ public sealed class DpsOverlay : MonoBehaviour
         List<DpsData.RunBreakdownRow> rows = GetSelectedRunViewRows(run, view, "DAMAGE");
         if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
         {
-            DrawParty(ToPartyRows(rows), metrics.Damage, metrics.DamageRate, "DPS");
+            DrawParty(ToPartyRows(rows), metrics.Damage, metrics.DamageRate, "DPS", null, rows);
             return;
         }
 
@@ -723,7 +730,7 @@ public sealed class DpsOverlay : MonoBehaviour
             DrawParty(ToPartyRows(rows), metrics.Healing, metrics.HealingRate, "HPS",
                 _mode == DisplayMode.PartyDps
                     ? "HPS: " + FormatNumber(metrics.HealingRate)
-                    : "HEAL: " + FormatNumber(metrics.Healing));
+                    : "HEAL: " + FormatNumber(metrics.Healing), rows);
             return;
         }
         GUILayout.Label(_mode == DisplayMode.CurrentDps
@@ -755,7 +762,7 @@ public sealed class DpsOverlay : MonoBehaviour
             DrawParty(ToPartyRows(rows), metrics.Barrier, metrics.BarrierRate, "BPS",
                 _mode == DisplayMode.PartyDps
                     ? "BPS: " + FormatNumber(metrics.BarrierRate)
-                    : "BARRIER: " + FormatNumber(metrics.Barrier));
+                    : "BARRIER: " + FormatNumber(metrics.Barrier), rows);
             return;
         }
         GUILayout.Label(_mode == DisplayMode.CurrentDps
@@ -1935,7 +1942,8 @@ public sealed class DpsOverlay : MonoBehaviour
         float total,
         float rate,
         string rateLabel,
-        string sectionLabel = null)
+        string sectionLabel = null,
+        IReadOnlyList<DpsData.RunBreakdownRow> savedPartyRows = null)
     {
         if (!string.IsNullOrEmpty(sectionLabel))
         {
@@ -1965,8 +1973,24 @@ public sealed class DpsOverlay : MonoBehaviour
             float valueWidth = _rowRight.CalcSize(new GUIContent(valueText)).x;
             float valueRight = rowRect.xMax - 7f;
             float valueLeft = Mathf.Max(rowRect.x + 7f, valueRight - valueWidth);
-            Sprite playerIcon;
-            bool hasPlayerIcon = _partyPlayerIcons.TryGetValue(row.Key, out playerIcon) && playerIcon != null;
+            Sprite playerIcon = null;
+            bool hasPlayerIcon = false;
+            if (savedPartyRows != null)
+            {
+                for (int savedIndex = 0; savedIndex < savedPartyRows.Count; savedIndex++)
+                {
+                    DpsData.RunBreakdownRow savedRow = savedPartyRows[savedIndex];
+                    if (savedRow == null || !string.Equals(savedRow.Name, row.Key, StringComparison.Ordinal))
+                        continue;
+                    playerIcon = ResolveRunHistoryIcon(savedRow);
+                    hasPlayerIcon = playerIcon != null;
+                    break;
+                }
+            }
+            else
+            {
+                hasPlayerIcon = _partyPlayerIcons.TryGetValue(row.Key, out playerIcon) && playerIcon != null;
+            }
             Rect barRect = rowRect;
             if (hasPlayerIcon)
             {
