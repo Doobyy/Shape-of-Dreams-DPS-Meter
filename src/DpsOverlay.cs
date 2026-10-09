@@ -92,7 +92,6 @@ public sealed class DpsOverlay : MonoBehaviour
     private Vector2 _historyScroll;
     private bool _showRunHistory;
     private const float HistoryPanelWidth = 210f;
-    private const float HistoryPanelHeight = 180f;
 
     public bool Visible { get; set; } = true;
 
@@ -103,8 +102,8 @@ public sealed class DpsOverlay : MonoBehaviour
 
     public void NotifyLiveDataReceived()
     {
-        if (_selectedRunRecord != null)
-            _selectedRunRecord = null;
+        _selectedRunRecord = null;
+        _showRunHistory = false;
     }
 
     private void Update()
@@ -812,11 +811,19 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private Rect GetRunHistoryPanelRect()
     {
+        const float rowHeight = 34f;
+        const float verticalPadding = 10f;
+        int entryCount = 1 + (_data == null || _data.CompletedRuns == null ? 0 : _data.CompletedRuns.Count);
+        float panelHeight = Mathf.Max(
+            _collapsedWindowHeight,
+            verticalPadding + (rowHeight * entryCount));
+        panelHeight = Mathf.Max(90f, panelHeight);
+
         float panelX = Mathf.Clamp(_windowRect.xMax + 4f, 4f,
             Mathf.Max(4f, Screen.width - HistoryPanelWidth - 4f));
         float panelY = Mathf.Clamp(_windowRect.y, 4f,
-            Mathf.Max(4f, Screen.height - HistoryPanelHeight - 4f));
-        return new Rect(panelX, panelY, HistoryPanelWidth, HistoryPanelHeight);
+            Mathf.Max(4f, Screen.height - panelHeight - 4f));
+        return new Rect(panelX, panelY, HistoryPanelWidth, panelHeight);
     }
 
     private bool IsPointerOverUi(Vector2 position, bool includeContextMenu)
