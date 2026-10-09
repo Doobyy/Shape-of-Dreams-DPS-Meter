@@ -1938,21 +1938,23 @@ public sealed class DpsOverlay : MonoBehaviour
             float valueLeft = Mathf.Max(rowRect.x + 7f, valueRight - valueWidth);
             Sprite playerIcon;
             bool hasPlayerIcon = _partyPlayerIcons.TryGetValue(row.Key, out playerIcon) && playerIcon != null;
-            float nameX = rowRect.x + (hasPlayerIcon ? 28f : 7f);
-            float nameWidth = Mathf.Max(0f, valueLeft - nameX - 7f);
-
             Rect barRect = rowRect;
             if (hasPlayerIcon)
             {
-                Rect iconRect = new Rect(rowRect.x + 5f, rowRect.y + 2f, 18f, 18f);
+                // Match the Current-tab source rows: full row-height icon,
+                // aligned to the row's left edge, with the bar immediately after it.
+                Rect iconRect = new Rect(rowRect.x, rowRect.y, rowRect.height, rowRect.height);
                 barRect.xMin = iconRect.xMax;
-
-                GUI.color = Color.black;
-                GUI.DrawTexture(iconRect, _whiteTexture);
-                GUI.color = Color.white;
                 DrawSprite(playerIcon, iconRect);
             }
 
+            float nameX = barRect.x + 7f;
+            float nameWidth = Mathf.Max(0f, valueLeft - nameX - 7f);
+
+            // Match the Current-tab bar's dark track and filled-bar treatment.
+            GUI.color = new Color(0.10f, 0.10f, 0.10f, 0.75f);
+            GUI.DrawTexture(barRect, _whiteTexture);
+            GUI.color = Color.white;
             DrawBar(barRect, ratio, _partyBarColor, null, DpsData.DamageScalingType.None, _partyBarOutlineColor);
 
             GUI.color = SourceNameColor;
