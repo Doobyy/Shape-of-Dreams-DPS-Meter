@@ -18,9 +18,11 @@ public sealed class DPSMeter : ModBehaviour
     private float _nextScoreScreenProbeAt;
     private readonly Dictionary<int, bool> _scoreScreenObjectStates = new Dictionary<int, bool>();
     private bool _scoreScreenCandidateActive;
-    private float _lastDamageEventAt;
-    private float _lastHealEventAt;
-    private float _lastBarrierEventAt;
+    private int _metricEventSequence;
+    private int _lastDamageEventSequence;
+    private int _lastHealEventSequence;
+    private int _lastBarrierEventSequence;
+    private int _scoreScreenProbeSequence;
 
     private void Update()
     {
@@ -31,10 +33,11 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         _nextScoreScreenProbeAt = now + 1f;
-        ProbeScoreScreenObjects(now);
+        _scoreScreenProbeSequence++;
+        ProbeScoreScreenObjects();
     }
 
-    private void ProbeScoreScreenObjects(float now)
+    private void ProbeScoreScreenObjects()
     {
         Component[] components = Resources.FindObjectsOfTypeAll<Component>();
         HashSet<int> foundCandidates = new HashSet<int>();
@@ -62,12 +65,12 @@ public sealed class DPSMeter : ModBehaviour
             if (stateChanged)
             {
                 _scoreScreenObjectStates[id] = active;
-                WriteDebugLog("[v8.400][DPS Meter] SCORE-CANDIDATE t=" + now.ToString("0.00")
+                WriteDebugLog("[v8.400][DPS Meter] SCORE-CANDIDATE probe=" + _scoreScreenProbeSequence
                     + " active=" + active
                     + " object=" + objectName
                     + " component=" + typeName
                     + " instance=" + id
-                    + " lastMetricTimes(damage/heal/barrier)=" + _lastDamageEventAt.ToString("0.00") + "/" + _lastHealEventAt.ToString("0.00") + "/" + _lastBarrierEventAt.ToString("0.00"));
+                    + " lastMetricSeq(damage/heal/barrier)=" + _lastDamageEventSequence + "/" + _lastHealEventSequence + "/" + _lastBarrierEventSequence);
             }
         }
 
@@ -98,7 +101,7 @@ public sealed class DPSMeter : ModBehaviour
         if (_scoreScreenCandidateActive != anyActiveCandidate)
         {
             _scoreScreenCandidateActive = anyActiveCandidate;
-            WriteDebugLog("[v8.400][DPS Meter] SCORE-CANDIDATE-STATE t=" + now.ToString("0.00")
+            WriteDebugLog("[v8.400][DPS Meter] SCORE-CANDIDATE-STATE probe=" + _scoreScreenProbeSequence
                 + " anyActive=" + anyActiveCandidate);
         }
     }
@@ -259,7 +262,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeHeal(EventInfoHeal info)
     {
-        _lastHealEventAt = Time.realtimeSinceStartup;
+        _lastHealEventSequence = ++_metricEventSequence;
         DewPlayer local = DewPlayer.local;
 
         if (local == null || local.hero == null || info.actor == null || info.target == null)
@@ -367,7 +370,7 @@ public sealed class DPSMeter : ModBehaviour
 
     private void OnTakeShield(EventInfoShield info)
     {
-        _lastBarrierEventAt = Time.realtimeSinceStartup;
+        _lastBarrierEventSequence = ++_metricEventSequence;
         DewPlayer local = DewPlayer.local;
 
         if (local == null || local.hero == null || info.target == null)
@@ -1523,7 +1526,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
     private void OnTakeDamage(EventInfoDamage info)
     {
-        _lastDamageEventAt = Time.realtimeSinceStartup;
+        _lastDamageEventSequence = ++_metricEventSequence;
 if (info.actor == null || info.victim == null)
         {
             return;
