@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v10.700";
+    public const string DevelopmentVersion = "v10.800";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -51,6 +51,11 @@ public sealed class DPSMeter : ModBehaviour
         {
             Debug.Log("[DPS Meter] Failed to write debug log: " + ex.GetType().Name);
         }
+    }
+
+    internal void WriteOverlayInputDiagnostic(string detail)
+    {
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] UI input blocker " + detail);
     }
 
     private static void ClearDebugLog()

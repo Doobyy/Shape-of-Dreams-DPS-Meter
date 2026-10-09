@@ -393,6 +393,11 @@ public sealed class DpsOverlay : MonoBehaviour
             _historyInputBlocker = CreateUiInputBlocker(_uiInputCanvasObject.transform, imageType);
             _settingsInputBlocker = CreateUiInputBlocker(_uiInputCanvasObject.transform, imageType);
             _contextMenuInputBlocker = CreateUiInputBlocker(_uiInputCanvasObject.transform, imageType);
+
+            if (DPSMeter.Instance != null)
+            {
+                DPSMeter.Instance.WriteOverlayInputDiagnostic("initialized");
+            }
         }
         catch (Exception ex)
         {
@@ -410,7 +415,11 @@ public sealed class DpsOverlay : MonoBehaviour
             if (!_uiInputBlockerFailureLogged)
             {
                 _uiInputBlockerFailureLogged = true;
-                Debug.LogError("[DPS Meter] Could not initialize UI click blockers: " + ex.GetType().Name);
+                if (DPSMeter.Instance != null)
+                {
+                    DPSMeter.Instance.WriteOverlayInputDiagnostic(
+                        "initialization failed: " + ex.GetType().Name);
+                }
             }
         }
     }
