@@ -293,7 +293,8 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = WindowFillColor;
         GUI.DrawTexture(panel, _whiteTexture);
         GUI.DrawTexture(closeTabRect, _whiteTexture);
-        GUI.color = Color.black;
+        // Keep the contour visible without competing with the brighter row text.
+        GUI.color = new Color(0f, 0f, 0f, 0.62f);
         const float outline = 1.25f;
         DrawHistoryOutlineLine(panel.xMin, panel.yMin, closeTabRect.xMin, panel.yMin, outline);
         DrawHistoryOutlineLine(closeTabRect.xMin, closeTabRect.yMin, closeTabRect.xMax, closeTabRect.yMin, outline);
