@@ -87,12 +87,14 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _barBackground;
     private GUIStyle _barFill;
     private GUIStyle _rowRight;
+    private GUIStyle _historyCloseTabLabel;
     private Texture2D _whiteTexture;
     private Sprite _basicAttackIcon;
     private Vector2 _historyScroll;
     private bool _showRunHistory;
     private const float HistoryPanelWidth = 184f;
-    private const float HistoryCloseTabWidth = 44f;
+    private const float HistoryCloseTabWidth = 22f;
+    private const float HistoryCloseTabHeight = 44f;
 
     public bool Visible { get; set; } = true;
 
@@ -286,10 +288,19 @@ public sealed class DpsOverlay : MonoBehaviour
 
         Rect panel = GetRunHistoryPanelRect();
         GUI.Box(panel, GUIContent.none);
-        Rect closeTabRect = new Rect(panel.xMax - 2f, panel.y, HistoryCloseTabWidth + 2f, 22f);
+        Rect closeTabRect = new Rect(panel.xMax - 2f, panel.y, HistoryCloseTabWidth + 2f, HistoryCloseTabHeight);
         GUI.Box(closeTabRect, GUIContent.none);
-        if (GUI.Button(closeTabRect, "Close", GUIStyle.none))
+        if (GUI.Button(closeTabRect, GUIContent.none, GUIStyle.none))
             _showRunHistory = false;
+
+        Matrix4x4 previousMatrix = GUI.matrix;
+        GUIUtility.RotateAroundPivot(90f, closeTabRect.center);
+        GUI.Label(new Rect(
+            closeTabRect.center.x - closeTabRect.height * 0.5f,
+            closeTabRect.center.y - closeTabRect.width * 0.5f,
+            closeTabRect.height,
+            closeTabRect.width), "CLOSE", _historyCloseTabLabel);
+        GUI.matrix = previousMatrix;
         const float padding = 6f;
         const float rowHeight = 38f;
         Rect listRect = new Rect(panel.x + padding, panel.y + 5f,
@@ -2263,6 +2274,15 @@ public sealed class DpsOverlay : MonoBehaviour
         _rowRight = new GUIStyle(_row)
         {
             alignment = TextAnchor.MiddleRight
+        };
+
+        _historyCloseTabLabel = new GUIStyle(GUI.skin.label)
+        {
+            alignment = TextAnchor.MiddleCenter,
+            fontSize = 10,
+            fontStyle = FontStyle.Bold,
+            normal = { textColor = Color.white },
+            wordWrap = false
         };
 
         _small = new GUIStyle(_row)
