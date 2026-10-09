@@ -171,7 +171,6 @@ public sealed class DPSMeter : ModBehaviour
                 WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION subscribed manager="
                     + manager.name + " active="
                     + (behaviour == null ? "<not-behaviour>" : behaviour.isActiveAndEnabled.ToString()));
-                LogGameConclusionState("subscribed");
                 return;
             }
 
@@ -216,8 +215,6 @@ public sealed class DPSMeter : ModBehaviour
 
     private void DetachFromClientEvents()
     {
-        DetachFromGameResultManager();
-
         if (_clientEvents != null && _subscribed)
         {
             _clientEvents.OnTakeDamage -= OnTakeDamage;
