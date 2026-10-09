@@ -11,7 +11,7 @@ namespace DPSMeter;
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v9.900";
+    public const string DevelopmentVersion = "v10.000";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -207,6 +207,7 @@ public sealed class DPSMeter : ModBehaviour
         _runActive = false;
         _awaitingNextRunEvent = true;
         _activeRunRecord = null;
+        _data.SetActiveRun(null);
         _activeRunTotalDamage = 0f;
         _activeRunWorlds.Clear();
         _activeRunMaps.Clear();

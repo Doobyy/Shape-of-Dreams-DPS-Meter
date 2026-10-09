@@ -257,20 +257,26 @@ public sealed class DpsOverlay : MonoBehaviour
         float currentY = panel.y + 31f;
         GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 18f), "CURRENT RUN", _header);
         currentY += 19f;
-        GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
-            "Character: " + (active == null || string.IsNullOrEmpty(active.CharacterName) ? "—" : active.CharacterName), _small);
-        currentY += 16f;
-        GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
-            "Visited: " + (active == null ? 0 : active.WorldsVisited) + " Worlds  " +
-            (active == null ? 0 : active.MapsVisited) + " Maps", _small);
-        currentY += 16f;
-        GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
-            "Damage: " + FormatNumber(active == null ? 0f : active.TotalDamage), _small);
-        currentY += 16f;
-        GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
-            "Duration: " + FormatDuration(active == null ? 0f : active.DurationSeconds), _small);
+        if (active == null)
+        {
+            GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f), "Awaiting next run", _small);
+        }
+        else
+        {
+            GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
+                "Character: " + (string.IsNullOrEmpty(active.CharacterName) ? "Unknown Character" : active.CharacterName), _small);
+            currentY += 16f;
+            GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
+                "Visited: " + active.WorldsVisited + " Worlds  " + active.MapsVisited + " Maps", _small);
+            currentY += 16f;
+            GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
+                "Damage: " + FormatNumber(active.TotalDamage), _small);
+            currentY += 16f;
+            GUI.Label(new Rect(panel.x + 10f, currentY, panel.width - 20f, 16f),
+                "Duration: " + FormatDuration(active.DurationSeconds), _small);
+        }
 
-        float listHeaderY = currentY + 21f;
+        float listHeaderY = panel.y + 135f;
         GUI.Label(new Rect(panel.x + 10f, listHeaderY, panel.width - 20f, 18f),
             "COMPLETED RUNS (" + _data.CompletedRuns.Count + "/10)", _header);
         float detailsHeight = _selectedRunRecord == null ? 0f : 62f;
