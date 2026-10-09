@@ -58,8 +58,15 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             int id = component.gameObject.GetInstanceID();
-            foundCandidates.Add(id);
             bool active = component.gameObject.activeInHierarchy;
+            // Ignore inactive asset/prefab candidates unless this object was
+            // previously observed active in the live scene.
+            if (!active && !_scoreScreenObjectStates.ContainsKey(id))
+            {
+                continue;
+            }
+
+            foundCandidates.Add(id);
             bool previous;
             bool stateChanged = !_scoreScreenObjectStates.TryGetValue(id, out previous) || previous != active;
             if (stateChanged)
