@@ -66,7 +66,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v14.500";
+    public const string DevelopmentVersion = "v14.600";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -856,12 +856,90 @@ public sealed class DPSMeter : ModBehaviour
             + " texture=" + (currentIcon == null || currentIcon.texture == null ? "<null>" : currentIcon.texture.name)
             + " heroType=" + (hero == null ? "<null>" : hero.GetType().FullName));
 
+        TraceLoadedEmblemAssets();
+
         if (hero == null)
             return;
 
         HashSet<object> visited = new HashSet<object>();
         TraceHeroIconObject(hero, "hero", 0, visited);
         WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HERO ICON scan-complete objects=" + visited.Count);
+    }
+
+    private static void TraceLoadedEmblemAssets()
+    {
+        const int maxLoggedPerType = 80;
+        int spriteCount = 0;
+        int textureCount = 0;
+        int loggedSprites = 0;
+        int loggedTextures = 0;
+
+        try
+        {
+            Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+            spriteCount = sprites == null ? 0 : sprites.Length;
+            for (int i = 0; sprites != null && i < sprites.Length; i++)
+            {
+                Sprite sprite = sprites[i];
+                if (sprite == null || !ShouldTraceEmblemAssetName(sprite.name))
+                    continue;
+
+                if (loggedSprites >= maxLoggedPerType)
+                    continue;
+
+                Texture2D texture = sprite.texture;
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM ASSET sprite="
+                    + sprite.name + " texture=" + (texture == null ? "<null>" : texture.name)
+                    + " size=" + sprite.rect.width + "x" + sprite.rect.height);
+                loggedSprites++;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM ASSET sprite-scan-error="
+                + ex.GetType().Name);
+        }
+
+        try
+        {
+            Texture2D[] textures = Resources.FindObjectsOfTypeAll<Texture2D>();
+            textureCount = textures == null ? 0 : textures.Length;
+            for (int i = 0; textures != null && i < textures.Length; i++)
+            {
+                Texture2D texture = textures[i];
+                if (texture == null || !ShouldTraceEmblemAssetName(texture.name))
+                    continue;
+
+                if (loggedTextures >= maxLoggedPerType)
+                    continue;
+
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM ASSET texture="
+                    + texture.name + " size=" + texture.width + "x" + texture.height);
+                loggedTextures++;
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM ASSET texture-scan-error="
+                + ex.GetType().Name);
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM ASSET scan-complete"
+            + " sprites=" + spriteCount + " sprite-matches=" + loggedSprites
+            + " textures=" + textureCount + " texture-matches=" + loggedTextures);
+    }
+
+    private static bool ShouldTraceEmblemAssetName(string assetName)
+    {
+        if (string.IsNullOrEmpty(assetName))
+            return false;
+
+        return assetName.IndexOf("ACH_", StringComparison.OrdinalIgnoreCase) >= 0
+            || assetName.IndexOf("Emblem", StringComparison.OrdinalIgnoreCase) >= 0
+            || assetName.IndexOf("Bismuth", StringComparison.OrdinalIgnoreCase) >= 0
+            || assetName.IndexOf("Pure_Imagination", StringComparison.OrdinalIgnoreCase) >= 0
+            || assetName.IndexOf("Once_Upon_A_Time", StringComparison.OrdinalIgnoreCase) >= 0
+            || assetName.IndexOf("Hero_", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static void TraceHeroIconObject(object target, string path, int depth, HashSet<object> visited)
