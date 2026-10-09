@@ -66,7 +66,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v14.700";
+    public const string DevelopmentVersion = "v14.800";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -851,9 +851,12 @@ public sealed class DPSMeter : ModBehaviour
             return;
         _heroIconReferencesLogged = true;
 
+        Texture2D currentTexture = currentIcon == null ? null : currentIcon.texture;
         WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HERO ICON current="
             + (currentIcon == null ? "<null>" : currentIcon.name)
-            + " texture=" + (currentIcon == null || currentIcon.texture == null ? "<null>" : currentIcon.texture.name)
+            + " spriteRect=" + (currentIcon == null ? "<null>" : currentIcon.rect.width + "x" + currentIcon.rect.height)
+            + " texture=" + (currentTexture == null ? "<null>" : currentTexture.name)
+            + " textureSize=" + (currentTexture == null ? "<null>" : currentTexture.width + "x" + currentTexture.height)
             + " heroType=" + (hero == null ? "<null>" : hero.GetType().FullName));
 
         TraceLoadedEmblemAssets();
@@ -868,14 +871,10 @@ public sealed class DPSMeter : ModBehaviour
 
     private static void TraceLoadedEmblemAssets()
     {
-        const int maxLoggedPerType = 250;
-        const int targetSize = 256;
         int spriteCount = 0;
         int textureCount = 0;
         int matchingSprites = 0;
         int matchingTextures = 0;
-        int loggedSprites = 0;
-        int loggedTextures = 0;
 
         try
         {
@@ -884,31 +883,20 @@ public sealed class DPSMeter : ModBehaviour
             for (int i = 0; sprites != null && i < sprites.Length; i++)
             {
                 Sprite sprite = sprites[i];
-                if (sprite == null)
-                    continue;
-
-                Texture2D texture = sprite.texture;
-                bool spriteIsTargetSize = Mathf.RoundToInt(sprite.rect.width) == targetSize
-                    && Mathf.RoundToInt(sprite.rect.height) == targetSize;
-                bool textureIsTargetSize = texture != null
-                    && texture.width == targetSize && texture.height == targetSize;
-                if (!spriteIsTargetSize && !textureIsTargetSize)
+                if (sprite == null || !IsEmblemRelatedAssetName(sprite.name))
                     continue;
 
                 matchingSprites++;
-                if (loggedSprites >= maxLoggedPerType)
-                    continue;
-
-                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM SIZE sprite="
+                Texture2D texture = sprite.texture;
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM ASSET sprite="
                     + sprite.name + " rect=" + sprite.rect.width + "x" + sprite.rect.height
                     + " texture=" + (texture == null ? "<null>" : texture.name)
                     + " textureSize=" + (texture == null ? "<null>" : texture.width + "x" + texture.height));
-                loggedSprites++;
             }
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM SIZE sprite-scan-error="
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM ASSET sprite-scan-error="
                 + ex.GetType().Name);
         }
 
@@ -919,29 +907,37 @@ public sealed class DPSMeter : ModBehaviour
             for (int i = 0; textures != null && i < textures.Length; i++)
             {
                 Texture2D texture = textures[i];
-                if (texture == null || texture.width != targetSize || texture.height != targetSize)
+                if (texture == null || !IsEmblemRelatedAssetName(texture.name))
                     continue;
 
                 matchingTextures++;
-                if (loggedTextures >= maxLoggedPerType)
-                    continue;
-
-                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM SIZE texture="
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM ASSET texture="
                     + texture.name + " size=" + texture.width + "x" + texture.height);
-                loggedTextures++;
             }
         }
         catch (Exception ex)
         {
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM SIZE texture-scan-error="
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM ASSET texture-scan-error="
                 + ex.GetType().Name);
         }
 
-        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM SIZE scan-complete"
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] EMBLEM ASSET scan-complete"
             + " sprites=" + spriteCount + " matching-sprites=" + matchingSprites
-            + " logged-sprites=" + loggedSprites
-            + " textures=" + textureCount + " matching-textures=" + matchingTextures
-            + " logged-textures=" + loggedTextures);
+            + " textures=" + textureCount + " matching-textures=" + matchingTextures);
+    }
+
+    private static bool IsEmblemRelatedAssetName(string assetName)
+    {
+        if (string.IsNullOrEmpty(assetName))
+            return false;
+
+        return assetName.IndexOf("emblem", StringComparison.OrdinalIgnoreCase) >= 0
+            || assetName.IndexOf("hero_", StringComparison.OrdinalIgnoreCase) >= 0
+            || assetName.IndexOf("character", StringComparison.OrdinalIgnoreCase) >= 0
+            || assetName.IndexOf("portrait", StringComparison.OrdinalIgnoreCase) >= 0
+            || assetName.IndexOf("ach_", StringComparison.OrdinalIgnoreCase) >= 0
+            || assetName.IndexOf("once_upon_a_time", StringComparison.OrdinalIgnoreCase) >= 0
+            || assetName.IndexOf("pure_imagination", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static void TraceHeroIconObject(object target, string path, int depth, HashSet<object> visited)
