@@ -70,7 +70,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v16.100";
+    public const string DevelopmentVersion = "v16.200";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -308,6 +308,8 @@ public sealed class DPSMeter : ModBehaviour
         _activeRunRecord.CompletedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
         _data.ArchiveRun(_activeRunRecord);
         SaveRunHistory();
+        if (_overlay != null)
+            _overlay.ShowCompletedRun(_activeRunRecord);
 
         _runActive = false;
         _awaitingNextRunEvent = true;
@@ -790,12 +792,7 @@ public sealed class DPSMeter : ModBehaviour
         };
         _data.SetActiveRun(_activeRunRecord);
         if (_overlay != null)
-        {
-            if (hasRunMainColor)
-                _overlay.SetPartyBarColor(runMainColor);
-            else
-                _overlay.ResetPartyBarColor();
-        }
+            _overlay.ShowLiveRun(_activeRunRecord);
         if (captureCurrentLocation) RecordCurrentRunLocation();
         RefreshActiveRunSummary();
     }
@@ -1125,7 +1122,6 @@ public sealed class DPSMeter : ModBehaviour
             if (_overlay != null)
             {
                 _overlay.SetPartyPlayerIcon(partyPlayerName, FindSpriteMember(healingHero));
-                _overlay.NotifyLiveDataReceived();
             }
             _data.AddPartyHealing(healing, partyPlayerName);
         }
@@ -1133,7 +1129,6 @@ public sealed class DPSMeter : ModBehaviour
         if (info.target == local.hero)
         {
             _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon, healingActorChain);
-            if (_overlay != null) _overlay.NotifyLiveDataReceived();
         }
 
     }
@@ -1171,7 +1166,6 @@ public sealed class DPSMeter : ModBehaviour
             if (_overlay != null)
             {
                 _overlay.SetPartyPlayerIcon(partyPlayerName, FindSpriteMember(barrierHero));
-                _overlay.NotifyLiveDataReceived();
             }
             _data.AddPartyBarrier(barrier, partyPlayerName);
         }
@@ -1179,7 +1173,6 @@ public sealed class DPSMeter : ModBehaviour
         if (info.target == local.hero)
         {
             _data.AddBarrier(barrier, sourceIdentity, sourceName, icon);
-            if (_overlay != null) _overlay.NotifyLiveDataReceived();
         }
     }
 
@@ -2513,7 +2506,6 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
             playerName,
             isDirectEssenceDamage,
             scalingType);
-        if (_overlay != null) _overlay.NotifyLiveDataReceived();
     }
 
     private DpsData.DamageScalingType GetCachedSkillScaling(string skillIdentity, SkillTrigger skill, Actor actor)
