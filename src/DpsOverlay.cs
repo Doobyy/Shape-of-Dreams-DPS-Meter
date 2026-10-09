@@ -298,7 +298,7 @@ public sealed class DpsOverlay : MonoBehaviour
         DrawHistoryOutlineLine(panel.xMin, panel.yMin, closeTabRect.xMin, panel.yMin, outline);
         DrawHistoryOutlineLine(closeTabRect.xMin, closeTabRect.yMin, closeTabRect.xMax, closeTabRect.yMin, outline);
         DrawHistoryOutlineLine(closeTabRect.xMax, closeTabRect.yMin, closeTabRect.xMax, closeTabRect.yMax, outline);
-        DrawHistoryOutlineLine(closeTabRect.xMin, closeTabRect.yMax, panel.xMax, closeTabRect.yMax, outline);
+        DrawHistoryOutlineLine(closeTabRect.xMax, closeTabRect.yMax, panel.xMax, closeTabRect.yMax, outline);
         DrawHistoryOutlineLine(panel.xMax, closeTabRect.yMax, panel.xMax, panel.yMax, outline);
         DrawHistoryOutlineLine(panel.xMax, panel.yMax, panel.xMin, panel.yMax, outline);
         DrawHistoryOutlineLine(panel.xMin, panel.yMax, panel.xMin, panel.yMin, outline);
