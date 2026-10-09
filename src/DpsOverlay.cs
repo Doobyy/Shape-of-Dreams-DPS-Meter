@@ -302,13 +302,13 @@ public sealed class DpsOverlay : MonoBehaviour
         float y = 0f;
         DpsData.RunRecord active = _data.ActiveRun;
         string activeCharacter = active == null || string.IsNullOrEmpty(active.CharacterName)
-            ? "Unknown Character" : active.CharacterName;
+            ? "Unknown" : active.CharacterName;
         Rect activeRect = new Rect(0f, y, viewRect.width, rowHeight);
         DrawRunHistoryRow(activeRect, active == null ? null : active,
-            "CURRENT  " + activeCharacter,
+            active == null ? "Current " + activeCharacter : 
+                "Current " + activeCharacter + " " + FormatDuration(active.DurationSeconds),
             active == null ? "Awaiting next run" :
-                FormatNumber(active.TotalDamage) + "  " + FormatDuration(active.DurationSeconds) +
-                "  Visited: " + active.WorldsVisited + " Worlds " + active.MapsVisited + " Maps",
+                "Visited: " + active.WorldsVisited + " Worlds - " + active.MapsVisited + " Maps",
             true);
         y += rowHeight;
 
@@ -316,11 +316,11 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             DpsData.RunRecord run = _data.CompletedRuns[i];
             if (run == null) continue;
-            string character = string.IsNullOrEmpty(run.CharacterName) ? "Unknown Character" : run.CharacterName;
+            string character = string.IsNullOrEmpty(run.CharacterName) ? "Unknown" : run.CharacterName;
             Rect rowRect = new Rect(0f, y, viewRect.width, rowHeight);
-            DrawRunHistoryRow(rowRect, run, character + "  " + FormatNumber(run.TotalDamage),
-                FormatDuration(run.DurationSeconds) + "  Visited: " +
-                run.WorldsVisited + " Worlds " + run.MapsVisited + " Maps", false);
+            DrawRunHistoryRow(rowRect, run,
+                character + " " + FormatNumber(run.TotalDamage) + " - " + FormatDuration(run.DurationSeconds),
+                "Visited: " + run.WorldsVisited + " Worlds - " + run.MapsVisited + " Maps", false);
             y += rowHeight;
         }
 
@@ -331,15 +331,16 @@ public sealed class DpsOverlay : MonoBehaviour
     {
         bool selected = isCurrent ? _selectedRunRecord == null : ReferenceEquals(_selectedRunRecord, run);
         bool hovered = rect.Contains(Event.current.mousePosition);
+
+        GUI.color = new Color(0.08f, 0.08f, 0.08f, 0.48f);
+        GUI.DrawTexture(rect, _whiteTexture);
+        GUI.color = Color.white;
+
         if (selected || hovered)
         {
-            if (_contextMenuHighlightTexture == null)
-            {
-                _contextMenuHighlightTexture = new Texture2D(1, 1);
-                _contextMenuHighlightTexture.SetPixel(0, 0, new Color(1f, 1f, 1f, 0.10f));
-                _contextMenuHighlightTexture.Apply();
-            }
-            GUI.DrawTexture(rect, _contextMenuHighlightTexture);
+            GUI.color = new Color(1f, 1f, 1f, hovered ? 0.24f : 0.13f);
+            GUI.DrawTexture(rect, _whiteTexture);
+            GUI.color = Color.white;
         }
 
         if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
