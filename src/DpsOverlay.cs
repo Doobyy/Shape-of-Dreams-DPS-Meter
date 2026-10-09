@@ -427,22 +427,6 @@ public sealed class DpsOverlay : MonoBehaviour
         }
 
         return null;
-
-        Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
-        for (int i = 0; sprites != null && i < sprites.Length; i++)
-        {
-            Sprite candidate = sprites[i];
-            if (candidate == null || !string.Equals(candidate.name, row.IconName, StringComparison.Ordinal))
-                continue;
-            if (!string.IsNullOrEmpty(row.IconTextureName) &&
-                (candidate.texture == null || !string.Equals(candidate.texture.name, row.IconTextureName, StringComparison.Ordinal)))
-                continue;
-            _historyIconCache[cacheKey] = candidate;
-            return candidate;
-        }
-
-        _historyIconLookups.Add(cacheKey);
-        return null;
     }
 
     private static List<DpsData.RunBreakdownRow> GetSelectedRunRows(
