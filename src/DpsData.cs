@@ -35,6 +35,8 @@ public sealed class DpsData
         public string CharacterName;
         public string Outcome;
         public float TotalDamage;
+        public float TotalHealing;
+        public float TotalBarrier;
         public float DurationSeconds;
         public int WorldsVisited;
         public int MapsVisited;
