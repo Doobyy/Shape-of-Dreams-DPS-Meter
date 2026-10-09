@@ -510,7 +510,10 @@ public sealed class DpsOverlay : MonoBehaviour
             if (selected)
             {
                 // Use the character's outline hue, brightened so the wider halo reads as a glow.
-                Color glowColor = Color.Lerp(GetRunCharacterOutlineColor(run), Color.white, 0.55f);
+                Color glowColor = GetRunCharacterOutlineColor(run);
+                Color.RGBToHSV(glowColor, out float glowHue, out float glowSaturation, out float glowValue);
+                // Raise brightness without blending toward white, preserving the outline's hue.
+                glowColor = Color.HSVToRGB(glowHue, glowSaturation, Mathf.Max(glowValue, 0.78f));
                 GUI.color = glowColor;
 
                 // Several offset rings create a soft, broader halo rather than a thin edge stroke.
