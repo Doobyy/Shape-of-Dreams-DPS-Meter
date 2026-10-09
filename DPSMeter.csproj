@@ -34,6 +34,7 @@
     <Reference Include="Dew.Core"><HintPath>$(ShapeOfDreamsHome)\Shape of Dreams_Data\Managed\Dew.Core.dll</HintPath></Reference>
     <Reference Include="Mirror"><HintPath>$(ShapeOfDreamsHome)\Shape of Dreams_Data\Managed\Mirror.dll</HintPath></Reference>
     <Reference Include="System" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Core" />
     <Reference Include="UnityEngine.CoreModule">
     <HintPath>$(ShapeOfDreamsHome)\Shape of Dreams_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
