@@ -369,6 +369,21 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (rightClick)
         {
+            if (_contextMenuOpen)
+            {
+                if (_contextMenuRect.Contains(e.mousePosition))
+                {
+                    return;
+                }
+
+                _contextMenuOpen = false;
+                if (IsPointerOverUi(e.mousePosition, false))
+                {
+                    e.Use();
+                    return;
+                }
+            }
+
             if (_settingsOpen && !_settingsRect.Contains(e.mousePosition))
             {
                 _settingsOpen = false;
