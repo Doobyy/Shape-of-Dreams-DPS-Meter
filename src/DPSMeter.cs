@@ -66,7 +66,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v14.300";
+    public const string DevelopmentVersion = "v14.400";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -719,6 +719,7 @@ public sealed class DPSMeter : ModBehaviour
         float elapsed;
         _runStartGameElapsed = TryGetGameElapsedTime(out elapsed) ? elapsed : -1f;
         Sprite characterIcon = GetLocalHeroIcon();
+        TraceCharacterEmblemVariants(characterIcon);
         _activeRunRecord = new DpsData.RunRecord
         {
             CharacterName = GetLocalHeroDisplayName(),
@@ -840,6 +841,44 @@ public sealed class DPSMeter : ModBehaviour
         }
         catch (Exception) { }
         return false;
+    }
+
+    private static bool _characterEmblemVariantsLogged;
+
+    private static void TraceCharacterEmblemVariants(Sprite currentIcon)
+    {
+        if (_characterEmblemVariantsLogged)
+            return;
+        _characterEmblemVariantsLogged = true;
+
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS EMBLEM current="
+            + (currentIcon == null ? "<null>" : currentIcon.name)
+            + " texture=" + (currentIcon == null || currentIcon.texture == null ? "<null>" : currentIcon.texture.name));
+
+        Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+        int logged = 0;
+        for (int i = 0; sprites != null && i < sprites.Length; i++)
+        {
+            Sprite candidate = sprites[i];
+            if (candidate == null)
+                continue;
+
+            string spriteName = candidate.name ?? string.Empty;
+            string textureName = candidate.texture == null ? string.Empty : candidate.texture.name ?? string.Empty;
+            bool matches = spriteName.IndexOf("Bismuth", StringComparison.OrdinalIgnoreCase) >= 0
+                || textureName.IndexOf("Bismuth", StringComparison.OrdinalIgnoreCase) >= 0
+                || spriteName.IndexOf("Emblem", StringComparison.OrdinalIgnoreCase) >= 0
+                || textureName.IndexOf("Emblem", StringComparison.OrdinalIgnoreCase) >= 0;
+            if (!matches)
+                continue;
+
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS EMBLEM candidate sprite="
+                + spriteName + " texture=" + textureName
+                + " size=" + (candidate.texture == null ? "<no-texture>" : candidate.texture.width + "x" + candidate.texture.height));
+            logged++;
+        }
+
+        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CLASS EMBLEM candidates=" + logged);
     }
 
     private static Sprite GetLocalHeroIcon()
