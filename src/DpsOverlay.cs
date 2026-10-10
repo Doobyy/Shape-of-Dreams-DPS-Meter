@@ -60,7 +60,6 @@ public sealed class DpsOverlay : MonoBehaviour
     private Color _partyBarColor = DefaultBarColor;
     private Color _partyBarOutlineColor = DefaultBarOutlineColor;
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
-    private readonly HashSet<string> _historyIconDiagnosticSeen = new HashSet<string>();
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerGlowColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -113,26 +112,7 @@ public sealed class DpsOverlay : MonoBehaviour
         _data = data;
     }
 
-    private void LogHistoryIconResolution(DpsData.RunBreakdownRow row, string status, string detail)
-    {
-        if (row == null || DPSMeter.Instance == null)
-            return;
 
-        string identity = string.IsNullOrEmpty(row.Identity) ? row.Name : row.Identity;
-        string diagnosticKey = status + "|" + row.SourceType + "|" + identity + "|" +
-            (row.IconName ?? string.Empty) + "|" + (row.IconTextureName ?? string.Empty);
-        if (!_historyIconDiagnosticSeen.Add(diagnosticKey))
-            return;
-
-        DPSMeter.Instance.WriteHistoryIconDiagnostic(
-            "status=" + status +
-            " sourceType=" + (row.SourceType ?? "<null>") +
-            " name=" + (row.Name ?? "<null>") +
-            " identity=" + (identity ?? "<null>") +
-            " savedSprite=" + (row.IconName ?? "<null>") +
-            " savedTexture=" + (row.IconTextureName ?? "<null>") +
-            " result=" + (detail ?? "<none>"));
-    }
 
     public void SetPartyBarColor(Color fillColor, bool useColdOutline = false)
     {
@@ -827,105 +807,51 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private Sprite ResolveRunHistoryIcon(DpsData.RunBreakdownRow row)
     {
-        if (row == null) return null;
-        string identity = string.IsNullOrEmpty(row.Identity) ? row.Name : row.Identity;
+        if (row == null)
+            return null;
 
+        string identity = string.IsNullOrEmpty(row.Identity) ? row.Name : row.Identity;
         string cacheKey = row.IconName + "|" + (row.IconTextureName ?? string.Empty);
-        string spriteNameDiagnostics = "sameNameCount=0 sameNameTextures=<none>";
+        Sprite cached;
+        if (!string.IsNullOrEmpty(row.IconName) && _historyIconCache.TryGetValue(cacheKey, out cached))
+            return cached;
+
         if (!string.IsNullOrEmpty(row.IconName))
         {
-            Sprite cached;
-            if (_historyIconCache.TryGetValue(cacheKey, out cached))
-            {
-                LogHistoryIconResolution(row, "CACHE-MATCH",
-                    "sprite=" + cached.name + " texture=" +
-                    (cached.texture == null ? "<null>" : cached.texture.name));
-                return cached;
-            }
-
             Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
-            int sameNameCount = 0;
-            List<string> sameNameTextures = new List<string>();
             for (int i = 0; sprites != null && i < sprites.Length; i++)
             {
                 Sprite candidate = sprites[i];
                 if (candidate == null || !string.Equals(candidate.name, row.IconName, StringComparison.Ordinal))
                     continue;
-
-                sameNameCount++;
-                string textureName = candidate.texture == null ? "<null>" : candidate.texture.name;
-                if (sameNameTextures.Count < 3 && !sameNameTextures.Contains(textureName))
-                    sameNameTextures.Add(textureName);
-
                 if (!string.IsNullOrEmpty(row.IconTextureName) &&
                     (candidate.texture == null || !string.Equals(candidate.texture.name, row.IconTextureName, StringComparison.Ordinal)))
                     continue;
+
                 _historyIconCache[cacheKey] = candidate;
-                LogHistoryIconResolution(row, "SPRITE-MATCH",
-                    "sprite=" + candidate.name + " texture=" +
-                    (candidate.texture == null ? "<null>" : candidate.texture.name));
                 return candidate;
             }
-
-            spriteNameDiagnostics = "sameNameCount=" + sameNameCount +
-                " sameNameTextures=" + (sameNameTextures.Count == 0 ? "<none>" : string.Join(",", sameNameTextures.ToArray()));
         }
 
-        // Record the live registry result explicitly so unresolved icons can be distinguished
-        // from missing registry entries and saved sprite/texture mismatches.
-        string registryDiagnostics = "registry=not-checked";
-        if (_data != null)
-        {
-            Sprite liveIcon = null;
-            string registryName = "none";
-            if (row.SourceType == "SKILL")
-            {
-                registryName = "skill";
-                liveIcon = _data.GetSkillIcon(identity);
-            }
-            else if (row.SourceType == "OTHER")
-            {
-                registryName = "other";
-                liveIcon = string.Equals(row.Name, "Basic Attack", StringComparison.Ordinal)
-                    ? GetBasicAttackIcon()
-                    : _data.GetCurrentOtherIcon(identity);
-            }
-            else if (row.SourceType == "ESSENCE")
-            {
-                registryName = "essence";
-                liveIcon = _data.GetCumulativeEssenceIcon(identity);
-            }
-            else if (row.SourceType == "HEALING")
-            {
-                registryName = "healing";
-                liveIcon = _data.GetCumulativeHealingIcon(identity);
-            }
-            else if (row.SourceType == "BARRIER")
-            {
-                registryName = "barrier";
-                liveIcon = _data.GetCumulativeBarrierIcon(identity);
-            }
+        if (_data == null)
+            return null;
 
-            registryDiagnostics = "registry=" + registryName + " icon=";
-            if (liveIcon == null)
-                registryDiagnostics += "<null>";
-            else
-                registryDiagnostics += liveIcon.name + "/" +
-                    (liveIcon.texture == null ? "<null>" : liveIcon.texture.name);
+        if (row.SourceType == "SKILL")
+            return _data.GetSkillIcon(identity);
+        if (row.SourceType == "OTHER")
+            return string.Equals(row.Name, "Basic Attack", StringComparison.Ordinal)
+                ? GetBasicAttackIcon()
+                : _data.GetCurrentOtherIcon(identity);
+        if (row.SourceType == "ESSENCE")
+            return _data.GetCumulativeEssenceIcon(identity);
+        if (row.SourceType == "HEALING")
+            return _data.GetCumulativeHealingIcon(identity);
+        if (row.SourceType == "BARRIER")
+            return _data.GetCumulativeBarrierIcon(identity);
 
-            if (liveIcon != null)
-            {
-                LogHistoryIconResolution(row, "REGISTRY-MATCH",
-                    "sprite=" + liveIcon.name + " texture=" +
-                    (liveIcon.texture == null ? "<null>" : liveIcon.texture.name));
-                return liveIcon;
-            }
-        }
-
-        LogHistoryIconResolution(row, "UNRESOLVED",
-            spriteNameDiagnostics + " " + registryDiagnostics);
         return null;
     }
+
 
     private static List<DpsData.RunBreakdownRow> GetSelectedRunRows(
         DpsData.RunRecord run, string category)
