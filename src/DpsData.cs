@@ -24,6 +24,8 @@ public sealed class DpsData
         public string Identity;
         public string Name;
         public float Amount;
+        public float AppliedAmount;
+        public float EffectiveAmount;
         public string Elemental;
         public string Scaling;
         public string IconName;
@@ -40,8 +42,10 @@ public sealed class DpsData
         public string View;
         public float Damage;
         public float DamageRate;
+        public float AppliedDamage;
         public float Healing;
         public float HealingRate;
+        public float EffectiveHealing;
         public float Barrier;
         public float BarrierRate;
     }
