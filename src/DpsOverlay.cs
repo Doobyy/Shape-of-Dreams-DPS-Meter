@@ -540,24 +540,35 @@ public sealed class DpsOverlay : MonoBehaviour
                 rect.y + (rect.height - iconSize) * 0.5f,
                 iconSize,
                 iconSize);
-            // History emblems stay in their character color and keep their glow,
-            // matching the live party rows instead of turning grayscale when idle.
             if (run.HasCharacterMainColor)
             {
-                GUI.color = new Color(
+                Color characterColor = new Color(
                     Mathf.Clamp01(run.CharacterMainColorR),
                     Mathf.Clamp01(run.CharacterMainColorG),
                     Mathf.Clamp01(run.CharacterMainColorB),
                     1f);
+                if (selected)
+                    GUI.color = characterColor;
+                else if (hovered)
+                    GUI.color = new Color(
+                        characterColor.r * 0.45f,
+                        characterColor.g * 0.45f,
+                        characterColor.b * 0.45f,
+                        1f);
+                else
+                    GUI.color = new Color(0.55f, 0.55f, 0.55f, 1f);
             }
             else
             {
-                GUI.color = Color.white;
+                GUI.color = selected ? Color.white : hovered
+                    ? new Color(0.72f, 0.72f, 0.72f, 1f)
+                    : new Color(0.55f, 0.55f, 0.55f, 1f);
             }
 
-            // Preserve the intended emblem tint separately from the outline-colored halo.
+            // Preserve the intended selected/hovered/idle tint separately from the halo.
             Color emblemTint = GUI.color;
-            DrawCharacterGlow(characterIcon, iconRect, GetRunCharacterOutlineColor(run));
+            if (selected)
+                DrawCharacterGlow(characterIcon, iconRect, GetRunCharacterOutlineColor(run));
 
             // Restore the emblem tint before drawing it on top of the glow.
             GUI.color = emblemTint;
