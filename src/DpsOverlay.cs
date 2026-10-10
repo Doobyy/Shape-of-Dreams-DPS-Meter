@@ -898,9 +898,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private void DiagnoseAddressableHistoryIconLocations(string iconName, string textureName)
     {
-        if (_historyAddressablesInventoryLogged)
-            return;
-
+        bool logInventory = !_historyAddressablesInventoryLogged;
         _historyAddressablesInventoryLogged = true;
         try
         {
@@ -973,7 +971,7 @@ public sealed class DpsOverlay : MonoBehaviour
                                 keyMatches.Add(keyText.Length > 120 ? keyText.Substring(0, 120) : keyText);
                         }
 
-                        if (keySamples.Count < 24)
+                        if (logInventory && keySamples.Count < 24)
                         {
                             string sampleText = keyText;
                             if (sampleText != null && sampleText.Length > 100)
@@ -987,15 +985,19 @@ public sealed class DpsOverlay : MonoBehaviour
                     DPSMeter.WriteHistoryIconResourceDiagnostic("addressables key-match icon=" + iconName +
                         " locator=" + locatorType.Name + " matches=" + string.Join(",", keyMatches.ToArray()));
 
-                totalKeys += locatorKeyCount;
-                locatorDetails.Add(locatorType.FullName + ":" + locatorKeyCount);
+                if (logInventory)
+                {
+                    totalKeys += locatorKeyCount;
+                    locatorDetails.Add(locatorType.FullName + ":" + locatorKeyCount);
+                }
             }
 
-            DPSMeter.WriteHistoryIconResourceDiagnostic("addressables inventory icon=" + iconName +
-                " locators=" + locatorCount + " locatorKeys=" +
-                (locatorDetails.Count == 0 ? "<none>" : string.Join(",", locatorDetails.ToArray())) +
-                " totalKeys=" + totalKeys + " keySamples=" +
-                (keySamples.Count == 0 ? "<none>" : string.Join(";", keySamples.ToArray())));
+            if (logInventory)
+                DPSMeter.WriteHistoryIconResourceDiagnostic("addressables inventory icon=" + iconName +
+                    " locators=" + locatorCount + " locatorKeys=" +
+                    (locatorDetails.Count == 0 ? "<none>" : string.Join(",", locatorDetails.ToArray())) +
+                    " totalKeys=" + totalKeys + " keySamples=" +
+                    (keySamples.Count == 0 ? "<none>" : string.Join(";", keySamples.ToArray())));
         }
         catch (Exception ex)
         {
