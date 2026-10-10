@@ -390,17 +390,17 @@ public sealed class DPSMeter : ModBehaviour
         run.ViewMetrics.Clear();
 
         AddRunViewMetrics(run, "CURRENT", _data.CurrentInstancePersonalDamage, _data.CurrentPersonalDps,
-            _data.CurrentInstancePersonalHealing, _data.CurrentPersonalHps,
-            _data.CurrentInstancePersonalBarrier, _data.CurrentPersonalBps);
+            _data.CurrentInstancePersonalAppliedDamage, _data.CurrentInstancePersonalHealing, _data.CurrentPersonalHps,
+            _data.CurrentInstancePersonalEffectiveHealing, _data.CurrentInstancePersonalBarrier, _data.CurrentPersonalBps);
         AddRunViewMetrics(run, "TOTAL", _data.CumulativePersonalDamage, 0f,
-            _data.CumulativePersonalHealing, _data.TotalPersonalHps,
-            _data.CumulativePersonalBarrier, _data.TotalPersonalBps);
+            _data.CumulativePersonalAppliedDamage, _data.CumulativePersonalHealing, _data.TotalPersonalHps,
+            _data.CumulativePersonalEffectiveHealing, _data.CumulativePersonalBarrier, _data.TotalPersonalBps);
         AddRunViewMetrics(run, "PARTY", _data.CurrentInstancePartyDamage, _data.CurrentPartyDps,
-            _data.CurrentInstancePartyHealing, _data.CurrentPartyHps,
-            _data.CurrentInstancePartyBarrier, _data.CurrentPartyBps);
+            _data.CurrentInstancePartyAppliedDamage, _data.CurrentInstancePartyHealing, _data.CurrentPartyHps,
+            _data.CurrentInstancePartyEffectiveHealing, _data.CurrentInstancePartyBarrier, _data.CurrentPartyBps);
         AddRunViewMetrics(run, "PARTY_TOTAL", _data.CumulativePartyDamage, _data.CumulativePartyDps,
-            _data.CumulativePartyHealing, _data.TotalPartyHps,
-            _data.CumulativePartyBarrier, _data.TotalPartyBps);
+            _data.CumulativePartyAppliedDamage, _data.CumulativePartyHealing, _data.TotalPartyHps,
+            _data.CumulativePartyEffectiveHealing, _data.CumulativePartyBarrier, _data.TotalPartyBps);
 
         CapturePersonalViewRows(run, "CURRENT", false);
         CapturePersonalViewRows(run, "TOTAL", true);
@@ -409,13 +409,13 @@ public sealed class DPSMeter : ModBehaviour
     }
 
     private static void AddRunViewMetrics(
-        DpsData.RunRecord run, string view, float damage, float damageRate,
-        float healing, float healingRate, float barrier, float barrierRate)
+        DpsData.RunRecord run, string view, float damage, float damageRate, float appliedDamage,
+        float healing, float healingRate, float effectiveHealing, float barrier, float barrierRate)
     {
         run.ViewMetrics.Add(new DpsData.RunViewMetrics
         {
-            View = view, Damage = damage, DamageRate = damageRate,
-            Healing = healing, HealingRate = healingRate,
+            View = view, Damage = damage, DamageRate = damageRate, AppliedDamage = appliedDamage,
+            Healing = healing, HealingRate = healingRate, EffectiveHealing = effectiveHealing,
             Barrier = barrier, BarrierRate = barrierRate
         });
     }
