@@ -1581,7 +1581,7 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             case DisplayMode.CurrentDps:
                 title = "CURRENT";
-                metric = "DPS: " + FormatNumber(_data.CurrentPersonalDps);
+                metric = "DPS: " + FormatNumber(_excludeOverkill ? _data.CurrentPersonalAppliedDps : _data.CurrentPersonalDps);
                 break;
 
             case DisplayMode.DamageTotal:
