@@ -62,10 +62,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
     private readonly HashSet<string> _historyIconResourceLookupAttempted = new HashSet<string>();
     private readonly Dictionary<string, string> _historyIconResolutionStates = new Dictionary<string, string>();
-    private readonly HashSet<string> _historyIconDetailsLogged = new HashSet<string>();
-    private bool _historyAddressablesInventoryLogged;
-    private bool _historySpriteAtlasMissingLogged;
-    private bool _historySpriteAtlasFoundLogged;
+    private readonly HashSet<string> _historyAssetBundleDiagnosticsLogged = new HashSet<string>();
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerGlowColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -811,198 +808,89 @@ public sealed class DpsOverlay : MonoBehaviour
         return null;
     }
 
-    private void DiagnoseHistorySpriteAtlases(string iconName, string textureName, bool spriteFound)
+    private void DiagnoseHistoryAssetBundles(string iconName, string textureName, bool spriteFound)
     {
-        if (spriteFound ? _historySpriteAtlasFoundLogged : _historySpriteAtlasMissingLogged)
+        string phase = spriteFound ? "found" : "missing";
+        string diagnosticKey = phase + "|" + (iconName ?? string.Empty) + "|" + (textureName ?? string.Empty);
+        if (!_historyAssetBundleDiagnosticsLogged.Add(diagnosticKey))
             return;
-        if (spriteFound)
-            _historySpriteAtlasFoundLogged = true;
-        else
-            _historySpriteAtlasMissingLogged = true;
 
         try
         {
-            Type atlasType = null;
-            Type spriteType = typeof(Sprite);
-            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            for (int i = 0; i < assemblies.Length && atlasType == null; i++)
-                atlasType = assemblies[i].GetType("UnityEngine.U2D.SpriteAtlas", false);
-
-            if (atlasType == null)
+            MethodInfo getLoadedBundles = typeof(AssetBundle).GetMethod(
+                "GetAllLoadedAssetBundles",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                Type.EmptyTypes,
+                null);
+            System.Collections.IEnumerable bundles = getLoadedBundles == null
+                ? null
+                : getLoadedBundles.Invoke(null, null) as System.Collections.IEnumerable;
+            if (bundles == null)
             {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-atlas inventory phase=" +
-                    (spriteFound ? "found" : "missing") + " unavailable=type-not-found icon=" + iconName);
+                DPSMeter.WriteHistoryIconResourceDiagnostic("asset-bundles phase=" + phase +
+                    " unavailable=GetAllLoadedAssetBundles icon=" + iconName);
                 return;
             }
 
-            System.Reflection.MethodInfo findAll = typeof(Resources).GetMethod("FindObjectsOfTypeAll",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static,
-                null, new Type[] { typeof(Type) }, null);
-            UnityEngine.Object[] atlases = findAll == null ? null :
-                findAll.Invoke(null, new object[] { atlasType }) as UnityEngine.Object[];
-            if (atlases == null)
+            int bundleCount = 0;
+            List<string> bundleSamples = new List<string>();
+            List<string> matchingAssets = new List<string>();
+            foreach (object bundleObject in bundles)
             {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-atlas inventory phase=" +
-                    (spriteFound ? "found" : "missing") + " unavailable=enumeration-failed icon=" + iconName);
-                return;
-            }
-
-            List<string> details = new List<string>();
-            for (int i = 0; i < atlases.Length && details.Count < 12; i++)
-            {
-                UnityEngine.Object atlas = atlases[i];
-                if (atlas == null)
+                AssetBundle bundle = bundleObject as AssetBundle;
+                if (bundle == null)
                     continue;
 
-                string match = "<none>";
-                int spriteCount = -1;
-                System.Reflection.MethodInfo getSprites = atlasType.GetMethod("GetSprites", new Type[] { spriteType.MakeArrayType() });
-                if (getSprites != null)
+                bundleCount++;
+                if (bundleSamples.Count < 12)
+                    bundleSamples.Add(bundle.name);
+
+                if (!spriteFound)
+                    continue;
+
+                MethodInfo getAssetNames = bundle.GetType().GetMethod(
+                    "GetAllAssetNames", BindingFlags.Public | BindingFlags.Instance,
+                    null, Type.EmptyTypes, null);
+                string[] assetNames = getAssetNames == null
+                    ? null
+                    : getAssetNames.Invoke(bundle, null) as string[];
+                if (assetNames == null)
+                    continue;
+
+                for (int i = 0; i < assetNames.Length; i++)
                 {
-                    Array spriteBuffer = Array.CreateInstance(spriteType, 512);
-                    try
+                    string assetPath = assetNames[i];
+                    if (string.IsNullOrEmpty(assetPath))
+                        continue;
+
+                    string assetName = Path.GetFileNameWithoutExtension(assetPath);
+                    bool iconMatch = !string.IsNullOrEmpty(iconName) &&
+                        string.Equals(assetName, iconName, StringComparison.OrdinalIgnoreCase);
+                    bool textureMatch = !string.IsNullOrEmpty(textureName) &&
+                        string.Equals(assetName, textureName, StringComparison.OrdinalIgnoreCase);
+                    if (iconMatch || textureMatch)
                     {
-                        spriteCount = Convert.ToInt32(getSprites.Invoke(atlas, new object[] { spriteBuffer }));
-                        for (int j = 0; j < Math.Min(spriteCount, spriteBuffer.Length); j++)
-                        {
-                            Sprite sprite = spriteBuffer.GetValue(j) as Sprite;
-                            if (sprite != null && (string.Equals(sprite.name, iconName, StringComparison.Ordinal) ||
-                                (!string.IsNullOrEmpty(textureName) && sprite.texture != null &&
-                                 string.Equals(sprite.texture.name, textureName, StringComparison.Ordinal))))
-                            {
-                                match = sprite.name + "/" + (sprite.texture == null ? "<null>" : sprite.texture.name);
-                                break;
-                            }
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        spriteCount = -2;
+                        string match = bundle.name + ":" + assetPath;
+                        if (!matchingAssets.Contains(match) && matchingAssets.Count < 12)
+                            matchingAssets.Add(match);
                     }
                 }
-
-                details.Add(atlas.name + "[sprites=" + spriteCount + ",match=" + match + "]");
             }
 
-            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-atlas inventory phase=" +
-                (spriteFound ? "found" : "missing") + " icon=" + iconName + " atlasType=" + atlasType.FullName +
-                " loadedAtlases=" + atlases.Length + " samples=" +
-                (details.Count == 0 ? "<none>" : string.Join(";", details.ToArray())));
+            DPSMeter.WriteHistoryIconResourceDiagnostic("asset-bundles phase=" + phase +
+                " icon=" + iconName + " loadedCount=" + bundleCount +
+                " bundleSamples=" + (bundleSamples.Count == 0
+                    ? "<none>" : string.Join(",", bundleSamples.ToArray())) +
+                (spriteFound
+                    ? " exactAssetMatches=" + (matchingAssets.Count == 0
+                        ? "<none>" : string.Join(";", matchingAssets.ToArray()))
+                    : string.Empty));
         }
         catch (Exception ex)
         {
-            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-atlas inventory phase=" +
-                (spriteFound ? "found" : "missing") + " exception=" + ex.GetType().Name + " icon=" + iconName);
-        }
-    }
-
-    private void DiagnoseAddressableHistoryIconLocations(string iconName, string textureName)
-    {
-        bool logInventory = !_historyAddressablesInventoryLogged;
-        _historyAddressablesInventoryLogged = true;
-        try
-        {
-            Type addressablesType = null;
-            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            for (int i = 0; i < assemblies.Length && addressablesType == null; i++)
-                addressablesType = assemblies[i].GetType("UnityEngine.AddressableAssets.Addressables", false);
-
-            if (addressablesType == null)
-            {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("addressables inventory unavailable reason=type-not-found");
-                return;
-            }
-
-            System.Reflection.PropertyInfo locatorsProperty = addressablesType.GetProperty("ResourceLocators");
-            object locatorsValue = locatorsProperty == null ? null : locatorsProperty.GetValue(null, null);
-            System.Collections.IEnumerable locators = locatorsValue as System.Collections.IEnumerable;
-            if (locators == null)
-            {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("addressables inventory unavailable reason=locators-not-found");
-                return;
-            }
-
-            int locatorCount = 0;
-            int totalKeys = 0;
-            List<string> locatorDetails = new List<string>();
-            List<string> keySamples = new List<string>();
-            foreach (object locator in locators)
-            {
-                if (locator == null)
-                    continue;
-                locatorCount++;
-
-                Type locatorType = locator.GetType();
-                System.Reflection.PropertyInfo keysProperty = null;
-                Type[] locatorInterfaces = locatorType.GetInterfaces();
-                for (int interfaceIndex = 0; interfaceIndex < locatorInterfaces.Length; interfaceIndex++)
-                {
-                    if (keysProperty == null)
-                        keysProperty = locatorInterfaces[interfaceIndex].GetProperty("Keys");
-                }
-
-                System.Collections.IEnumerable keys = keysProperty == null ? null :
-                    keysProperty.GetValue(locator, null) as System.Collections.IEnumerable;
-                int locatorKeyCount = 0;
-                List<string> keyMatches = new List<string>();
-                if (keys != null)
-                {
-                    foreach (object key in keys)
-                    {
-                        locatorKeyCount++;
-                        string keyText;
-                        try
-                        {
-                            keyText = key == null ? "<null>" : key.ToString();
-                        }
-                        catch (Exception)
-                        {
-                            keyText = "<ToString-error>";
-                        }
-
-                        if (!string.IsNullOrEmpty(keyText) &&
-                            (string.Equals(keyText, iconName, StringComparison.OrdinalIgnoreCase) ||
-                             string.Equals(keyText, textureName, StringComparison.OrdinalIgnoreCase) ||
-                             keyText.IndexOf(iconName, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                             (!string.IsNullOrEmpty(textureName) &&
-                              keyText.IndexOf(textureName, StringComparison.OrdinalIgnoreCase) >= 0)))
-                        {
-                            if (keyMatches.Count < 8)
-                                keyMatches.Add(keyText.Length > 120 ? keyText.Substring(0, 120) : keyText);
-                        }
-
-                        if (logInventory && keySamples.Count < 24)
-                        {
-                            string sampleText = keyText;
-                            if (sampleText != null && sampleText.Length > 100)
-                                sampleText = sampleText.Substring(0, 100);
-                            keySamples.Add(locatorType.Name + ":" +
-                                (key == null ? "<null>" : key.GetType().FullName) + "=" + sampleText);
-                        }
-                    }
-                }
-                if (keyMatches.Count > 0)
-                    DPSMeter.WriteHistoryIconResourceDiagnostic("addressables key-match icon=" + iconName +
-                        " locator=" + locatorType.Name + " matches=" + string.Join(",", keyMatches.ToArray()));
-
-                if (logInventory)
-                {
-                    totalKeys += locatorKeyCount;
-                    locatorDetails.Add(locatorType.FullName + ":" + locatorKeyCount);
-                }
-            }
-
-            if (logInventory)
-                DPSMeter.WriteHistoryIconResourceDiagnostic("addressables inventory icon=" + iconName +
-                    " locators=" + locatorCount + " locatorKeys=" +
-                    (locatorDetails.Count == 0 ? "<none>" : string.Join(",", locatorDetails.ToArray())) +
-                    " totalKeys=" + totalKeys + " keySamples=" +
-                    (keySamples.Count == 0 ? "<none>" : string.Join(";", keySamples.ToArray())));
-        }
-        catch (Exception ex)
-        {
-            DPSMeter.WriteHistoryIconResourceDiagnostic("addressables inventory exception type=" +
-                ex.GetType().FullName + " message=" + ex.Message);
+            DPSMeter.WriteHistoryIconResourceDiagnostic("asset-bundles phase=" + phase +
+                " exception=" + ex.GetType().Name + " icon=" + iconName);
         }
     }
 
@@ -1057,10 +945,6 @@ public sealed class DpsOverlay : MonoBehaviour
 
             if (!nameMapDictionary.Contains(row.IconName))
             {
-                // Check Addressables' runtime locators directly; UI sprites may be
-                // registered there without being standalone DewResources entries.
-                DiagnoseAddressableHistoryIconLocations(row.IconName, row.IconTextureName);
-
                 // These sprites may belong to a registered parent asset rather than
                 // being standalone DewResources entries. Log a small set of matching
                 // registered names to identify a possible owner without loading assets.
@@ -1155,11 +1039,11 @@ public sealed class DpsOverlay : MonoBehaviour
                     continue;
 
                 _historyIconCache[cacheKey] = candidate;
-                DiagnoseHistorySpriteAtlases(row.IconName, row.IconTextureName, true);
+                DiagnoseHistoryAssetBundles(row.IconName, row.IconTextureName, true);
                 DiagnoseHistoryIconResolution(row, cacheKey, "loaded-sprite", candidate);
                 return candidate;
             }
-            DiagnoseHistorySpriteAtlases(row.IconName, row.IconTextureName, false);
+            DiagnoseHistoryAssetBundles(row.IconName, row.IconTextureName, false);
         }
 
         Sprite resourceIcon = TryLoadHistoryIconFromGameResources(row, cacheKey);
@@ -1215,66 +1099,6 @@ public sealed class DpsOverlay : MonoBehaviour
         return fallbackIcon;
     }
 
-    private void DiagnoseHistoryIconSpriteDetails(DpsData.RunBreakdownRow row, string key, Sprite sprite)
-    {
-        if (row == null || sprite == null || !_historyIconDetailsLogged.Add(key ?? string.Empty))
-            return;
-
-        try
-        {
-            Texture2D texture = sprite.texture;
-            string activeAtlas = "<unavailable>";
-            Type atlasExtensions = null;
-            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            for (int i = 0; i < assemblies.Length && atlasExtensions == null; i++)
-                atlasExtensions = assemblies[i].GetType("UnityEngine.U2D.SpriteAtlasExtensions", false);
-            if (atlasExtensions != null)
-            {
-                System.Reflection.MethodInfo[] methods = atlasExtensions.GetMethods(
-                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                for (int i = 0; i < methods.Length; i++)
-                {
-                    if (!string.Equals(methods[i].Name, "GetActiveAtlas", StringComparison.Ordinal))
-                        continue;
-                    System.Reflection.ParameterInfo[] parameters = methods[i].GetParameters();
-                    if (parameters.Length != 1 || !parameters[0].ParameterType.IsAssignableFrom(typeof(Sprite)))
-                        continue;
-                    object atlas = methods[i].Invoke(null, new object[] { sprite });
-                    activeAtlas = atlas == null ? "<none>" : ((UnityEngine.Object)atlas).name;
-                    break;
-                }
-            }
-
-            List<string> sharedTextureSprites = new List<string>();
-            Sprite[] allSprites = Resources.FindObjectsOfTypeAll<Sprite>();
-            for (int i = 0; allSprites != null && i < allSprites.Length; i++)
-            {
-                Sprite other = allSprites[i];
-                if (other == null || other.texture == null || texture == null ||
-                    !object.ReferenceEquals(other.texture, texture))
-                    continue;
-                if (sharedTextureSprites.Count < 12)
-                    sharedTextureSprites.Add(other.name);
-            }
-
-            string rect = sprite.rect.x + "," + sprite.rect.y + "," +
-                sprite.rect.width + "," + sprite.rect.height;
-            string textureInfo = texture == null ? "<null>" :
-                texture.name + "[" + texture.width + "x" + texture.height + "]";
-            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-details icon=" + row.IconName +
-                " texture=" + textureInfo + " rect=" + rect +
-                " packed=" + sprite.packed + " packingMode=" + sprite.packingMode +
-                " activeAtlas=" + activeAtlas +
-                " sameTextureSprites=" + (sharedTextureSprites.Count == 0
-                    ? "<none>" : string.Join(",", sharedTextureSprites.ToArray())));
-        }
-        catch (Exception ex)
-        {
-            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-details exception icon=" +
-                row.IconName + " type=" + ex.GetType().Name);
-        }
-    }
-
     private void DiagnoseHistoryIconResolution(
         DpsData.RunBreakdownRow row, string cacheKey, string source, Sprite sprite)
     {
@@ -1287,15 +1111,15 @@ public sealed class DpsOverlay : MonoBehaviour
         string result = sprite == null
             ? "<null>"
             : sprite.name + "/" + (sprite.texture == null ? "<null>" : sprite.texture.name);
-        string state = source + "|" + result;
+
+        // The same icon can be used by damage, healing, and barrier rows. Dedupe
+        // by actual result rather than fallback source so redraws do not flood the log.
         string previous;
         if (_historyIconResolutionStates.TryGetValue(key, out previous) &&
-            string.Equals(previous, state, StringComparison.Ordinal))
+            string.Equals(previous, result, StringComparison.Ordinal))
             return;
 
-        _historyIconResolutionStates[key] = state;
-        if (sprite != null)
-            DiagnoseHistoryIconSpriteDetails(row, key, sprite);
+        _historyIconResolutionStates[key] = result;
         DPSMeter.WriteHistoryIconResourceDiagnostic("resolve icon=" +
             (string.IsNullOrEmpty(row.IconName) ? "<none>" : row.IconName) +
             " texture=" + (string.IsNullOrEmpty(row.IconTextureName) ? "<none>" : row.IconTextureName) +
