@@ -61,11 +61,6 @@ public sealed class DpsOverlay : MonoBehaviour
     private Color _partyBarOutlineColor = DefaultBarOutlineColor;
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
     private readonly HashSet<string> _historyIconResourceLookupAttempted = new HashSet<string>();
-    private readonly Dictionary<string, string> _historyIconResolutionStates = new Dictionary<string, string>();
-    private HashSet<string> _historySpriteNamesBeforeLobby;
-    private readonly HashSet<string> _historyIconsMissingAtBaseline = new HashSet<string>(StringComparer.Ordinal);
-    private readonly HashSet<string> _historySpriteComparisonsLogged = new HashSet<string>(StringComparer.Ordinal);
-    private bool _historyResourceRuntimeAfterLobbyLogged;
     private bool _historyResourcesReady;
     private float _nextHistoryResourceCheckTime;
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
@@ -828,263 +823,6 @@ public sealed class DpsOverlay : MonoBehaviour
         return null;
     }
 
-    private void DiagnoseHistorySpriteInventory(string iconName, string textureName, bool spriteFound)
-    {
-        try
-        {
-            if (!spriteFound)
-            {
-                if (!string.IsNullOrEmpty(iconName))
-                    _historyIconsMissingAtBaseline.Add(iconName);
-
-                if (_historySpriteNamesBeforeLobby != null)
-                    return;
-
-                Sprite[] baselineSprites = Resources.FindObjectsOfTypeAll<Sprite>();
-                HashSet<string> baselineNames = new HashSet<string>(StringComparer.Ordinal);
-                int validBaselineCount = 0;
-
-                for (int i = 0; baselineSprites != null && i < baselineSprites.Length; i++)
-                {
-                    Sprite sprite = baselineSprites[i];
-                    if (sprite == null)
-                        continue;
-
-                    validBaselineCount++;
-                    string texture = sprite.texture == null ? "<null>" : sprite.texture.name;
-                    baselineNames.Add(sprite.name + "@" + texture);
-                }
-
-                _historySpriteNamesBeforeLobby = baselineNames;
-                DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=baseline-missing icon=" + iconName +
-                    " spriteCount=" + validBaselineCount + " uniqueSpriteTexturePairs=" + baselineNames.Count);
-                DPSMeter.WriteHistoryIconResourceDiagnostic("resource-runtime " + GetHistoryResourceRuntimeInventory("baseline"));
-                return;
-            }
-
-            if (_historySpriteNamesBeforeLobby == null || string.IsNullOrEmpty(iconName) ||
-                !_historyIconsMissingAtBaseline.Contains(iconName) ||
-                !_historySpriteComparisonsLogged.Add(iconName))
-                return;
-
-            Sprite[] currentSprites = Resources.FindObjectsOfTypeAll<Sprite>();
-            HashSet<string> currentNames = new HashSet<string>(StringComparer.Ordinal);
-            List<string> newlyVisibleSample = new List<string>();
-            int validCurrentCount = 0;
-
-            for (int i = 0; currentSprites != null && i < currentSprites.Length; i++)
-            {
-                Sprite sprite = currentSprites[i];
-                if (sprite == null)
-                    continue;
-
-                validCurrentCount++;
-                string texture = sprite.texture == null ? "<null>" : sprite.texture.name;
-                string identity = sprite.name + "@" + texture;
-                currentNames.Add(identity);
-
-                if (!_historySpriteNamesBeforeLobby.Contains(identity) && newlyVisibleSample.Count < 80)
-                    newlyVisibleSample.Add(identity);
-            }
-
-            int newlyVisibleCount = 0;
-            foreach (string identity in currentNames)
-            {
-                if (!_historySpriteNamesBeforeLobby.Contains(identity))
-                    newlyVisibleCount++;
-            }
-
-            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=missing-icon-now-found icon=" + iconName +
-                " texture=" + textureName + " spriteCount=" + validCurrentCount +
-                " uniqueSpriteTexturePairs=" + currentNames.Count +
-                " newlyVisibleCount=" + newlyVisibleCount);
-            if (!_historyResourceRuntimeAfterLobbyLogged)
-            {
-                _historyResourceRuntimeAfterLobbyLogged = true;
-                DPSMeter.WriteHistoryIconResourceDiagnostic("resource-runtime " + GetHistoryResourceRuntimeInventory("after-lobby"));
-            }
-        }
-        catch (Exception ex)
-        {
-            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory exception=" +
-                ex.GetType().Name + " icon=" + iconName + " found=" + spriteFound);
-        }
-    }
-
-    private static string GetHistorySceneInventory()
-    {
-        try
-        {
-            Type sceneManagerType = Type.GetType("UnityEngine.SceneManagement.SceneManager, UnityEngine.CoreModule");
-            if (sceneManagerType == null)
-                return "scene-manager-type=<null>";
-
-            System.Reflection.PropertyInfo sceneCountProperty =
-                sceneManagerType.GetProperty("sceneCount", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            System.Reflection.MethodInfo getSceneAtMethod =
-                sceneManagerType.GetMethod("GetSceneAt", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            if (sceneCountProperty == null || getSceneAtMethod == null)
-                return "scene-api-unavailable";
-
-            int sceneCount = Convert.ToInt32(sceneCountProperty.GetValue(null, null));
-            List<string> scenes = new List<string>();
-            for (int i = 0; i < sceneCount; i++)
-            {
-                object scene = getSceneAtMethod.Invoke(null, new object[] { i });
-                if (scene == null)
-                    continue;
-
-                Type sceneType = scene.GetType();
-                System.Reflection.PropertyInfo nameProperty = sceneType.GetProperty("name");
-                System.Reflection.PropertyInfo loadedProperty = sceneType.GetProperty("isLoaded");
-                string name = nameProperty == null ? "<no-name>" : Convert.ToString(nameProperty.GetValue(scene, null));
-                string loaded = loadedProperty == null ? "?" : Convert.ToString(loadedProperty.GetValue(scene, null));
-                scenes.Add(name + "(loaded=" + loaded + ")");
-            }
-
-            return "sceneCount=" + sceneCount + " scenes=" +
-                (scenes.Count == 0 ? "<none>" : string.Join(";", scenes.ToArray()));
-        }
-        catch (Exception ex)
-        {
-            return "scene-inventory-error=" + ex.GetType().Name;
-        }
-    }
-
-    private string GetHistoryResourceRuntimeInventory(string phase)
-    {
-        List<string> assemblyNames = new List<string>();
-        List<string> locatorDetails = new List<string>();
-        string addressablesTypeStatus = "type=<null>";
-        string locatorStatus = "locators=<unavailable>";
-        string dewDatabaseStatus = "dew-database=<unavailable>";
-
-        try
-        {
-            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            for (int i = 0; assemblies != null && i < assemblies.Length; i++)
-            {
-                System.Reflection.Assembly assembly = assemblies[i];
-                if (assembly == null)
-                    continue;
-
-                string name = assembly.GetName().Name ?? string.Empty;
-                if (name.IndexOf("Addressable", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    name.IndexOf("ResourceManager", StringComparison.OrdinalIgnoreCase) >= 0)
-                    assemblyNames.Add(name);
-            }
-
-            Type addressablesType = Type.GetType("UnityEngine.AddressableAssets.Addressables, Unity.Addressables");
-            addressablesTypeStatus = addressablesType == null ? "type=<null>" : "type=" + addressablesType.FullName;
-            if (addressablesType != null)
-            {
-                System.Reflection.PropertyInfo locatorsProperty = addressablesType.GetProperty(
-                    "ResourceLocators", BindingFlags.Public | BindingFlags.Static);
-                object locatorsObject = locatorsProperty == null ? null : locatorsProperty.GetValue(null, null);
-                System.Collections.IEnumerable locators = locatorsObject as System.Collections.IEnumerable;
-                if (locators == null)
-                {
-                    locatorStatus = "locators=<unavailable>";
-                }
-                else
-                {
-                    int locatorCount = 0;
-                    foreach (object locator in locators)
-                    {
-                        if (locator == null)
-                            continue;
-
-                        locatorCount++;
-                        Type locatorType = locator.GetType();
-                        System.Reflection.PropertyInfo idProperty = locatorType.GetProperty("LocatorId");
-                        string locatorId = idProperty == null ? locatorType.Name :
-                            Convert.ToString(idProperty.GetValue(locator, null));
-                        object keysObject = null;
-                        System.Reflection.PropertyInfo keysProperty = locatorType.GetProperty("Keys");
-                        if (keysProperty != null)
-                            keysObject = keysProperty.GetValue(locator, null);
-
-                        System.Collections.ICollection keyCollection = keysObject as System.Collections.ICollection;
-                        string keyCount = keyCollection == null ? "?" : keyCollection.Count.ToString();
-                        List<string> matchingKeys = new List<string>();
-                        List<string> keyTypeSamples = new List<string>();
-                        System.Collections.IEnumerable keyEnumerable = keysObject as System.Collections.IEnumerable;
-                        if (keyEnumerable != null)
-                        {
-                            foreach (object key in keyEnumerable)
-                            {
-                                if (key == null)
-                                    continue;
-
-                                string keyText = Convert.ToString(key);
-                                if (keyTypeSamples.Count < 5)
-                                    keyTypeSamples.Add(key.GetType().Name + ":" + keyText);
-
-                                bool matchesMissingIcon = false;
-                                foreach (string missingIcon in _historyIconsMissingAtBaseline)
-                                {
-                                    if (!string.IsNullOrEmpty(missingIcon) &&
-                                        keyText.IndexOf(missingIcon, StringComparison.OrdinalIgnoreCase) >= 0)
-                                    {
-                                        matchesMissingIcon = true;
-                                        break;
-                                    }
-                                }
-
-                                if (matchesMissingIcon && matchingKeys.Count < 30)
-                                    matchingKeys.Add(key.GetType().Name + ":" + keyText);
-                            }
-                        }
-
-                        locatorDetails.Add(locatorId + "(type=" + locatorType.Name + ",keys=" + keyCount +
-                            ",matching-icon-keys=" + (matchingKeys.Count == 0 ? "<none>" : string.Join(";", matchingKeys.ToArray())) +
-                            ",key-samples=" + (keyTypeSamples.Count == 0 ? "<none>" : string.Join(";", keyTypeSamples.ToArray())) + ")");
-                    }
-
-                    locatorStatus = "locatorCount=" + locatorCount + " details=" +
-                        (locatorDetails.Count == 0 ? "<none>" : string.Join(";", locatorDetails.ToArray()));
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            locatorStatus = "locator-error=" + ex.GetType().Name;
-        }
-
-        try
-        {
-            System.Reflection.PropertyInfo databaseProperty = typeof(DewResources).GetProperty("database");
-            object database = databaseProperty == null ? null : databaseProperty.GetValue(null, null);
-            if (database == null)
-            {
-                dewDatabaseStatus = databaseProperty == null ? "dew-database-property=<missing>" : "dew-database=<null>";
-            }
-            else
-            {
-                System.Reflection.MemberInfo mapMember =
-                    (System.Reflection.MemberInfo)database.GetType().GetProperty("nameToGuid") ??
-                    database.GetType().GetField("nameToGuid");
-                object map = null;
-                if (mapMember is System.Reflection.PropertyInfo mapProperty)
-                    map = mapProperty.GetValue(database, null);
-                else if (mapMember is System.Reflection.FieldInfo mapField)
-                    map = mapField.GetValue(database);
-
-                System.Collections.IDictionary dictionary = map as System.Collections.IDictionary;
-                dewDatabaseStatus = "dew-database-type=" + database.GetType().FullName +
-                    " name-map-count=" + (dictionary == null ? "?" : dictionary.Count.ToString());
-            }
-        }
-        catch (Exception ex)
-        {
-            dewDatabaseStatus = "dew-database-error=" + ex.GetType().Name;
-        }
-
-        return "phase=" + phase +
-            " addressable-assemblies=" + (assemblyNames.Count == 0 ? "<none>" : string.Join(";", assemblyNames.ToArray())) +
-            " " + addressablesTypeStatus + " " + locatorStatus + " " + dewDatabaseStatus;
-    }
-
     private Sprite TryLoadHistoryIconFromGameResources(DpsData.RunBreakdownRow row, string cacheKey)
     {
         if (row == null || string.IsNullOrEmpty(row.IconName))
@@ -1094,7 +832,6 @@ public sealed class DpsOverlay : MonoBehaviour
             return null;
 
         string iconTexture = string.IsNullOrEmpty(row.IconTextureName) ? "<none>" : row.IconTextureName;
-        DPSMeter.WriteHistoryIconResourceDiagnostic("begin icon=" + row.IconName + " texture=" + iconTexture);
 
         try
         {
@@ -1106,14 +843,12 @@ public sealed class DpsOverlay : MonoBehaviour
                 typeof(DewResources).GetProperty("database");
             if (databaseProperty == null)
             {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("no database property icon=" + row.IconName);
                 return null;
             }
 
             object database = databaseProperty.GetValue(null, null);
             if (database == null)
             {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("database null icon=" + row.IconName);
                 return null;
             }
 
@@ -1129,8 +864,6 @@ public sealed class DpsOverlay : MonoBehaviour
             System.Collections.IDictionary nameMapDictionary = nameMap as System.Collections.IDictionary;
             if (nameMapDictionary == null)
             {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("name map unavailable type=" +
-                    (nameMap == null ? "<null>" : nameMap.GetType().FullName) + " icon=" + row.IconName);
                 return null;
             }
 
@@ -1160,13 +893,9 @@ public sealed class DpsOverlay : MonoBehaviour
                             break;
                     }
 
-                    DPSMeter.WriteHistoryIconResourceDiagnostic("name not registered icon=" + row.IconName +
-                        " token=" + searchToken + " candidates=" +
-                        (candidates.Count == 0 ? "<none>" : string.Join(",", candidates.ToArray())));
                 }
                 else
                 {
-                    DPSMeter.WriteHistoryIconResourceDiagnostic("name not registered icon=" + row.IconName);
                 }
                 return null;
             }
@@ -1174,7 +903,6 @@ public sealed class DpsOverlay : MonoBehaviour
             Sprite sprite = DewResources.GetByName<Sprite>(row.IconName);
             if (sprite == null)
             {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("resource returned null icon=" + row.IconName);
                 return null;
             }
 
@@ -1182,23 +910,15 @@ public sealed class DpsOverlay : MonoBehaviour
                 (sprite.texture == null ||
                  !string.Equals(sprite.texture.name, row.IconTextureName, StringComparison.Ordinal)))
             {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("texture mismatch icon=" + row.IconName +
-                    " actual=" + (sprite.texture == null ? "<null>" : sprite.texture.name) +
-                    " expected=" + row.IconTextureName);
                 return null;
             }
 
             _historyIconCache[cacheKey] = sprite;
-            DPSMeter.WriteHistoryIconResourceDiagnostic("success icon=" + row.IconName +
-                " sprite=" + sprite.name + " texture=" +
-                (sprite.texture == null ? "<null>" : sprite.texture.name));
             return sprite;
         }
         catch (Exception ex)
         {
             // Report why the early resource lookup failed while preserving the existing fallbacks.
-            DPSMeter.WriteHistoryIconResourceDiagnostic("exception icon=" + row.IconName +
-                " type=" + ex.GetType().FullName + " message=" + ex.Message);
             return null;
         }
     }
@@ -1213,7 +933,6 @@ public sealed class DpsOverlay : MonoBehaviour
         Sprite cached;
         if (!string.IsNullOrEmpty(row.IconName) && _historyIconCache.TryGetValue(cacheKey, out cached))
         {
-            DiagnoseHistoryIconResolution(row, cacheKey, "cache", cached);
             return cached;
         }
 
@@ -1230,23 +949,18 @@ public sealed class DpsOverlay : MonoBehaviour
                     continue;
 
                 _historyIconCache[cacheKey] = candidate;
-                DiagnoseHistorySpriteInventory(row.IconName, row.IconTextureName, true);
-                DiagnoseHistoryIconResolution(row, cacheKey, "loaded-sprite", candidate);
                 return candidate;
             }
-            DiagnoseHistorySpriteInventory(row.IconName, row.IconTextureName, false);
         }
 
         Sprite resourceIcon = TryLoadHistoryIconFromGameResources(row, cacheKey);
         if (resourceIcon != null)
         {
-            DiagnoseHistoryIconResolution(row, cacheKey, "DewResources", resourceIcon);
             return resourceIcon;
         }
 
         if (_data == null)
         {
-            DiagnoseHistoryIconResolution(row, cacheKey, "no-data", null);
             return null;
         }
 
@@ -1286,36 +1000,7 @@ public sealed class DpsOverlay : MonoBehaviour
             fallbackIcon = _data.GetCumulativeBarrierIcon(identity);
         }
 
-        DiagnoseHistoryIconResolution(row, cacheKey, fallbackSource, fallbackIcon);
         return fallbackIcon;
-    }
-
-    private void DiagnoseHistoryIconResolution(
-        DpsData.RunBreakdownRow row, string cacheKey, string source, Sprite sprite)
-    {
-        if (row == null)
-            return;
-
-        string key = string.IsNullOrEmpty(cacheKey)
-            ? (row.IconName ?? string.Empty) + "|" + (row.IconTextureName ?? string.Empty)
-            : cacheKey;
-        string result = sprite == null
-            ? "<null>"
-            : sprite.name + "/" + (sprite.texture == null ? "<null>" : sprite.texture.name);
-
-        // The same icon can be used by damage, healing, and barrier rows. Dedupe
-        // by actual result rather than fallback source so redraws do not flood the log.
-        string previous;
-        if (_historyIconResolutionStates.TryGetValue(key, out previous) &&
-            string.Equals(previous, result, StringComparison.Ordinal))
-            return;
-
-        _historyIconResolutionStates[key] = result;
-        DPSMeter.WriteHistoryIconResourceDiagnostic("resolve icon=" +
-            (string.IsNullOrEmpty(row.IconName) ? "<none>" : row.IconName) +
-            " texture=" + (string.IsNullOrEmpty(row.IconTextureName) ? "<none>" : row.IconTextureName) +
-            " source=" + source + " result=" + result +
-            " row=" + (row.SourceType ?? "<null>") + ":" + (row.Name ?? "<null>"));
     }
 
     private static List<DpsData.RunBreakdownRow> GetSelectedRunRows(
