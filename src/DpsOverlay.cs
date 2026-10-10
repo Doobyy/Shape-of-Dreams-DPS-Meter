@@ -838,7 +838,7 @@ public sealed class DpsOverlay : MonoBehaviour
             int locatorCount = 0;
             int totalKeys = 0;
             List<string> locatorDetails = new List<string>();
-            List<string> candidateKeys = new List<string>();
+            List<string> keySamples = new List<string>();
             foreach (object locator in locators)
             {
                 if (locator == null)
@@ -862,18 +862,23 @@ public sealed class DpsOverlay : MonoBehaviour
                     foreach (object key in keys)
                     {
                         locatorKeyCount++;
-                        string keyText = key as string;
-                        if (string.IsNullOrEmpty(keyText) || candidateKeys.Count >= 20)
+                        if (keySamples.Count >= 24)
                             continue;
 
-                        if (keyText.IndexOf("icon", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            keyText.IndexOf("sprite", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            keyText.IndexOf("atlas", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            keyText.IndexOf("spellbook", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            keyText.IndexOf("essence", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            keyText.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            keyText.IndexOf("memory", StringComparison.OrdinalIgnoreCase) >= 0)
-                            candidateKeys.Add(keyText);
+                        string keyText;
+                        try
+                        {
+                            keyText = key == null ? "<null>" : key.ToString();
+                        }
+                        catch (Exception)
+                        {
+                            keyText = "<ToString-error>";
+                        }
+
+                        if (keyText != null && keyText.Length > 100)
+                            keyText = keyText.Substring(0, 100);
+                        keySamples.Add(locatorType.Name + ":" +
+                            (key == null ? "<null>" : key.GetType().FullName) + "=" + keyText);
                     }
                 }
 
@@ -884,8 +889,8 @@ public sealed class DpsOverlay : MonoBehaviour
             DPSMeter.WriteHistoryIconResourceDiagnostic("addressables inventory icon=" + iconName +
                 " locators=" + locatorCount + " locatorKeys=" +
                 (locatorDetails.Count == 0 ? "<none>" : string.Join(",", locatorDetails.ToArray())) +
-                " totalKeys=" + totalKeys + " candidates=" +
-                (candidateKeys.Count == 0 ? "<none>" : string.Join(",", candidateKeys.ToArray())));
+                " totalKeys=" + totalKeys + " keySamples=" +
+                (keySamples.Count == 0 ? "<none>" : string.Join(";", keySamples.ToArray())));
         }
         catch (Exception ex)
         {
