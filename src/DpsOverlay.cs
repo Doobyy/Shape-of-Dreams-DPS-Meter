@@ -2153,16 +2153,26 @@ public sealed class DpsOverlay : MonoBehaviour
                 Rect iconRect = new Rect(rowRect.x, rowRect.y, rowRect.height, rowRect.height);
                 barRect.xMin = iconRect.xMax;
 
-                Color emblemTint = Color.white;
-                Color glowColor = DefaultBarOutlineColor;
-                if (_partyPlayerColors.TryGetValue(row.Key, out Color characterColor))
-                    emblemTint = characterColor;
-                if (!_partyPlayerGlowColors.TryGetValue(row.Key, out glowColor))
-                    glowColor = DefaultBarOutlineColor;
-                DrawCharacterGlow(playerIcon, iconRect, glowColor);
-                GUI.color = emblemTint;
-                DrawSprite(playerIcon, iconRect);
-                GUI.color = Color.white;
+                if (savedPartyRows != null)
+                {
+                    // Saved run breakdown rows use skill/essence icons, not character emblems.
+                    GUI.color = Color.white;
+                    DrawSprite(playerIcon, iconRect);
+                    GUI.color = Color.white;
+                }
+                else
+                {
+                    Color emblemTint = Color.white;
+                    Color glowColor = DefaultBarOutlineColor;
+                    if (_partyPlayerColors.TryGetValue(row.Key, out Color characterColor))
+                        emblemTint = characterColor;
+                    if (!_partyPlayerGlowColors.TryGetValue(row.Key, out glowColor))
+                        glowColor = DefaultBarOutlineColor;
+                    DrawCharacterGlow(playerIcon, iconRect, glowColor);
+                    GUI.color = emblemTint;
+                    DrawSprite(playerIcon, iconRect);
+                    GUI.color = Color.white;
+                }
             }
 
             float nameX = barRect.x + 7f;
