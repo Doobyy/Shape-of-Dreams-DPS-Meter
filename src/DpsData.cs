@@ -123,11 +123,15 @@ public sealed class DpsData
         Hp
     }
     private readonly Dictionary<string, float> _currentPersonalSkills = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _currentPersonalSkillsApplied = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _cumulativePersonalSkillsApplied = new Dictionary<string, float>();
     private readonly Dictionary<string, Sprite> _skillIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, string> _skillDisplayNames = new Dictionary<string, string>();
     private readonly Dictionary<string, Sprite> _otherIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalSkills = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentPersonalEssences = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _currentPersonalEssencesApplied = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _cumulativePersonalEssencesApplied = new Dictionary<string, float>();
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalEssenceScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<string, Sprite> _currentPersonalEssenceIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalEssences = new Dictionary<string, float>();
@@ -135,6 +139,8 @@ public sealed class DpsData
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _cumulativePersonalEssenceScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<string, Sprite> _cumulativePersonalEssenceIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _currentOtherPersonal = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _currentOtherPersonalApplied = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _cumulativeOtherPersonalApplied = new Dictionary<string, float>();
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalSkillScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _currentPersonalOtherScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
     private readonly Dictionary<string, Dictionary<DamageScalingType, float>> _cumulativePersonalSkillScaling = new Dictionary<string, Dictionary<DamageScalingType, float>>();
@@ -145,6 +151,8 @@ public sealed class DpsData
     private readonly Dictionary<string, Dictionary<ElementalType, float>> _cumulativePersonalEssenceElements = new Dictionary<string, Dictionary<ElementalType, float>>();
     private readonly Dictionary<string, float> _cumulativeOtherPersonal = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentPersonalHealing = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _currentPersonalEffectiveHealing = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _cumulativePersonalEffectiveHealing = new Dictionary<string, float>();
     private readonly Dictionary<string, Sprite> _currentPersonalHealingIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, float> _cumulativePersonalHealing = new Dictionary<string, float>();
     private readonly Dictionary<string, Sprite> _cumulativePersonalHealingIcons = new Dictionary<string, Sprite>();
@@ -155,8 +163,12 @@ public sealed class DpsData
     private readonly Dictionary<string, Sprite> _cumulativePersonalBarrierIcons = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, string> _barrierDisplayNames = new Dictionary<string, string>();
     private readonly Dictionary<string, float> _currentParty = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _currentPartyApplied = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _cumulativePartyApplied = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativeParty = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentPartyHealing = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _currentPartyEffectiveHealing = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> _cumulativePartyEffectiveHealing = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativePartyHealing = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _currentPartyBarrier = new Dictionary<string, float>();
     private readonly Dictionary<string, float> _cumulativePartyBarrier = new Dictionary<string, float>();
@@ -389,16 +401,18 @@ public sealed class DpsData
             _cumulativePersonalBarrierIcons[identity] = icon;
         }
     }
-    public void AddPartyHealing(float healing, string playerName)
+    public void AddPartyHealing(float generatedHealing, float effectiveHealing, string playerName)
     {
-        if (healing <= 0f || string.IsNullOrEmpty(playerName)) return;
+        if (generatedHealing <= 0f || string.IsNullOrEmpty(playerName)) return;
         float now = Time.time;
         if (PartyHealingStartedAt <= 0f) PartyHealingStartedAt = now;
         LastPartyHealingAt = now;
-        CurrentInstancePartyHealing += healing;
-        CumulativePartyHealing += healing;
-        Add(_currentPartyHealing, playerName, healing);
-        Add(_cumulativePartyHealing, playerName, healing);
+        CurrentInstancePartyHealing += generatedHealing;
+        CumulativePartyHealing += generatedHealing;
+        Add(_currentPartyHealing, playerName, generatedHealing);
+        Add(_cumulativePartyHealing, playerName, generatedHealing);
+        Add(_currentPartyEffectiveHealing, playerName, effectiveHealing);
+        Add(_cumulativePartyEffectiveHealing, playerName, effectiveHealing);
     }
 
     public void AddPartyBarrier(float barrier, string playerName)
@@ -413,9 +427,9 @@ public sealed class DpsData
         Add(_cumulativePartyBarrier, playerName, barrier);
     }
 
-    public void AddHealing(float healing, string sourceIdentity, string sourceName, Sprite icon, string actorChain)
+    public void AddHealing(float generatedHealing, float effectiveHealing, string sourceIdentity, string sourceName, Sprite icon, string actorChain)
     {
-        if (healing <= 0f)
+        if (generatedHealing <= 0f)
         {
             return;
         }
@@ -442,11 +456,13 @@ public sealed class DpsData
         LastCumulativeHealAt = now;
         CurrentHealCount++;
 
-        CurrentInstancePersonalHealing += healing;
-        CumulativePersonalHealing += healing;
+        CurrentInstancePersonalHealing += generatedHealing;
+        CumulativePersonalHealing += generatedHealing;
 
-        Add(_currentPersonalHealing, sourceName, healing);
-        Add(_cumulativePersonalHealing, sourceName, healing);
+        Add(_currentPersonalHealing, sourceName, generatedHealing);
+        Add(_cumulativePersonalHealing, sourceName, generatedHealing);
+        Add(_currentPersonalEffectiveHealing, sourceName, effectiveHealing);
+        Add(_cumulativePersonalEffectiveHealing, sourceName, effectiveHealing);
 
         if (icon != null && !string.IsNullOrEmpty(sourceName))
         {
@@ -463,7 +479,7 @@ public sealed class DpsData
         {
             Index = _nextHealingRecordIndex++,
             Time = now,
-            Amount = healing,
+            Amount = generatedHealing,
             Identity = sourceIdentity,
             SourceName = sourceName,
             ActorChain = actorChain
@@ -552,6 +568,8 @@ public sealed class DpsData
 
         Add(_currentParty, playerName, producedDamage);
         Add(_cumulativeParty, playerName, producedDamage);
+        Add(_currentPartyApplied, playerName, appliedDamage);
+        Add(_cumulativePartyApplied, playerName, appliedDamage);
 
         if (!isLocalPlayer)
         {
@@ -569,6 +587,8 @@ public sealed class DpsData
         {
             Add(_currentPersonalSkills, skillIdentity, producedDamage);
             Add(_cumulativePersonalSkills, skillIdentity, producedDamage);
+            Add(_currentPersonalSkillsApplied, skillIdentity, appliedDamage);
+            Add(_cumulativePersonalSkillsApplied, skillIdentity, appliedDamage);
             AddElement(_currentPersonalSkillElements, skillIdentity, elemental, producedDamage);
             AddScaling(_currentPersonalSkillScaling, skillIdentity, scalingType, producedDamage);
             AddScaling(_cumulativePersonalSkillScaling, skillIdentity, scalingType, producedDamage);
@@ -578,6 +598,8 @@ public sealed class DpsData
         else if (!isDirectEssenceDamage)
         {
             Add(_currentOtherPersonal, sourceName, producedDamage);
+            Add(_currentOtherPersonalApplied, sourceName, appliedDamage);
+            Add(_cumulativeOtherPersonalApplied, sourceName, appliedDamage);
             AddScaling(_currentPersonalOtherScaling, sourceName, scalingType, producedDamage);
             AddScaling(_cumulativePersonalOtherScaling, sourceName, scalingType, producedDamage);
             Add(_cumulativeOtherPersonal, sourceName, producedDamage);
@@ -598,6 +620,9 @@ public sealed class DpsData
                     continue;
 
                 Add(_currentPersonalEssences, essenceKey, contribution);
+                float appliedContribution = producedDamage > 0f ? contribution * (appliedDamage / producedDamage) : 0f;
+                Add(_currentPersonalEssencesApplied, essenceKey, appliedContribution);
+                Add(_cumulativePersonalEssencesApplied, essenceKey, appliedContribution);
                 _essenceDisplayNames[essenceKey] = GetLocalizedEssenceName(essence);
                 Add(_cumulativePersonalEssences, essenceKey, contribution);
                 AddElement(_currentPersonalEssenceElements, essenceKey, elemental, contribution);
@@ -649,11 +674,14 @@ public sealed class DpsData
         CurrentHitCount = 0;
 
         _currentPersonalHealing.Clear();
+        _currentPersonalEffectiveHealing.Clear();
         _currentPersonalHealingIcons.Clear();
         _currentPersonalBarrier.Clear();
         _currentPersonalBarrierIcons.Clear();
         _currentPersonalSkills.Clear();
+        _currentPersonalSkillsApplied.Clear();
         _currentPersonalEssences.Clear();
+        _currentPersonalEssencesApplied.Clear();
         _currentPersonalSkillElements.Clear();
         _currentPersonalSkillScaling.Clear();
         _currentPersonalOtherScaling.Clear();
@@ -661,8 +689,11 @@ public sealed class DpsData
         _currentPersonalEssenceIcons.Clear();
         _currentPersonalEssenceElements.Clear();
         _currentOtherPersonal.Clear();
+        _currentOtherPersonalApplied.Clear();
         _currentParty.Clear();
+        _currentPartyApplied.Clear();
         _currentPartyHealing.Clear();
+        _currentPartyEffectiveHealing.Clear();
         _currentPartyBarrier.Clear();
     }
 
@@ -695,26 +726,32 @@ public sealed class DpsData
         CumulativePartyOverkill = 0f;
 
         _cumulativePersonalHealing.Clear();
+        _cumulativePersonalEffectiveHealing.Clear();
         _cumulativePersonalHealingIcons.Clear();
         _healingDisplayNames.Clear();
         _cumulativePersonalBarrier.Clear();
         _cumulativePersonalBarrierIcons.Clear();
         _barrierDisplayNames.Clear();
         _cumulativePersonalSkills.Clear();
+        _cumulativePersonalSkillsApplied.Clear();
         _cumulativePersonalSkillScaling.Clear();
         _cumulativePersonalOtherScaling.Clear();
         _skillIcons.Clear();
         _skillDisplayNames.Clear();
         _otherIcons.Clear();
         _cumulativePersonalEssences.Clear();
+        _cumulativePersonalEssencesApplied.Clear();
         _essenceDisplayNames.Clear();
         _cumulativePersonalEssenceScaling.Clear();
         _cumulativePersonalEssenceIcons.Clear();
         _cumulativePersonalSkillElements.Clear();
         _cumulativePersonalEssenceElements.Clear();
         _cumulativeOtherPersonal.Clear();
+        _cumulativeOtherPersonalApplied.Clear();
         _cumulativeParty.Clear();
+        _cumulativePartyApplied.Clear();
         _cumulativePartyHealing.Clear();
+        _cumulativePartyEffectiveHealing.Clear();
         _cumulativePartyBarrier.Clear();
     }
 

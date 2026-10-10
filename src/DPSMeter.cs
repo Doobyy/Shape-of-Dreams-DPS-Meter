@@ -74,7 +74,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v18.300";
+    public const string DevelopmentVersion = "v18.400";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -1050,7 +1050,8 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        float healing = Mathf.Max(0f, info.amount) + Mathf.Max(0f, info.discardedAmount);
+        float effectiveHealing = Mathf.Max(0f, info.amount);
+        float healing = effectiveHealing + Mathf.Max(0f, info.discardedAmount);
 
         if (healing <= 0f)
         {
@@ -1140,12 +1141,12 @@ public sealed class DPSMeter : ModBehaviour
             {
                 _overlay.SetPartyPlayerIcon(partyPlayerName, FindSpriteMember(healingHero));
             }
-            _data.AddPartyHealing(healing, partyPlayerName);
+            _data.AddPartyHealing(healing, effectiveHealing, partyPlayerName);
         }
 
         if (info.target == local.hero)
         {
-            _data.AddHealing(healing, sourceIdentity, sourceName, healingIcon, healingActorChain);
+            _data.AddHealing(healing, effectiveHealing, sourceIdentity, sourceName, healingIcon, healingActorChain);
         }
 
     }
