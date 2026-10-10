@@ -61,6 +61,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Color _partyBarOutlineColor = DefaultBarOutlineColor;
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
     private readonly HashSet<string> _historyIconResourceLookupAttempted = new HashSet<string>();
+    private readonly Dictionary<string, string> _historyIconResolutionStates = new Dictionary<string, string>();
     private bool _historyAddressablesInventoryLogged;
     private bool _historySpriteAtlasMissingLogged;
     private bool _historySpriteAtlasFoundLogged;
@@ -1117,7 +1118,10 @@ public sealed class DpsOverlay : MonoBehaviour
         string cacheKey = row.IconName + "|" + (row.IconTextureName ?? string.Empty);
         Sprite cached;
         if (!string.IsNullOrEmpty(row.IconName) && _historyIconCache.TryGetValue(cacheKey, out cached))
+        {
+            DiagnoseHistoryIconResolution(row, cacheKey, "cache", cached);
             return cached;
+        }
 
         if (!string.IsNullOrEmpty(row.IconName))
         {
@@ -1133,6 +1137,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
                 _historyIconCache[cacheKey] = candidate;
                 DiagnoseHistorySpriteAtlases(row.IconName, row.IconTextureName, true);
+                DiagnoseHistoryIconResolution(row, cacheKey, "loaded-sprite", candidate);
                 return candidate;
             }
             DiagnoseHistorySpriteAtlases(row.IconName, row.IconTextureName, false);
@@ -1140,27 +1145,82 @@ public sealed class DpsOverlay : MonoBehaviour
 
         Sprite resourceIcon = TryLoadHistoryIconFromGameResources(row, cacheKey);
         if (resourceIcon != null)
+        {
+            DiagnoseHistoryIconResolution(row, cacheKey, "DewResources", resourceIcon);
             return resourceIcon;
+        }
 
         if (_data == null)
+        {
+            DiagnoseHistoryIconResolution(row, cacheKey, "no-data", null);
             return null;
+        }
 
+        Sprite fallbackIcon = null;
+        string fallbackSource = "no-registry:" + (row.SourceType ?? "<null>");
         if (row.SourceType == "SKILL")
-            return _data.GetSkillIcon(identity);
-        if (row.SourceType == "OTHER")
-            return string.Equals(row.Name, "Basic Attack", StringComparison.Ordinal)
-                ? GetBasicAttackIcon()
-                : _data.GetCurrentOtherIcon(identity);
-        if (row.SourceType == "ESSENCE")
-            return _data.GetCumulativeEssenceIcon(identity);
-        if (row.SourceType == "HEALING")
-            return _data.GetCumulativeHealingIcon(identity);
-        if (row.SourceType == "BARRIER")
-            return _data.GetCumulativeBarrierIcon(identity);
+        {
+            fallbackSource = "registry:SKILL";
+            fallbackIcon = _data.GetSkillIcon(identity);
+        }
+        else if (row.SourceType == "OTHER")
+        {
+            if (string.Equals(row.Name, "Basic Attack", StringComparison.Ordinal))
+            {
+                fallbackSource = "basic-attack";
+                fallbackIcon = GetBasicAttackIcon();
+            }
+            else
+            {
+                fallbackSource = "registry:OTHER";
+                fallbackIcon = _data.GetCurrentOtherIcon(identity);
+            }
+        }
+        else if (row.SourceType == "ESSENCE")
+        {
+            fallbackSource = "registry:ESSENCE";
+            fallbackIcon = _data.GetCumulativeEssenceIcon(identity);
+        }
+        else if (row.SourceType == "HEALING")
+        {
+            fallbackSource = "registry:HEALING";
+            fallbackIcon = _data.GetCumulativeHealingIcon(identity);
+        }
+        else if (row.SourceType == "BARRIER")
+        {
+            fallbackSource = "registry:BARRIER";
+            fallbackIcon = _data.GetCumulativeBarrierIcon(identity);
+        }
 
-        return null;
+        DiagnoseHistoryIconResolution(row, cacheKey, fallbackSource, fallbackIcon);
+        return fallbackIcon;
     }
 
+    private void DiagnoseHistoryIconResolution(
+        DpsData.RunBreakdownRow row, string cacheKey, string source, Sprite sprite)
+    {
+        if (row == null)
+            return;
+
+        string key = string.IsNullOrEmpty(cacheKey)
+            ? (row.IconName ?? string.Empty) + "|" + (row.IconTextureName ?? string.Empty)
+            : cacheKey;
+        string result = sprite == null
+            ? "<null>"
+            : sprite.name + "/" + (sprite.texture == null ? "<null>" : sprite.texture.name);
+        string state = source + "|" + result;
+        string previous;
+        if (_historyIconResolutionStates.TryGetValue(key, out previous) &&
+            string.Equals(previous, state, StringComparison.Ordinal))
+            return;
+
+        _historyIconResolutionStates[key] = state;
+        DPSMeter.WriteHistoryIconResourceDiagnostic("resolve icon=" +
+            (string.IsNullOrEmpty(row.IconName) ? "<none>" : row.IconName) +
+            " texture=" + (string.IsNullOrEmpty(row.IconTextureName) ? "<none>" : row.IconTextureName) +
+            " source=" + source + " result=" + result +
+            " row=" + (row.SourceType ?? "<null>") + ":" + (row.Name ?? "<null>"));
+    }
 
     private static List<DpsData.RunBreakdownRow> GetSelectedRunRows(
         DpsData.RunRecord run, string category)
