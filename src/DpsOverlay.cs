@@ -59,6 +59,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private Color _partyBarOutlineColor = DefaultBarOutlineColor;
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Color> _partyPlayerColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Color> _partyPlayerGlowColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     private Vector2 _scroll;
     private DisplayMode _mode;
 
@@ -131,6 +133,32 @@ public sealed class DpsOverlay : MonoBehaviour
             return;
 
         _partyPlayerIcons[playerName] = icon;
+    }
+
+    public void SetPartyPlayerIcon(string playerName, Sprite icon, Color mainColor, bool hasMainColor)
+    {
+        SetPartyPlayerIcon(playerName, icon);
+        if (string.IsNullOrEmpty(playerName) || icon == null)
+            return;
+
+        if (!hasMainColor)
+        {
+            _partyPlayerColors.Remove(playerName);
+            _partyPlayerGlowColors.Remove(playerName);
+            return;
+        }
+
+        mainColor = new Color(
+            Mathf.Clamp01(mainColor.r),
+            Mathf.Clamp01(mainColor.g),
+            Mathf.Clamp01(mainColor.b),
+            1f);
+        _partyPlayerColors[playerName] = mainColor;
+        _partyPlayerGlowColors[playerName] = new Color(
+            mainColor.r * 0.32f,
+            mainColor.g * 0.32f,
+            mainColor.b * 0.32f,
+            1f);
     }
 
     public Sprite GetPartyPlayerIconForHistory(string playerName)
@@ -448,6 +476,35 @@ public sealed class DpsOverlay : MonoBehaviour
             1f);
     }
 
+    private void DrawCharacterGlow(Sprite icon, Rect iconRect, Color outlineColor)
+    {
+        if (icon == null)
+            return;
+
+        Color.RGBToHSV(outlineColor, out float glowHue, out float glowSaturation, out float glowValue);
+        // Brighten the outline hue without blending toward white.
+        Color glowColor = Color.HSVToRGB(glowHue, glowSaturation, Mathf.Min(glowValue, 0.55f));
+        float[] glowOffsets = { 1.5f, 3f, 4.5f };
+        float[] glowAlphas = { 0.24f, 0.14f, 0.07f };
+        for (int ring = 0; ring < glowOffsets.Length; ring++)
+        {
+            float glowOffset = glowOffsets[ring];
+            Color ringColor = glowColor;
+            ringColor.a = glowAlphas[ring];
+            GUI.color = ringColor;
+
+            DrawSprite(icon, new Rect(iconRect.x - glowOffset, iconRect.y, iconRect.width, iconRect.height));
+            DrawSprite(icon, new Rect(iconRect.x + glowOffset, iconRect.y, iconRect.width, iconRect.height));
+            DrawSprite(icon, new Rect(iconRect.x, iconRect.y - glowOffset, iconRect.width, iconRect.height));
+            DrawSprite(icon, new Rect(iconRect.x, iconRect.y + glowOffset, iconRect.width, iconRect.height));
+            DrawSprite(icon, new Rect(iconRect.x - glowOffset, iconRect.y - glowOffset, iconRect.width, iconRect.height));
+            DrawSprite(icon, new Rect(iconRect.x + glowOffset, iconRect.y - glowOffset, iconRect.width, iconRect.height));
+            DrawSprite(icon, new Rect(iconRect.x - glowOffset, iconRect.y + glowOffset, iconRect.width, iconRect.height));
+            DrawSprite(icon, new Rect(iconRect.x + glowOffset, iconRect.y + glowOffset, iconRect.width, iconRect.height));
+        }
+        GUI.color = Color.white;
+    }
+
     private void DrawRunHistoryRow(Rect rect, DpsData.RunRecord run, string line1, string line2, bool isCurrent, bool drawSeparator)
     {
         bool selected = isCurrent ? _selectedRunRecord == null : ReferenceEquals(_selectedRunRecord, run);
@@ -511,35 +568,7 @@ public sealed class DpsOverlay : MonoBehaviour
             // Preserve the intended emblem tint separately from the outline-colored halo.
             Color emblemTint = GUI.color;
             if (selected)
-            {
-                // Use the character's outline hue, brightened so the wider halo reads as a glow.
-                Color glowColor = GetRunCharacterOutlineColor(run);
-                Color.RGBToHSV(glowColor, out float glowHue, out float glowSaturation, out float glowValue);
-                // Raise brightness without blending toward white, preserving the outline's hue.
-                // Keep the glow darker than neon character colors so it adds edge contrast rather than haze.
-                glowColor = Color.HSVToRGB(glowHue, glowSaturation, Mathf.Min(glowValue, 0.55f));
-                GUI.color = glowColor;
-
-                // Several offset rings create a soft, broader halo rather than a thin edge stroke.
-                float[] glowOffsets = { 1.5f, 3f, 4.5f };
-                float[] glowAlphas = { 0.24f, 0.14f, 0.07f };
-                for (int ring = 0; ring < glowOffsets.Length; ring++)
-                {
-                    float glowOffset = glowOffsets[ring];
-                    Color ringColor = glowColor;
-                    ringColor.a = glowAlphas[ring];
-                    GUI.color = ringColor;
-
-                    DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y, iconRect.width, iconRect.height));
-                    DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y, iconRect.width, iconRect.height));
-                    DrawSprite(characterIcon, new Rect(iconRect.x, iconRect.y - glowOffset, iconRect.width, iconRect.height));
-                    DrawSprite(characterIcon, new Rect(iconRect.x, iconRect.y + glowOffset, iconRect.width, iconRect.height));
-                    DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y - glowOffset, iconRect.width, iconRect.height));
-                    DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y - glowOffset, iconRect.width, iconRect.height));
-                    DrawSprite(characterIcon, new Rect(iconRect.x - glowOffset, iconRect.y + glowOffset, iconRect.width, iconRect.height));
-                    DrawSprite(characterIcon, new Rect(iconRect.x + glowOffset, iconRect.y + glowOffset, iconRect.width, iconRect.height));
-                }
-            }
+                DrawCharacterGlow(characterIcon, iconRect, GetRunCharacterOutlineColor(run));
 
             // Restore the original selected/hovered/idle tint before drawing the emblem on top.
             GUI.color = emblemTint;
@@ -2123,7 +2152,16 @@ public sealed class DpsOverlay : MonoBehaviour
                 // aligned to the row's left edge, with the bar immediately after it.
                 Rect iconRect = new Rect(rowRect.x, rowRect.y, rowRect.height, rowRect.height);
                 barRect.xMin = iconRect.xMax;
+
+                Color emblemTint = Color.white;
+                Color glowColor = DefaultBarOutlineColor;
+                if (_partyPlayerColors.TryGetValue(row.Key, out Color characterColor))
+                    emblemTint = characterColor;
+                _partyPlayerGlowColors.TryGetValue(row.Key, out glowColor);
+                DrawCharacterGlow(playerIcon, iconRect, glowColor);
+                GUI.color = emblemTint;
                 DrawSprite(playerIcon, iconRect);
+                GUI.color = Color.white;
             }
 
             float nameX = barRect.x + 7f;
