@@ -871,6 +871,25 @@ public sealed class DpsData
         _otherIcons[sourceName] = icon;
     }
 
+    public float GetCurrentSkillAppliedAmount(string identity) => GetAmount(_currentPersonalSkillsApplied, identity);
+    public float GetCumulativeSkillAppliedAmount(string identity) => GetAmount(_cumulativePersonalSkillsApplied, identity);
+    public float GetCurrentEssenceAppliedAmount(string identity) => GetAmount(_currentPersonalEssencesApplied, identity);
+    public float GetCumulativeEssenceAppliedAmount(string identity) => GetAmount(_cumulativePersonalEssencesApplied, identity);
+    public float GetCurrentOtherAppliedAmount(string identity) => GetAmount(_currentOtherPersonalApplied, identity);
+    public float GetCumulativeOtherAppliedAmount(string identity) => GetAmount(_cumulativeOtherPersonalApplied, identity);
+    public float GetCurrentPartyAppliedAmount(string playerName) => GetAmount(_currentPartyApplied, playerName);
+    public float GetCumulativePartyAppliedAmount(string playerName) => GetAmount(_cumulativePartyApplied, playerName);
+    public float GetCurrentHealingEffectiveAmount(string identity) => GetAmount(_currentPersonalEffectiveHealing, identity);
+    public float GetCumulativeHealingEffectiveAmount(string identity) => GetAmount(_cumulativePersonalEffectiveHealing, identity);
+    public float GetCurrentPartyHealingEffectiveAmount(string playerName) => GetAmount(_currentPartyEffectiveHealing, playerName);
+    public float GetCumulativePartyHealingEffectiveAmount(string playerName) => GetAmount(_cumulativePartyEffectiveHealing, playerName);
+
+    private static float GetAmount(Dictionary<string, float> amounts, string identity)
+    {
+        float amount;
+        return !string.IsNullOrEmpty(identity) && amounts.TryGetValue(identity, out amount) ? amount : 0f;
+    }
+
     public ElementalType? GetCurrentEssenceElement(string essenceKey) => GetDominantElement(_currentPersonalEssenceElements, essenceKey);
 
     public ElementalType? GetCumulativeEssenceElement(string essenceKey) => GetDominantElement(_cumulativePersonalEssenceElements, essenceKey);
