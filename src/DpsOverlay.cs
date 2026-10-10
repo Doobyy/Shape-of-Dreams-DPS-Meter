@@ -2194,7 +2194,7 @@ public sealed class DpsOverlay : MonoBehaviour
                         emblemTint = characterColor;
                     if (!_partyPlayerGlowColors.TryGetValue(row.Key, out glowColor))
                         glowColor = DefaultBarOutlineColor;
-                    DrawCharacterGlow(playerIcon, iconRect, glowColor);
+                    DrawCharacterGlow(playerIcon, iconRect, glowColor, true);
                     GUI.color = emblemTint;
                     DrawSprite(playerIcon, iconRect);
                     GUI.color = Color.white;
