@@ -881,11 +881,52 @@ public sealed class DpsOverlay : MonoBehaviour
                 " newlyVisibleCount=" + newlyVisibleCount +
                 " newlyVisibleSample=" + (newlyVisibleSample.Count == 0
                     ? "<none>" : string.Join(";", newlyVisibleSample.ToArray())));
+            DPSMeter.WriteHistoryIconResourceDiagnostic("scene-inventory " + GetHistorySceneInventory());
         }
         catch (Exception ex)
         {
             DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory exception=" +
                 ex.GetType().Name + " icon=" + iconName + " found=" + spriteFound);
+        }
+    }
+
+    private static string GetHistorySceneInventory()
+    {
+        try
+        {
+            Type sceneManagerType = Type.GetType("UnityEngine.SceneManagement.SceneManager, UnityEngine.CoreModule");
+            if (sceneManagerType == null)
+                return "scene-manager-type=<null>";
+
+            System.Reflection.PropertyInfo sceneCountProperty =
+                sceneManagerType.GetProperty("sceneCount", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            System.Reflection.MethodInfo getSceneAtMethod =
+                sceneManagerType.GetMethod("GetSceneAt", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            if (sceneCountProperty == null || getSceneAtMethod == null)
+                return "scene-api-unavailable";
+
+            int sceneCount = Convert.ToInt32(sceneCountProperty.GetValue(null, null));
+            List<string> scenes = new List<string>();
+            for (int i = 0; i < sceneCount; i++)
+            {
+                object scene = getSceneAtMethod.Invoke(null, new object[] { i });
+                if (scene == null)
+                    continue;
+
+                Type sceneType = scene.GetType();
+                System.Reflection.PropertyInfo nameProperty = sceneType.GetProperty("name");
+                System.Reflection.PropertyInfo loadedProperty = sceneType.GetProperty("isLoaded");
+                string name = nameProperty == null ? "<no-name>" : Convert.ToString(nameProperty.GetValue(scene, null));
+                string loaded = loadedProperty == null ? "?" : Convert.ToString(loadedProperty.GetValue(scene, null));
+                scenes.Add(name + "(loaded=" + loaded + ")");
+            }
+
+            return "sceneCount=" + sceneCount + " scenes=" +
+                (scenes.Count == 0 ? "<none>" : string.Join(";", scenes.ToArray()));
+        }
+        catch (Exception ex)
+        {
+            return "scene-inventory-error=" + ex.GetType().Name;
         }
     }
 
