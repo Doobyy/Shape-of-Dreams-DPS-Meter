@@ -176,6 +176,8 @@ public sealed class DpsData
 
     public float CurrentInstancePersonalHealing { get; private set; }
     public float CumulativePersonalHealing { get; private set; }
+    public float CurrentInstancePersonalEffectiveHealing { get; private set; }
+    public float CumulativePersonalEffectiveHealing { get; private set; }
     public float CurrentInstancePersonalBarrier { get; private set; }
     public float CumulativePersonalBarrier { get; private set; }
 
@@ -222,6 +224,8 @@ public sealed class DpsData
 
     public float CurrentInstancePartyHealing { get; private set; }
     public float CumulativePartyHealing { get; private set; }
+    public float CurrentInstancePartyEffectiveHealing { get; private set; }
+    public float CumulativePartyEffectiveHealing { get; private set; }
     public float CurrentInstancePartyBarrier { get; private set; }
     public float CumulativePartyBarrier { get; private set; }
     public float PartyDamageStartedAt { get; private set; }
@@ -409,6 +413,8 @@ public sealed class DpsData
         LastPartyHealingAt = now;
         CurrentInstancePartyHealing += generatedHealing;
         CumulativePartyHealing += generatedHealing;
+        CurrentInstancePartyEffectiveHealing += effectiveHealing;
+        CumulativePartyEffectiveHealing += effectiveHealing;
         Add(_currentPartyHealing, playerName, generatedHealing);
         Add(_cumulativePartyHealing, playerName, generatedHealing);
         Add(_currentPartyEffectiveHealing, playerName, effectiveHealing);
@@ -458,6 +464,8 @@ public sealed class DpsData
 
         CurrentInstancePersonalHealing += generatedHealing;
         CumulativePersonalHealing += generatedHealing;
+        CurrentInstancePersonalEffectiveHealing += effectiveHealing;
+        CumulativePersonalEffectiveHealing += effectiveHealing;
 
         Add(_currentPersonalHealing, sourceName, generatedHealing);
         Add(_cumulativePersonalHealing, sourceName, generatedHealing);
@@ -647,6 +655,7 @@ public sealed class DpsData
     private void ClearCurrentInstance()
     {
         CurrentInstancePersonalHealing = 0f;
+        CurrentInstancePersonalEffectiveHealing = 0f;
         CurrentInstancePersonalBarrier = 0f;
         HealingStartedAt = 0f;
         BarrierStartedAt = 0f;
@@ -659,6 +668,7 @@ public sealed class DpsData
         CurrentInstancePersonalAppliedDamage = 0f;
         CurrentInstancePersonalOverkill = 0f;
         CurrentInstancePartyHealing = 0f;
+        CurrentInstancePartyEffectiveHealing = 0f;
         CurrentInstancePartyBarrier = 0f;
         PartyDamageStartedAt = 0f;
         LastPartyDamageAt = 0f;
@@ -703,6 +713,7 @@ public sealed class DpsData
         _pendingInstanceReset = false;
 
         CumulativePersonalHealing = 0f;
+        CumulativePersonalEffectiveHealing = 0f;
         CumulativePersonalBarrier = 0f;
         CumulativeHealingStartedAt = 0f;
         CumulativeBarrierStartedAt = 0f;
@@ -712,6 +723,7 @@ public sealed class DpsData
         CumulativePersonalAppliedDamage = 0f;
         CumulativePersonalOverkill = 0f;
         CumulativePartyHealing = 0f;
+        CumulativePartyEffectiveHealing = 0f;
         CumulativePartyBarrier = 0f;
         PartyDamageStartedAt = 0f;
         LastPartyDamageAt = 0f;
