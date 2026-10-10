@@ -453,6 +453,7 @@ public sealed class DPSMeter : ModBehaviour
             DpsData.RunBreakdownRow saved = CreateRunBreakdownRow("DAMAGE", "OTHER", row.Key, row.Key, row.Value,
                 null, cumulative ? _data.GetCumulativeOtherScaling(row.Key) : _data.GetCurrentOtherScaling(row.Key), icon);
             saved.View = view;
+            PopulateRunRowDualAmounts(saved, cumulative);
             run.ViewRows.Add(saved);
         }
 
@@ -465,6 +466,7 @@ public sealed class DPSMeter : ModBehaviour
                 cumulative ? _data.GetCumulativeEssenceScaling(row.Key) : _data.GetCurrentEssenceScaling(row.Key),
                 cumulative ? _data.GetCumulativeEssenceIcon(row.Key) : _data.GetCurrentEssenceIcon(row.Key));
             saved.View = view;
+            PopulateRunRowDualAmounts(saved, cumulative);
             run.ViewRows.Add(saved);
         }
 
@@ -476,6 +478,7 @@ public sealed class DPSMeter : ModBehaviour
                 null, DpsData.DamageScalingType.None,
                 cumulative ? _data.GetCumulativeHealingIcon(row.Identity) : _data.GetCurrentHealingIcon(row.Identity));
             saved.View = view;
+            PopulateRunRowDualAmounts(saved, cumulative);
             run.ViewRows.Add(saved);
         }
 
@@ -487,6 +490,7 @@ public sealed class DPSMeter : ModBehaviour
                 null, DpsData.DamageScalingType.None,
                 cumulative ? _data.GetCumulativeBarrierIcon(row.Identity) : _data.GetCurrentBarrierIcon(row.Identity));
             saved.View = view;
+            PopulateRunRowDualAmounts(saved, cumulative);
             run.ViewRows.Add(saved);
         }
     }
