@@ -66,11 +66,15 @@ public sealed class RunHistoryBreakdownRow
     [DataMember] public string Scaling;
     [DataMember] public string IconName;
     [DataMember] public string IconTextureName;
+    [DataMember] public float CharacterMainColorR;
+    [DataMember] public float CharacterMainColorG;
+    [DataMember] public float CharacterMainColorB;
+    [DataMember] public bool HasCharacterMainColor;
 }
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v18.000";
+    public const string DevelopmentVersion = "v18.100";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -491,13 +495,19 @@ public sealed class DPSMeter : ModBehaviour
         KeyValuePair<string, float> pair)
     {
         Sprite icon = _overlay == null ? null : _overlay.GetPartyPlayerIconForHistory(pair.Key);
+        Color savedPlayerColor = Color.white;
+        bool hasSavedPlayerColor = _overlay != null && _overlay.TryGetPartyPlayerMainColor(pair.Key, out savedPlayerColor);
         run.ViewRows.Add(new DpsData.RunBreakdownRow
         {
             View = view, Category = category, SourceType = sourceType,
             Identity = pair.Key, Name = pair.Key, Amount = pair.Value,
             Scaling = DpsData.DamageScalingType.None.ToString(),
             IconName = icon == null ? null : icon.name,
-            IconTextureName = icon == null || icon.texture == null ? null : icon.texture.name
+            IconTextureName = icon == null || icon.texture == null ? null : icon.texture.name,
+            CharacterMainColorR = savedPlayerColor.r,
+            CharacterMainColorG = savedPlayerColor.g,
+            CharacterMainColorB = savedPlayerColor.b,
+            HasCharacterMainColor = hasSavedPlayerColor
         });
     }
 
@@ -590,7 +600,11 @@ public sealed class DPSMeter : ModBehaviour
                                     View = row.View, Category = row.Category, SourceType = row.SourceType,
                                     Identity = row.Identity, Name = row.Name, Amount = row.Amount,
                                     Elemental = row.Elemental, Scaling = row.Scaling,
-                                    IconName = row.IconName, IconTextureName = row.IconTextureName
+                                    IconName = row.IconName, IconTextureName = row.IconTextureName,
+                                    CharacterMainColorR = row.CharacterMainColorR,
+                                    CharacterMainColorG = row.CharacterMainColorG,
+                                    CharacterMainColorB = row.CharacterMainColorB,
+                                    HasCharacterMainColor = row.HasCharacterMainColor
                                 });
                         }
                     }
@@ -682,7 +696,11 @@ public sealed class DPSMeter : ModBehaviour
                                 View = row.View, Category = row.Category, SourceType = row.SourceType,
                                 Identity = row.Identity, Name = row.Name, Amount = row.Amount,
                                 Elemental = row.Elemental, Scaling = row.Scaling,
-                                IconName = row.IconName, IconTextureName = row.IconTextureName
+                                IconName = row.IconName, IconTextureName = row.IconTextureName,
+                                CharacterMainColorR = row.CharacterMainColorR,
+                                CharacterMainColorG = row.CharacterMainColorG,
+                                CharacterMainColorB = row.CharacterMainColorB,
+                                HasCharacterMainColor = row.HasCharacterMainColor
                             });
                     }
                 }
