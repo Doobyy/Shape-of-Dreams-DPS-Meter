@@ -62,7 +62,9 @@ public sealed class DpsData
         public bool HasCharacterMainColor;
         public string Outcome;
         public float TotalDamage;
+        public float TotalAppliedDamage;
         public float TotalHealing;
+        public float TotalEffectiveHealing;
         public float TotalBarrier;
         public float DurationSeconds;
         public int WorldsVisited;
