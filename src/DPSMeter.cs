@@ -70,7 +70,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v17.600";
+    public const string DevelopmentVersion = "v17.700";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -4011,7 +4011,11 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
             {
                 Sprite icon = FindSpriteMember(player.hero);
                 if (icon != null)
-                    _overlay.SetPartyPlayerIcon(playerName, icon);
+                {
+                    Color playerMainColor;
+                    bool hasPlayerMainColor = TryGetHeroMainColor(player.hero, out playerMainColor);
+                    _overlay.SetPartyPlayerIcon(playerName, icon, playerMainColor, hasPlayerMainColor);
+                }
             }
             catch (Exception ex)
             {
