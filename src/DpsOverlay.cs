@@ -808,9 +808,14 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private Sprite TryLoadHistoryIconFromGameResources(DpsData.RunBreakdownRow row, string cacheKey)
     {
-        if (row == null || string.IsNullOrEmpty(row.IconName) ||
-            !_historyIconResourceLookupAttempted.Add(cacheKey))
+        if (row == null || string.IsNullOrEmpty(row.IconName))
             return null;
+
+        if (!_historyIconResourceLookupAttempted.Add(cacheKey))
+            return null;
+
+        string iconTexture = string.IsNullOrEmpty(row.IconTextureName) ? "<none>" : row.IconTextureName;
+        DPSMeter.WriteHistoryIconResourceDiagnostic("begin icon=" + row.IconName + " texture=" + iconTexture);
 
         try
         {
@@ -820,9 +825,18 @@ public sealed class DpsOverlay : MonoBehaviour
             // supplied by Sirenix.Serialization, which this mod intentionally does not reference.
             System.Reflection.PropertyInfo databaseProperty =
                 typeof(DewResources).GetProperty("database");
-            object database = databaseProperty == null ? null : databaseProperty.GetValue(null, null);
-            if (database == null)
+            if (databaseProperty == null)
+            {
+                DPSMeter.WriteHistoryIconResourceDiagnostic("no database property icon=" + row.IconName);
                 return null;
+            }
+
+            object database = databaseProperty.GetValue(null, null);
+            if (database == null)
+            {
+                DPSMeter.WriteHistoryIconResourceDiagnostic("database null icon=" + row.IconName);
+                return null;
+            }
 
             System.Reflection.MemberInfo nameMapMember =
                 (System.Reflection.MemberInfo)database.GetType().GetProperty("nameToGuid") ??
@@ -834,25 +848,47 @@ public sealed class DpsOverlay : MonoBehaviour
                 nameMap = nameMapField.GetValue(database);
 
             System.Collections.IDictionary nameMapDictionary = nameMap as System.Collections.IDictionary;
-            if (nameMapDictionary == null || !nameMapDictionary.Contains(row.IconName))
+            if (nameMapDictionary == null)
+            {
+                DPSMeter.WriteHistoryIconResourceDiagnostic("name map unavailable type=" +
+                    (nameMap == null ? "<null>" : nameMap.GetType().FullName) + " icon=" + row.IconName);
                 return null;
+            }
+
+            if (!nameMapDictionary.Contains(row.IconName))
+            {
+                DPSMeter.WriteHistoryIconResourceDiagnostic("name not registered icon=" + row.IconName);
+                return null;
+            }
 
             Sprite sprite = DewResources.GetByName<Sprite>(row.IconName);
             if (sprite == null)
+            {
+                DPSMeter.WriteHistoryIconResourceDiagnostic("resource returned null icon=" + row.IconName);
                 return null;
+            }
 
             if (!string.IsNullOrEmpty(row.IconTextureName) &&
                 (sprite.texture == null ||
                  !string.Equals(sprite.texture.name, row.IconTextureName, StringComparison.Ordinal)))
+            {
+                DPSMeter.WriteHistoryIconResourceDiagnostic("texture mismatch icon=" + row.IconName +
+                    " actual=" + (sprite.texture == null ? "<null>" : sprite.texture.name) +
+                    " expected=" + row.IconTextureName);
                 return null;
+            }
 
             _historyIconCache[cacheKey] = sprite;
+            DPSMeter.WriteHistoryIconResourceDiagnostic("success icon=" + row.IconName +
+                " sprite=" + sprite.name + " texture=" +
+                (sprite.texture == null ? "<null>" : sprite.texture.name));
             return sprite;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // The game's resource database may not be ready this early in startup.
-            // The existing loaded-sprite and live-registry fallbacks remain active.
+            // Report why the early resource lookup failed while preserving the existing fallbacks.
+            DPSMeter.WriteHistoryIconResourceDiagnostic("exception icon=" + row.IconName +
+                " type=" + ex.GetType().FullName + " message=" + ex.Message);
             return null;
         }
     }
