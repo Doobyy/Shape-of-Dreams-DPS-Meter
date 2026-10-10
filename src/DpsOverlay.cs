@@ -63,6 +63,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private readonly HashSet<string> _historyIconResourceLookupAttempted = new HashSet<string>();
     private readonly Dictionary<string, string> _historyIconResolutionStates = new Dictionary<string, string>();
     private readonly HashSet<string> _historyAssetBundleDiagnosticsLogged = new HashSet<string>();
+    private HashSet<string> _historySpriteNamesBeforeLobby;
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerGlowColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -811,110 +812,59 @@ public sealed class DpsOverlay : MonoBehaviour
     private void DiagnoseHistoryAssetBundles(string iconName, string textureName, bool spriteFound)
     {
         string phase = spriteFound ? "found" : "missing";
-        string diagnosticKey = phase;
-        if (!_historyAssetBundleDiagnosticsLogged.Add(diagnosticKey))
+        if (!_historyAssetBundleDiagnosticsLogged.Add(phase))
             return;
 
         try
         {
-            Type assetBundleType = null;
-            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            for (int i = 0; i < assemblies.Length && assetBundleType == null; i++)
-                assetBundleType = assemblies[i].GetType("UnityEngine.AssetBundle", false);
+            Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+            HashSet<string> currentNames = new HashSet<string>(StringComparer.Ordinal);
+            List<string> sample = new List<string>();
+            int validSpriteCount = 0;
 
-            MethodInfo getLoadedBundles = assetBundleType == null ? null : assetBundleType.GetMethod(
-                "GetAllLoadedAssetBundles",
-                BindingFlags.Public | BindingFlags.Static,
-                null,
-                Type.EmptyTypes,
-                null);
-            System.Collections.IEnumerable bundles = getLoadedBundles == null
-                ? null
-                : getLoadedBundles.Invoke(null, null) as System.Collections.IEnumerable;
-            if (bundles == null)
+            for (int i = 0; sprites != null && i < sprites.Length; i++)
             {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("asset-bundles phase=" + phase +
-                    " unavailable=" + (assetBundleType == null ? "type-not-found" : "GetAllLoadedAssetBundles") +
-                    " icon=" + iconName);
+                Sprite sprite = sprites[i];
+                if (sprite == null)
+                    continue;
+
+                validSpriteCount++;
+                string texture = sprite.texture == null ? "<null>" : sprite.texture.name;
+                string identity = sprite.name + "@" + texture;
+                currentNames.Add(identity);
+
+                if (spriteFound && _historySpriteNamesBeforeLobby != null &&
+                    !_historySpriteNamesBeforeLobby.Contains(identity) && sample.Count < 80)
+                    sample.Add(identity);
+            }
+
+            if (!spriteFound)
+            {
+                _historySpriteNamesBeforeLobby = currentNames;
+                DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=missing icon=" + iconName +
+                    " spriteCount=" + validSpriteCount + " uniqueSpriteTexturePairs=" + currentNames.Count);
                 return;
             }
 
-            int bundleCount = 0;
-            int totalAssetPathCount = 0;
-            List<string> bundleSamples = new List<string>();
-            List<string> matchingAssets = new List<string>();
-            List<string> relevantAssetPaths = new List<string>();
-            foreach (object bundle in bundles)
+            int newCount = 0;
+            if (_historySpriteNamesBeforeLobby != null)
             {
-                if (bundle == null)
-                    continue;
-
-                bundleCount++;
-                Type bundleType = bundle.GetType();
-                System.Reflection.PropertyInfo nameProperty = bundleType.GetProperty("name");
-                string bundleName = nameProperty == null ? bundleType.Name :
-                    Convert.ToString(nameProperty.GetValue(bundle, null));
-                if (bundleSamples.Count < 12)
-                    bundleSamples.Add(bundleName);
-
-                MethodInfo getAssetNames = bundleType.GetMethod(
-                    "GetAllAssetNames", BindingFlags.Public | BindingFlags.Instance,
-                    null, Type.EmptyTypes, null);
-                string[] assetNames = getAssetNames == null
-                    ? null
-                    : getAssetNames.Invoke(bundle, null) as string[];
-                if (assetNames == null)
-                    continue;
-
-                totalAssetPathCount += assetNames.Length;
-                for (int i = 0; i < assetNames.Length; i++)
+                foreach (string identity in currentNames)
                 {
-                    string assetPath = assetNames[i];
-                    if (string.IsNullOrEmpty(assetPath))
-                        continue;
-
-                    string assetName = Path.GetFileNameWithoutExtension(assetPath);
-                    bool iconMatch = !string.IsNullOrEmpty(iconName) &&
-                        string.Equals(assetName, iconName, StringComparison.OrdinalIgnoreCase);
-                    bool textureMatch = !string.IsNullOrEmpty(textureName) &&
-                        string.Equals(assetName, textureName, StringComparison.OrdinalIgnoreCase);
-                    if (iconMatch || textureMatch)
-                    {
-                        string match = bundleName + ":" + assetPath;
-                        if (!matchingAssets.Contains(match) && matchingAssets.Count < 12)
-                            matchingAssets.Add(match);
-                    }
-
-                    if (!spriteFound || relevantAssetPaths.Count >= 30)
-                        continue;
-
-                    string pathLower = assetPath.ToLowerInvariant();
-                    if (pathLower.Contains("sprite") || pathLower.Contains("icon") ||
-                        pathLower.Contains("skill") || pathLower.Contains("spell") ||
-                        pathLower.Contains("texture") || pathLower.Contains("ui"))
-                    {
-                        string sample = bundleName + ":" + assetPath;
-                        if (!relevantAssetPaths.Contains(sample))
-                            relevantAssetPaths.Add(sample);
-                    }
+                    if (!_historySpriteNamesBeforeLobby.Contains(identity))
+                        newCount++;
                 }
             }
 
-            DPSMeter.WriteHistoryIconResourceDiagnostic("asset-bundles phase=" + phase +
-                " icon=" + iconName + " loadedCount=" + bundleCount +
-                " bundleSamples=" + (bundleSamples.Count == 0
-                    ? "<none>" : string.Join(",", bundleSamples.ToArray())) +
-                (spriteFound
-                    ? " totalAssetPaths=" + totalAssetPathCount +
-                      " exactAssetMatches=" + (matchingAssets.Count == 0
-                          ? "<none>" : string.Join(";", matchingAssets.ToArray())) +
-                      " relevantAssetPaths=" + (relevantAssetPaths.Count == 0
-                          ? "<none>" : string.Join(";", relevantAssetPaths.ToArray()))
-                    : string.Empty));
+            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=found icon=" + iconName +
+                " spriteCount=" + validSpriteCount + " uniqueSpriteTexturePairs=" + currentNames.Count +
+                " baselineAvailable=" + (_historySpriteNamesBeforeLobby != null) +
+                " newlyVisibleCount=" + newCount +
+                " newlyVisibleSample=" + (sample.Count == 0 ? "<none>" : string.Join(";", sample.ToArray())));
         }
         catch (Exception ex)
         {
-            DPSMeter.WriteHistoryIconResourceDiagnostic("asset-bundles phase=" + phase +
+            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=" + phase +
                 " exception=" + ex.GetType().Name + " icon=" + iconName);
         }
     }
