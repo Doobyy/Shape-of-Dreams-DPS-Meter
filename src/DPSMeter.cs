@@ -80,7 +80,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v23.600";
+    public const string DevelopmentVersion = "v23.700";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -1107,7 +1107,7 @@ public sealed class DPSMeter : ModBehaviour
         return false;
     }
 
-    private static bool IsRegenOrbHealingActor(Actor source)
+    private static bool IsKnownGeneratedHealingActor(Actor source)
     {
         Actor current = source;
         int depth = 0;
@@ -1116,7 +1116,8 @@ public sealed class DPSMeter : ModBehaviour
         {
             string typeName = current.GetType().Name;
             if (string.Equals(typeName, "Ai_RegenOrb_Projectile", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(typeName, "Pickup_RegenOrb", StringComparison.OrdinalIgnoreCase))
+                string.Equals(typeName, "Pickup_RegenOrb", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(typeName, "Shrine_Guidance", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
@@ -1137,20 +1138,8 @@ public sealed class DPSMeter : ModBehaviour
             return;
         }
 
-        if (info.actor.firstEntity as Hero == null && !IsRegenOrbHealingActor(info.actor))
+        if (info.actor.firstEntity as Hero == null && !IsKnownGeneratedHealingActor(info.actor))
         {
-            if (_rejectedHealTraceCount < 5)
-            {
-                _rejectedHealTraceCount++;
-                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HEAL-REJECT #" +
-                    _rejectedHealTraceCount + " amount=" + info.amount +
-                    " discarded=" + info.discardedAmount +
-                    " actor=" + DescribeActor(info.actor) +
-                    " target=" + DescribeActor(info.target) +
-                    " localHero=" + DescribeActor(local.hero));
-                TraceSourceChain(info.actor, "[" + DevelopmentVersion + "][DPS Meter] HEAL-REJECT");
-            }
-
             return;
         }
 
@@ -1866,7 +1855,6 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
 
     private static int _healthOrbTraceCount;
-    private static int _rejectedHealTraceCount;
     private static int _bismuthHealTraceCount;
     private static int _bismuthBookDamageTraceCount;
 
