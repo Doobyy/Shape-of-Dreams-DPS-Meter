@@ -547,6 +547,12 @@ public sealed class DPSMeter : ModBehaviour
         {
             View = view, Category = category, SourceType = sourceType,
             Identity = pair.Key, Name = pair.Key, Amount = pair.Value,
+            AppliedAmount = string.Equals(category, "DAMAGE", StringComparison.Ordinal)
+                ? (string.Equals(view, "PARTY_TOTAL", StringComparison.Ordinal) ? _data.GetCumulativePartyAppliedAmount(pair.Key) : _data.GetCurrentPartyAppliedAmount(pair.Key))
+                : 0f,
+            EffectiveAmount = string.Equals(category, "HEALING", StringComparison.Ordinal)
+                ? (string.Equals(view, "PARTY_TOTAL", StringComparison.Ordinal) ? _data.GetCumulativePartyHealingEffectiveAmount(pair.Key) : _data.GetCurrentPartyHealingEffectiveAmount(pair.Key))
+                : 0f,
             Scaling = DpsData.DamageScalingType.None.ToString(),
             IconName = icon == null ? null : icon.name,
             IconTextureName = icon == null || icon.texture == null ? null : icon.texture.name,
