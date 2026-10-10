@@ -80,7 +80,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v23.100";
+    public const string DevelopmentVersion = "v23.200";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -105,6 +105,7 @@ public sealed class DPSMeter : ModBehaviour
     private DpsData.RunRecord _activeRunRecord;
     private static readonly object _debugLogLock = new object();
     private static readonly string _debugLogPath = Path.Combine(Application.persistentDataPath, "DPSMeter-debug.log");
+    private int _healingEventProbeCount;
 
     private static void WriteDebugLog(string message)
     {
@@ -1117,6 +1118,38 @@ public sealed class DPSMeter : ModBehaviour
     private void OnTakeHeal(EventInfoHeal info)
     {
         DewPlayer local = DewPlayer.local;
+
+        // Temporary probe: capture early healing events before the hero-source
+        // filter so generated pickup/effect actors cannot disappear silently.
+        if (_healingEventProbeCount < 40)
+        {
+            _healingEventProbeCount++;
+            Actor probeActor = info.actor;
+            Entity probeFirstEntity = probeActor == null ? null : probeActor.firstEntity;
+            string actorChain = "<unavailable>";
+            try
+            {
+                if (probeActor != null)
+                {
+                    actorChain = BuildHealingExportActorChain(probeActor);
+                }
+            }
+            catch (Exception ex)
+            {
+                actorChain = "chain-error=" + ex.GetType().Name;
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HEAL-PROBE #" + _healingEventProbeCount
+                + " amount=" + info.amount.ToString("0.######")
+                + " discarded=" + info.discardedAmount.ToString("0.######")
+                + " actor=" + (probeActor == null ? "<null>" : probeActor.GetType().Name + "(" + probeActor.name + ")")
+                + " firstEntity=" + (probeFirstEntity == null ? "<null>" : probeFirstEntity.GetType().Name)
+                + " target=" + (info.target == null ? "<null>" : info.target.GetType().Name + "(" + info.target.name + ")")
+                + " localHero=" + (local == null || local.hero == null ? "<null>" : local.hero.GetType().Name)
+                + " targetIsLocal=" + (local != null && info.target == local.hero)
+                + " firstEntityIsHero=" + (probeFirstEntity is Hero)
+                + " chain={" + actorChain + "}");
+        }
 
         if (local == null || local.hero == null || info.actor == null || info.target == null)
         {
