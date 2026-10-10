@@ -30,7 +30,9 @@ public sealed class RunHistoryRecord
     [DataMember] public bool HasCharacterMainColor;
     [DataMember] public string Outcome;
     [DataMember] public float TotalDamage;
+    [DataMember] public float TotalAppliedDamage;
     [DataMember] public float TotalHealing;
+    [DataMember] public float TotalEffectiveHealing;
     [DataMember] public float TotalBarrier;
     [DataMember] public float DurationSeconds;
     [DataMember] public int WorldsVisited;
@@ -78,7 +80,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v18.900";
+    public const string DevelopmentVersion = "v19.000";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -332,7 +334,9 @@ public sealed class DPSMeter : ModBehaviour
     {
         if (run == null || _data == null) return;
         run.BreakdownRows.Clear();
+        run.TotalAppliedDamage = _data.CumulativePersonalAppliedDamage;
         run.TotalHealing = _data.CumulativePersonalHealing;
+        run.TotalEffectiveHealing = _data.CumulativePersonalEffectiveHealing;
         run.TotalBarrier = _data.CumulativePersonalBarrier;
 
         IReadOnlyList<DpsData.BreakdownRow> skills = _data.CumulativePersonalSkillRows;
@@ -571,7 +575,9 @@ public sealed class DPSMeter : ModBehaviour
                         HasCharacterMainColor = source.HasCharacterMainColor,
                         Outcome = source.Outcome,
                         TotalDamage = source.TotalDamage,
+                        TotalAppliedDamage = source.TotalAppliedDamage,
                         TotalHealing = source.TotalHealing,
+                        TotalEffectiveHealing = source.TotalEffectiveHealing,
                         TotalBarrier = source.TotalBarrier,
                         DurationSeconds = source.DurationSeconds,
                         WorldsVisited = source.WorldsVisited,
@@ -669,7 +675,9 @@ public sealed class DPSMeter : ModBehaviour
                     HasCharacterMainColor = source.HasCharacterMainColor,
                     Outcome = source.Outcome,
                     TotalDamage = source.TotalDamage,
+                    TotalAppliedDamage = source.TotalAppliedDamage,
                     TotalHealing = source.TotalHealing,
+                    TotalEffectiveHealing = source.TotalEffectiveHealing,
                     TotalBarrier = source.TotalBarrier,
                     DurationSeconds = source.DurationSeconds,
                     WorldsVisited = source.WorldsVisited,
