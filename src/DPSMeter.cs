@@ -343,8 +343,10 @@ public sealed class DPSMeter : ModBehaviour
         for (int i = 0; i < skills.Count; i++)
         {
             DpsData.BreakdownRow row = skills[i];
-            run.BreakdownRows.Add(CreateRunBreakdownRow("DAMAGE", "SKILL", row.Identity, row.Name, row.Amount,
-                _data.GetCumulativeSkillElement(row.Identity), _data.GetCumulativeSkillScaling(row.Identity), _data.GetSkillIcon(row.Identity)));
+            DpsData.RunBreakdownRow saved = CreateRunBreakdownRow("DAMAGE", "SKILL", row.Identity, row.Name, row.Amount,
+                _data.GetCumulativeSkillElement(row.Identity), _data.GetCumulativeSkillScaling(row.Identity), _data.GetSkillIcon(row.Identity));
+            PopulateRunRowDualAmounts(saved, true);
+            run.BreakdownRows.Add(saved);
         }
 
         IReadOnlyList<KeyValuePair<string, float>> other = _data.CumulativePersonalOther;
@@ -354,24 +356,30 @@ public sealed class DPSMeter : ModBehaviour
             Sprite icon = row.Key == "Basic Attack" && _overlay != null
                 ? _overlay.GetBasicAttackIconForHistory()
                 : _data.GetCurrentOtherIcon(row.Key);
-            run.BreakdownRows.Add(CreateRunBreakdownRow("DAMAGE", "OTHER", row.Key, row.Key, row.Value,
-                null, _data.GetCumulativeOtherScaling(row.Key), icon));
+            DpsData.RunBreakdownRow saved = CreateRunBreakdownRow("DAMAGE", "OTHER", row.Key, row.Key, row.Value,
+                null, _data.GetCumulativeOtherScaling(row.Key), icon);
+            PopulateRunRowDualAmounts(saved, true);
+            run.BreakdownRows.Add(saved);
         }
 
         IReadOnlyList<KeyValuePair<string, float>> essences = _data.CumulativePersonalEssences;
         for (int i = 0; i < essences.Count; i++)
         {
             KeyValuePair<string, float> row = essences[i];
-            run.BreakdownRows.Add(CreateRunBreakdownRow("DAMAGE", "ESSENCE", row.Key, _data.GetEssenceDisplayName(row.Key), row.Value,
-                _data.GetCumulativeEssenceElement(row.Key), _data.GetCumulativeEssenceScaling(row.Key), _data.GetCumulativeEssenceIcon(row.Key)));
+            DpsData.RunBreakdownRow saved = CreateRunBreakdownRow("DAMAGE", "ESSENCE", row.Key, _data.GetEssenceDisplayName(row.Key), row.Value,
+                _data.GetCumulativeEssenceElement(row.Key), _data.GetCumulativeEssenceScaling(row.Key), _data.GetCumulativeEssenceIcon(row.Key));
+            PopulateRunRowDualAmounts(saved, true);
+            run.BreakdownRows.Add(saved);
         }
 
         IReadOnlyList<DpsData.BreakdownRow> healing = _data.CumulativeHealingRows;
         for (int i = 0; i < healing.Count; i++)
         {
             DpsData.BreakdownRow row = healing[i];
-            run.BreakdownRows.Add(CreateRunBreakdownRow("HEALING", "HEALING", row.Identity, row.Name, row.Amount,
-                null, DpsData.DamageScalingType.None, _data.GetCumulativeHealingIcon(row.Identity)));
+            DpsData.RunBreakdownRow saved = CreateRunBreakdownRow("HEALING", "HEALING", row.Identity, row.Name, row.Amount,
+                null, DpsData.DamageScalingType.None, _data.GetCumulativeHealingIcon(row.Identity));
+            PopulateRunRowDualAmounts(saved, true);
+            run.BreakdownRows.Add(saved);
         }
 
         IReadOnlyList<DpsData.BreakdownRow> barrier = _data.CumulativeBarrierRows;
@@ -431,6 +439,7 @@ public sealed class DPSMeter : ModBehaviour
                 cumulative ? _data.GetCumulativeSkillScaling(row.Identity) : _data.GetCurrentSkillScaling(row.Identity),
                 _data.GetSkillIcon(row.Identity));
             saved.View = view;
+            PopulateRunRowDualAmounts(saved, cumulative);
             run.ViewRows.Add(saved);
         }
 
@@ -479,6 +488,36 @@ public sealed class DPSMeter : ModBehaviour
                 cumulative ? _data.GetCumulativeBarrierIcon(row.Identity) : _data.GetCurrentBarrierIcon(row.Identity));
             saved.View = view;
             run.ViewRows.Add(saved);
+        }
+    }
+
+    private void PopulateRunRowDualAmounts(DpsData.RunBreakdownRow row, bool cumulative)
+    {
+        if (row == null || _data == null) return;
+        if (string.Equals(row.Category, "DAMAGE", StringComparison.Ordinal))
+        {
+            switch (row.SourceType)
+            {
+                case "SKILL":
+                    row.AppliedAmount = cumulative ? _data.GetCumulativeSkillAppliedAmount(row.Identity) : _data.GetCurrentSkillAppliedAmount(row.Identity);
+                    break;
+                case "ESSENCE":
+                    row.AppliedAmount = cumulative ? _data.GetCumulativeEssenceAppliedAmount(row.Identity) : _data.GetCurrentEssenceAppliedAmount(row.Identity);
+                    break;
+                case "OTHER":
+                    row.AppliedAmount = cumulative ? _data.GetCumulativeOtherAppliedAmount(row.Identity) : _data.GetCurrentOtherAppliedAmount(row.Identity);
+                    break;
+                case "PARTY_DAMAGE":
+                    row.AppliedAmount = cumulative ? _data.GetCumulativePartyAppliedAmount(row.Identity) : _data.GetCurrentPartyAppliedAmount(row.Identity);
+                    break;
+            }
+        }
+        else if (string.Equals(row.Category, "HEALING", StringComparison.Ordinal))
+        {
+            if (string.Equals(row.SourceType, "PARTY_HEALING", StringComparison.Ordinal))
+                row.EffectiveAmount = cumulative ? _data.GetCumulativePartyHealingEffectiveAmount(row.Identity) : _data.GetCurrentPartyHealingEffectiveAmount(row.Identity);
+            else
+                row.EffectiveAmount = cumulative ? _data.GetCumulativeHealingEffectiveAmount(row.Identity) : _data.GetCurrentHealingEffectiveAmount(row.Identity);
         }
     }
 
