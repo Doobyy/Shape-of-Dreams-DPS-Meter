@@ -8,6 +8,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace DPSMeter;
 
@@ -80,7 +81,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v21.800";
+    public const string DevelopmentVersion = "v21.900";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -197,6 +198,9 @@ public sealed class DPSMeter : ModBehaviour
         _data = new DpsData();
         _runHistoryPath = Path.Combine(Application.persistentDataPath, "DPSMeter-run-history.json");
         LoadRunHistory();
+        SceneManager.sceneLoaded -= OnHistoryIconDiagnosticSceneLoaded;
+        SceneManager.sceneLoaded += OnHistoryIconDiagnosticSceneLoaded;
+        DiagnoseHistoryIconsAtScene(SceneManager.GetActiveScene().name);
         _overlay = gameObject.AddComponent<DpsOverlay>();
         _overlay.Initialize(_data);
         _travelInterruptHandler = OnTravelToNodeInterrupt;
@@ -4016,6 +4020,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
     private void OnDestroy()
     {
+        SceneManager.sceneLoaded -= OnHistoryIconDiagnosticSceneLoaded;
         DetachFromClientEvents();
         DetachFromZoneManager();
         DetachFromGameManager();
@@ -4029,6 +4034,103 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         if (Instance == this)
         {
             Instance = null;
+        }
+    }
+
+    private void OnHistoryIconDiagnosticSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        DiagnoseHistoryIconsAtScene(scene.name);
+    }
+
+    private void DiagnoseHistoryIconsAtScene(string sceneName)
+    {
+        try
+        {
+            Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+            List<string> targets = new List<string>();
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+
+            Action<string, string> addTarget = (iconName, textureName) =>
+            {
+                if (string.IsNullOrEmpty(iconName))
+                    return;
+
+                string key = iconName + "|" + (textureName ?? string.Empty);
+                if (seen.Add(key) && targets.Count < 16)
+                    targets.Add(key);
+            };
+
+            Action<DpsData.RunRecord> addRunTargets = run =>
+            {
+                if (run == null)
+                    return;
+
+                addTarget(run.CharacterIconName, run.CharacterIconTextureName);
+                if (run.BreakdownRows != null)
+                {
+                    for (int i = 0; i < run.BreakdownRows.Count; i++)
+                    {
+                        DpsData.RunBreakdownRow row = run.BreakdownRows[i];
+                        if (row != null)
+                            addTarget(row.IconName, row.IconTextureName);
+                    }
+                }
+
+                if (run.ViewRows != null)
+                {
+                    for (int i = 0; i < run.ViewRows.Count; i++)
+                    {
+                        DpsData.RunBreakdownRow row = run.ViewRows[i];
+                        if (row != null)
+                            addTarget(row.IconName, row.IconTextureName);
+                    }
+                }
+            };
+
+            if (_data != null)
+            {
+                addRunTargets(_data.ActiveRun);
+                for (int i = 0; i < _data.CompletedRuns.Count; i++)
+                    addRunTargets(_data.CompletedRuns[i]);
+            }
+
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HISTORY-SCENE scene=" +
+                (sceneName ?? "<null>") + " mode-snapshot sprites=" +
+                (sprites == null ? 0 : sprites.Length) + " targets=" + targets.Count);
+
+            for (int i = 0; i < targets.Count; i++)
+            {
+                string key = targets[i];
+                int separator = key.IndexOf('|');
+                string iconName = separator < 0 ? key : key.Substring(0, separator);
+                string textureName = separator < 0 ? string.Empty : key.Substring(separator + 1);
+                string match = "<none>";
+
+                for (int j = 0; sprites != null && j < sprites.Length; j++)
+                {
+                    Sprite sprite = sprites[j];
+                    if (sprite == null || !string.Equals(sprite.name, iconName, StringComparison.Ordinal))
+                        continue;
+                    if (!string.IsNullOrEmpty(textureName) &&
+                        (sprite.texture == null ||
+                         !string.Equals(sprite.texture.name, textureName, StringComparison.Ordinal)))
+                        continue;
+
+                    match = sprite.name + "/" +
+                        (sprite.texture == null ? "<null>" : sprite.texture.name);
+                    break;
+                }
+
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HISTORY-SCENE scene=" +
+                    (sceneName ?? "<null>") + " icon=" + iconName + " texture=" +
+                    (string.IsNullOrEmpty(textureName) ? "<none>" : textureName) +
+                    " match=" + match);
+            }
+        }
+        catch (Exception ex)
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HISTORY-SCENE scene=" +
+                (sceneName ?? "<null>") + " error=" + ex.GetType().Name);
         }
     }
 
