@@ -857,7 +857,38 @@ public sealed class DpsOverlay : MonoBehaviour
 
             if (!nameMapDictionary.Contains(row.IconName))
             {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("name not registered icon=" + row.IconName);
+                // These sprites may belong to a registered parent asset rather than
+                // being standalone DewResources entries. Log a small set of matching
+                // registered names to identify a possible owner without loading assets.
+                string searchToken = row.IconName;
+                if (searchToken.StartsWith("icon", StringComparison.OrdinalIgnoreCase) && searchToken.Length > 4)
+                    searchToken = searchToken.Substring(4);
+                else if (searchToken.StartsWith("tex", StringComparison.OrdinalIgnoreCase) && searchToken.Length > 3)
+                    searchToken = searchToken.Substring(3);
+
+                if (searchToken.Length >= 4 && !char.IsDigit(searchToken[0]))
+                {
+                    List<string> candidates = new List<string>();
+                    foreach (object key in nameMapDictionary.Keys)
+                    {
+                        string registeredName = key as string;
+                        if (string.IsNullOrEmpty(registeredName) ||
+                            registeredName.IndexOf(searchToken, StringComparison.OrdinalIgnoreCase) < 0)
+                            continue;
+
+                        candidates.Add(registeredName);
+                        if (candidates.Count >= 8)
+                            break;
+                    }
+
+                    DPSMeter.WriteHistoryIconResourceDiagnostic("name not registered icon=" + row.IconName +
+                        " token=" + searchToken + " candidates=" +
+                        (candidates.Count == 0 ? "<none>" : string.Join(",", candidates.ToArray())));
+                }
+                else
+                {
+                    DPSMeter.WriteHistoryIconResourceDiagnostic("name not registered icon=" + row.IconName);
+                }
                 return null;
             }
 
