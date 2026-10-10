@@ -831,6 +831,7 @@ public sealed class DpsOverlay : MonoBehaviour
         string identity = string.IsNullOrEmpty(row.Identity) ? row.Name : row.Identity;
 
         string cacheKey = row.IconName + "|" + (row.IconTextureName ?? string.Empty);
+        string spriteNameDiagnostics = "sameNameCount=0 sameNameTextures=<none>";
         if (!string.IsNullOrEmpty(row.IconName))
         {
             Sprite cached;
@@ -843,11 +844,19 @@ public sealed class DpsOverlay : MonoBehaviour
             }
 
             Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+            int sameNameCount = 0;
+            List<string> sameNameTextures = new List<string>();
             for (int i = 0; sprites != null && i < sprites.Length; i++)
             {
                 Sprite candidate = sprites[i];
                 if (candidate == null || !string.Equals(candidate.name, row.IconName, StringComparison.Ordinal))
                     continue;
+
+                sameNameCount++;
+                string textureName = candidate.texture == null ? "<null>" : candidate.texture.name;
+                if (sameNameTextures.Count < 3 && !sameNameTextures.Contains(textureName))
+                    sameNameTextures.Add(textureName);
+
                 if (!string.IsNullOrEmpty(row.IconTextureName) &&
                     (candidate.texture == null || !string.Equals(candidate.texture.name, row.IconTextureName, StringComparison.Ordinal)))
                     continue;
@@ -857,20 +866,53 @@ public sealed class DpsOverlay : MonoBehaviour
                     (candidate.texture == null ? "<null>" : candidate.texture.name));
                 return candidate;
             }
+
+            spriteNameDiagnostics = "sameNameCount=" + sameNameCount +
+                " sameNameTextures=" + (sameNameTextures.Count == 0 ? "<none>" : string.Join(",", sameNameTextures.ToArray()));
         }
 
-        // The saved sprite may not be loaded yet. Retry live icon registries as a fallback.
+        // Record the live registry result explicitly so unresolved icons can be distinguished
+        // from missing registry entries and saved sprite/texture mismatches.
+        string registryDiagnostics = "registry=not-checked";
         if (_data != null)
         {
             Sprite liveIcon = null;
-            if (row.SourceType == "SKILL") liveIcon = _data.GetSkillIcon(identity);
+            string registryName = "none";
+            if (row.SourceType == "SKILL")
+            {
+                registryName = "skill";
+                liveIcon = _data.GetSkillIcon(identity);
+            }
             else if (row.SourceType == "OTHER")
+            {
+                registryName = "other";
                 liveIcon = string.Equals(row.Name, "Basic Attack", StringComparison.Ordinal)
                     ? GetBasicAttackIcon()
                     : _data.GetCurrentOtherIcon(identity);
-            else if (row.SourceType == "ESSENCE") liveIcon = _data.GetCumulativeEssenceIcon(identity);
-            else if (row.SourceType == "HEALING") liveIcon = _data.GetCumulativeHealingIcon(identity);
-            else if (row.SourceType == "BARRIER") liveIcon = _data.GetCumulativeBarrierIcon(identity);
+            }
+            else if (row.SourceType == "ESSENCE")
+            {
+                registryName = "essence";
+                liveIcon = _data.GetCumulativeEssenceIcon(identity);
+            }
+            else if (row.SourceType == "HEALING")
+            {
+                registryName = "healing";
+                liveIcon = _data.GetCumulativeHealingIcon(identity);
+            }
+            else if (row.SourceType == "BARRIER")
+            {
+                registryName = "barrier";
+                liveIcon = _data.GetCumulativeBarrierIcon(identity);
+            }
+
+            registryDiagnostics = "registry=" + registryName + " icon=";
+            if (liveIcon == null)
+                registryDiagnostics += "<null>";
+            else
+                registryDiagnostics += liveIcon.name + "/" +
+                    (liveIcon.texture == null ? "<null>" : liveIcon.texture.name);
+
             if (liveIcon != null)
             {
                 LogHistoryIconResolution(row, "REGISTRY-MATCH",
@@ -880,7 +922,8 @@ public sealed class DpsOverlay : MonoBehaviour
             }
         }
 
-        LogHistoryIconResolution(row, "UNRESOLVED", "no loaded sprite or live registry icon");
+        LogHistoryIconResolution(row, "UNRESOLVED",
+            spriteNameDiagnostics + " " + registryDiagnostics);
         return null;
     }
 
