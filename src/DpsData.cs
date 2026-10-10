@@ -277,6 +277,11 @@ public sealed class DpsData
             ? 0f
             : CumulativePartyDamage / Mathf.Max(0.001f, LastCumulativePartyDamageAt - CumulativePartyDamageStartedAt);
 
+    public float CumulativePartyAppliedDps =>
+        CumulativePartyAppliedDamage <= 0f || CumulativePartyDamageStartedAt <= 0f
+            ? 0f
+            : CumulativePartyAppliedDamage / Mathf.Max(0.001f, LastCumulativePartyDamageAt - CumulativePartyDamageStartedAt);
+
     public float CurrentPartyAppliedDps =>
         CurrentHitCount == 0 ? 0f : CurrentInstancePartyAppliedDamage / CurrentDuration;
 
