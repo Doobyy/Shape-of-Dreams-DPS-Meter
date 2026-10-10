@@ -62,6 +62,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
     private readonly HashSet<string> _historyIconResourceLookupAttempted = new HashSet<string>();
     private bool _historyAddressablesInventoryLogged;
+    private bool _historySpriteAtlasMissingLogged;
+    private bool _historySpriteAtlasFoundLogged;
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerGlowColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -807,6 +809,91 @@ public sealed class DpsOverlay : MonoBehaviour
         return null;
     }
 
+    private void DiagnoseHistorySpriteAtlases(string iconName, string textureName, bool spriteFound)
+    {
+        if (spriteFound ? _historySpriteAtlasFoundLogged : _historySpriteAtlasMissingLogged)
+            return;
+        if (spriteFound)
+            _historySpriteAtlasFoundLogged = true;
+        else
+            _historySpriteAtlasMissingLogged = true;
+
+        try
+        {
+            Type atlasType = null;
+            Type spriteType = typeof(Sprite);
+            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length && atlasType == null; i++)
+                atlasType = assemblies[i].GetType("UnityEngine.U2D.SpriteAtlas", false);
+
+            if (atlasType == null)
+            {
+                DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-atlas inventory phase=" +
+                    (spriteFound ? "found" : "missing") + " unavailable=type-not-found icon=" + iconName);
+                return;
+            }
+
+            System.Reflection.MethodInfo findAll = typeof(Resources).GetMethod("FindObjectsOfTypeAll",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static,
+                null, new Type[] { typeof(Type) }, null);
+            UnityEngine.Object[] atlases = findAll == null ? null :
+                findAll.Invoke(null, new object[] { atlasType }) as UnityEngine.Object[];
+            if (atlases == null)
+            {
+                DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-atlas inventory phase=" +
+                    (spriteFound ? "found" : "missing") + " unavailable=enumeration-failed icon=" + iconName);
+                return;
+            }
+
+            List<string> details = new List<string>();
+            for (int i = 0; i < atlases.Length && details.Count < 12; i++)
+            {
+                UnityEngine.Object atlas = atlases[i];
+                if (atlas == null)
+                    continue;
+
+                string match = "<none>";
+                int spriteCount = -1;
+                System.Reflection.MethodInfo getSprites = atlasType.GetMethod("GetSprites", new Type[] { spriteType.MakeArrayType() });
+                if (getSprites != null)
+                {
+                    Array spriteBuffer = Array.CreateInstance(spriteType, 512);
+                    try
+                    {
+                        spriteCount = Convert.ToInt32(getSprites.Invoke(atlas, new object[] { spriteBuffer }));
+                        for (int j = 0; j < Math.Min(spriteCount, spriteBuffer.Length); j++)
+                        {
+                            Sprite sprite = spriteBuffer.GetValue(j) as Sprite;
+                            if (sprite != null && (string.Equals(sprite.name, iconName, StringComparison.Ordinal) ||
+                                (!string.IsNullOrEmpty(textureName) && sprite.texture != null &&
+                                 string.Equals(sprite.texture.name, textureName, StringComparison.Ordinal))))
+                            {
+                                match = sprite.name + "/" + (sprite.texture == null ? "<null>" : sprite.texture.name);
+                                break;
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        spriteCount = -2;
+                    }
+                }
+
+                details.Add(atlas.name + "[sprites=" + spriteCount + ",match=" + match + "]");
+            }
+
+            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-atlas inventory phase=" +
+                (spriteFound ? "found" : "missing") + " icon=" + iconName + " atlasType=" + atlasType.FullName +
+                " loadedAtlases=" + atlases.Length + " samples=" +
+                (details.Count == 0 ? "<none>" : string.Join(";", details.ToArray())));
+        }
+        catch (Exception ex)
+        {
+            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-atlas inventory phase=" +
+                (spriteFound ? "found" : "missing") + " exception=" + ex.GetType().Name + " icon=" + iconName);
+        }
+    }
+
     private void DiagnoseAddressableHistoryIconLocations(string iconName, string textureName)
     {
         if (_historyAddressablesInventoryLogged)
@@ -1045,8 +1132,10 @@ public sealed class DpsOverlay : MonoBehaviour
                     continue;
 
                 _historyIconCache[cacheKey] = candidate;
+                DiagnoseHistorySpriteAtlases(row.IconName, row.IconTextureName, true);
                 return candidate;
             }
+            DiagnoseHistorySpriteAtlases(row.IconName, row.IconTextureName, false);
         }
 
         Sprite resourceIcon = TryLoadHistoryIconFromGameResources(row, cacheKey);
