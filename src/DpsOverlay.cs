@@ -889,17 +889,19 @@ public sealed class DpsOverlay : MonoBehaviour
         DpsData.RunViewMetrics metrics = GetSelectedRunMetrics(run, view);
         if (metrics == null) return;
         List<DpsData.RunBreakdownRow> rows = GetSelectedRunViewRows(run, view, "HEALING");
+        float displayHealing = _excludeOverheal ? metrics.EffectiveHealing : metrics.Healing;
+        float displayHealingRate = _excludeOverheal ? ScaleEffectiveRate(metrics.HealingRate, metrics.Healing, metrics.EffectiveHealing) : metrics.HealingRate;
         if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
         {
-            DrawParty(ToPartyRows(rows), metrics.Healing, metrics.HealingRate, "HPS",
+            DrawParty(ToPartyRows(rows), displayHealing, displayHealingRate, "HPS",
                 _mode == DisplayMode.PartyDps
-                    ? "HPS: " + FormatNumber(metrics.HealingRate)
-                    : "HEAL: " + FormatNumber(metrics.Healing), rows);
+                    ? "HPS: " + FormatNumber(displayHealingRate)
+                    : "HEAL: " + FormatNumber(displayHealing), rows);
             return;
         }
         GUILayout.Label(_mode == DisplayMode.CurrentDps
-            ? "HPS: " + FormatNumber(metrics.HealingRate)
-            : "HEAL: " + FormatNumber(metrics.Healing), _headerRight);
+            ? "HPS: " + FormatNumber(displayHealingRate)
+            : "HEAL: " + FormatNumber(displayHealing), _headerRight);
         float max = GetSelectedRunMax(rows);
         if (rows.Count == 0)
         {
@@ -907,7 +909,7 @@ public sealed class DpsOverlay : MonoBehaviour
             return;
         }
         for (int i = 0; i < rows.Count; i++)
-            DrawHealingRow(rows[i].Name, rows[i].Amount, metrics.Healing, max, ResolveRunHistoryIcon(rows[i]));
+            DrawHealingRow(rows[i].Name, rows[i].Amount, displayHealing, max, ResolveRunHistoryIcon(rows[i]));
     }
 
     private void DrawSelectedRunBarrier(DpsData.RunRecord run)
@@ -1605,7 +1607,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             case DisplayMode.DamageTotal:
                 title = "TOTAL";
-                metric = "DMG: " + FormatNumber(_data.CumulativePersonalDamage);
+                metric = "DMG: " + FormatNumber(_excludeOverkill ? _data.CumulativePersonalAppliedDamage : _data.CumulativePersonalDamage);
                 break;
 
             case DisplayMode.PartyDps:
@@ -1615,12 +1617,12 @@ public sealed class DpsOverlay : MonoBehaviour
 
             case DisplayMode.PartyTotal:
                 title = "PARTY TOTAL";
-                metric = "DMG: " + FormatNumber(_data.CumulativePartyDamage);
+                metric = "DMG: " + FormatNumber(_excludeOverkill ? _data.CumulativePartyAppliedDamage : _data.CumulativePartyDamage);
                 break;
 
             default:
                 title = "TOTAL";
-                metric = "DMG: " + FormatNumber(_data.CumulativePersonalDamage);
+                metric = "DMG: " + FormatNumber(_excludeOverkill ? _data.CumulativePersonalAppliedDamage : _data.CumulativePersonalDamage);
                 break;
         }
 
