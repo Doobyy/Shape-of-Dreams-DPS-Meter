@@ -916,9 +916,8 @@ public sealed class DpsOverlay : MonoBehaviour
             _historyIconCache[cacheKey] = sprite;
             return sprite;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // Report why the early resource lookup failed while preserving the existing fallbacks.
             return null;
         }
     }
