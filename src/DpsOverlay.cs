@@ -806,6 +806,128 @@ public sealed class DpsOverlay : MonoBehaviour
         return null;
     }
 
+    private void DiagnoseAddressableHistoryIconLocations(string iconName, string textureName)
+    {
+        try
+        {
+            Type addressablesType = null;
+            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length && addressablesType == null; i++)
+                addressablesType = assemblies[i].GetType("UnityEngine.AddressableAssets.Addressables", false);
+
+            if (addressablesType == null)
+            {
+                DPSMeter.WriteHistoryIconResourceDiagnostic("addressables type unavailable icon=" + iconName);
+                return;
+            }
+
+            System.Reflection.PropertyInfo locatorsProperty = addressablesType.GetProperty("ResourceLocators");
+            object locatorsValue = locatorsProperty == null ? null : locatorsProperty.GetValue(null, null);
+            System.Collections.IEnumerable locators = locatorsValue as System.Collections.IEnumerable;
+            if (locators == null)
+            {
+                DPSMeter.WriteHistoryIconResourceDiagnostic("addressable locators unavailable icon=" + iconName);
+                return;
+            }
+
+            string token = iconName ?? string.Empty;
+            if (token.StartsWith("icon", StringComparison.OrdinalIgnoreCase) && token.Length > 4)
+                token = token.Substring(4);
+            else if (token.StartsWith("tex", StringComparison.OrdinalIgnoreCase) && token.Length > 3)
+                token = token.Substring(3);
+
+            int locatorCount = 0;
+            List<string> keyMatches = new List<string>();
+            List<string> locationMatches = new List<string>();
+            foreach (object locator in locators)
+            {
+                if (locator == null)
+                    continue;
+                locatorCount++;
+
+                Type locatorType = locator.GetType();
+                System.Reflection.PropertyInfo keysProperty = locatorType.GetProperty("Keys");
+                System.Collections.IEnumerable keys = keysProperty == null ? null :
+                    keysProperty.GetValue(locator, null) as System.Collections.IEnumerable;
+                if (keys != null && keyMatches.Count < 12)
+                {
+                    foreach (object key in keys)
+                    {
+                        string keyText = key as string;
+                        if (string.IsNullOrEmpty(keyText))
+                            continue;
+                        bool matches = string.Equals(keyText, iconName, StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(keyText, textureName, StringComparison.OrdinalIgnoreCase) ||
+                            (token.Length >= 4 && keyText.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0);
+                        if (!matches)
+                            continue;
+                        keyMatches.Add(keyText);
+                        if (keyMatches.Count >= 12)
+                            break;
+                    }
+                }
+
+                System.Reflection.MethodInfo locate = null;
+                System.Reflection.MethodInfo[] methods = locatorType.GetMethods();
+                for (int i = 0; i < methods.Length; i++)
+                {
+                    System.Reflection.ParameterInfo[] parameters = methods[i].GetParameters();
+                    if (methods[i].Name == "Locate" && parameters.Length == 3 &&
+                        parameters[0].ParameterType == typeof(object) &&
+                        parameters[1].ParameterType == typeof(Type) && parameters[2].IsOut)
+                    {
+                        locate = methods[i];
+                        break;
+                    }
+                }
+
+                if (locate == null)
+                    continue;
+
+                string[] lookupKeys = { iconName, textureName };
+                for (int k = 0; k < lookupKeys.Length && locationMatches.Count < 8; k++)
+                {
+                    if (string.IsNullOrEmpty(lookupKeys[k]))
+                        continue;
+                    object[] arguments = { lookupKeys[k], typeof(Sprite), null };
+                    object found = locate.Invoke(locator, arguments);
+                    if (!(found is bool) || !(bool)found || arguments[2] == null)
+                        continue;
+
+                    System.Collections.IEnumerable locations = arguments[2] as System.Collections.IEnumerable;
+                    if (locations == null)
+                        continue;
+                    foreach (object location in locations)
+                    {
+                        if (location == null)
+                            continue;
+                        Type locationType = location.GetType();
+                        System.Reflection.PropertyInfo primaryKeyProperty = locationType.GetProperty("PrimaryKey");
+                        System.Reflection.PropertyInfo internalIdProperty = locationType.GetProperty("InternalId");
+                        string primaryKey = primaryKeyProperty == null ? "<no-primary-key>" :
+                            Convert.ToString(primaryKeyProperty.GetValue(location, null));
+                        string internalId = internalIdProperty == null ? "<no-internal-id>" :
+                            Convert.ToString(internalIdProperty.GetValue(location, null));
+                        locationMatches.Add(lookupKeys[k] + "=>" + primaryKey + "@" + internalId);
+                        if (locationMatches.Count >= 8)
+                            break;
+                    }
+                }
+            }
+
+            DPSMeter.WriteHistoryIconResourceDiagnostic("addressables icon=" + iconName +
+                " locators=" + locatorCount + " matchingKeys=" +
+                (keyMatches.Count == 0 ? "<none>" : string.Join(",", keyMatches.ToArray())) +
+                " spriteLocations=" +
+                (locationMatches.Count == 0 ? "<none>" : string.Join(";", locationMatches.ToArray())));
+        }
+        catch (Exception ex)
+        {
+            DPSMeter.WriteHistoryIconResourceDiagnostic("addressables probe exception icon=" + iconName +
+                " type=" + ex.GetType().FullName + " message=" + ex.Message);
+        }
+    }
+
     private Sprite TryLoadHistoryIconFromGameResources(DpsData.RunBreakdownRow row, string cacheKey)
     {
         if (row == null || string.IsNullOrEmpty(row.IconName))
@@ -857,6 +979,10 @@ public sealed class DpsOverlay : MonoBehaviour
 
             if (!nameMapDictionary.Contains(row.IconName))
             {
+                // Check Addressables' runtime locators directly; UI sprites may be
+                // registered there without being standalone DewResources entries.
+                DiagnoseAddressableHistoryIconLocations(row.IconName, row.IconTextureName);
+
                 // These sprites may belong to a registered parent asset rather than
                 // being standalone DewResources entries. Log a small set of matching
                 // registered names to identify a possible owner without loading assets.
