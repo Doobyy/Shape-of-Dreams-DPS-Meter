@@ -62,6 +62,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
     private readonly HashSet<string> _historyIconResourceLookupAttempted = new HashSet<string>();
     private readonly Dictionary<string, string> _historyIconResolutionStates = new Dictionary<string, string>();
+    private readonly HashSet<string> _historyIconDetailsLogged = new HashSet<string>();
     private bool _historyAddressablesInventoryLogged;
     private bool _historySpriteAtlasMissingLogged;
     private bool _historySpriteAtlasFoundLogged;
@@ -945,14 +946,12 @@ public sealed class DpsOverlay : MonoBehaviour
                 System.Collections.IEnumerable keys = keysProperty == null ? null :
                     keysProperty.GetValue(locator, null) as System.Collections.IEnumerable;
                 int locatorKeyCount = 0;
+                List<string> keyMatches = new List<string>();
                 if (keys != null)
                 {
                     foreach (object key in keys)
                     {
                         locatorKeyCount++;
-                        if (keySamples.Count >= 24)
-                            continue;
-
                         string keyText;
                         try
                         {
@@ -963,12 +962,30 @@ public sealed class DpsOverlay : MonoBehaviour
                             keyText = "<ToString-error>";
                         }
 
-                        if (keyText != null && keyText.Length > 100)
-                            keyText = keyText.Substring(0, 100);
-                        keySamples.Add(locatorType.Name + ":" +
-                            (key == null ? "<null>" : key.GetType().FullName) + "=" + keyText);
+                        if (!string.IsNullOrEmpty(keyText) &&
+                            (string.Equals(keyText, iconName, StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(keyText, textureName, StringComparison.OrdinalIgnoreCase) ||
+                             keyText.IndexOf(iconName, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             (!string.IsNullOrEmpty(textureName) &&
+                              keyText.IndexOf(textureName, StringComparison.OrdinalIgnoreCase) >= 0)))
+                        {
+                            if (keyMatches.Count < 8)
+                                keyMatches.Add(keyText.Length > 120 ? keyText.Substring(0, 120) : keyText);
+                        }
+
+                        if (keySamples.Count < 24)
+                        {
+                            string sampleText = keyText;
+                            if (sampleText != null && sampleText.Length > 100)
+                                sampleText = sampleText.Substring(0, 100);
+                            keySamples.Add(locatorType.Name + ":" +
+                                (key == null ? "<null>" : key.GetType().FullName) + "=" + sampleText);
+                        }
                     }
                 }
+                if (keyMatches.Count > 0)
+                    DPSMeter.WriteHistoryIconResourceDiagnostic("addressables key-match icon=" + iconName +
+                        " locator=" + locatorType.Name + " matches=" + string.Join(",", keyMatches.ToArray()));
 
                 totalKeys += locatorKeyCount;
                 locatorDetails.Add(locatorType.FullName + ":" + locatorKeyCount);
@@ -1196,6 +1213,66 @@ public sealed class DpsOverlay : MonoBehaviour
         return fallbackIcon;
     }
 
+    private void DiagnoseHistoryIconSpriteDetails(DpsData.RunBreakdownRow row, string key, Sprite sprite)
+    {
+        if (row == null || sprite == null || !_historyIconDetailsLogged.Add(key ?? string.Empty))
+            return;
+
+        try
+        {
+            Texture2D texture = sprite.texture;
+            string activeAtlas = "<unavailable>";
+            Type atlasExtensions = null;
+            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length && atlasExtensions == null; i++)
+                atlasExtensions = assemblies[i].GetType("UnityEngine.U2D.SpriteAtlasExtensions", false);
+            if (atlasExtensions != null)
+            {
+                System.Reflection.MethodInfo[] methods = atlasExtensions.GetMethods(
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                for (int i = 0; i < methods.Length; i++)
+                {
+                    if (!string.Equals(methods[i].Name, "GetActiveAtlas", StringComparison.Ordinal))
+                        continue;
+                    System.Reflection.ParameterInfo[] parameters = methods[i].GetParameters();
+                    if (parameters.Length != 1 || !parameters[0].ParameterType.IsAssignableFrom(typeof(Sprite)))
+                        continue;
+                    object atlas = methods[i].Invoke(null, new object[] { sprite });
+                    activeAtlas = atlas == null ? "<none>" : ((UnityEngine.Object)atlas).name;
+                    break;
+                }
+            }
+
+            List<string> sharedTextureSprites = new List<string>();
+            Sprite[] allSprites = Resources.FindObjectsOfTypeAll<Sprite>();
+            for (int i = 0; allSprites != null && i < allSprites.Length; i++)
+            {
+                Sprite other = allSprites[i];
+                if (other == null || other.texture == null || texture == null ||
+                    !object.ReferenceEquals(other.texture, texture))
+                    continue;
+                if (sharedTextureSprites.Count < 12)
+                    sharedTextureSprites.Add(other.name);
+            }
+
+            string rect = sprite.rect.x + "," + sprite.rect.y + "," +
+                sprite.rect.width + "," + sprite.rect.height;
+            string textureInfo = texture == null ? "<null>" :
+                texture.name + "[" + texture.width + "x" + texture.height + "]";
+            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-details icon=" + row.IconName +
+                " texture=" + textureInfo + " rect=" + rect +
+                " packed=" + sprite.packed + " packingMode=" + sprite.packingMode +
+                " activeAtlas=" + activeAtlas +
+                " sameTextureSprites=" + (sharedTextureSprites.Count == 0
+                    ? "<none>" : string.Join(",", sharedTextureSprites.ToArray())));
+        }
+        catch (Exception ex)
+        {
+            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-details exception icon=" +
+                row.IconName + " type=" + ex.GetType().Name);
+        }
+    }
+
     private void DiagnoseHistoryIconResolution(
         DpsData.RunBreakdownRow row, string cacheKey, string source, Sprite sprite)
     {
@@ -1215,6 +1292,8 @@ public sealed class DpsOverlay : MonoBehaviour
             return;
 
         _historyIconResolutionStates[key] = state;
+        if (sprite != null)
+            DiagnoseHistoryIconSpriteDetails(row, key, sprite);
         DPSMeter.WriteHistoryIconResourceDiagnostic("resolve icon=" +
             (string.IsNullOrEmpty(row.IconName) ? "<none>" : row.IconName) +
             " texture=" + (string.IsNullOrEmpty(row.IconTextureName) ? "<none>" : row.IconTextureName) +
