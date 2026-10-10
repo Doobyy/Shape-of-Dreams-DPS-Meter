@@ -60,6 +60,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Color _partyBarColor = DefaultBarColor;
     private Color _partyBarOutlineColor = DefaultBarOutlineColor;
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
+    private readonly HashSet<string> _historyIconDiagnosticSeen = new HashSet<string>();
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerGlowColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -110,6 +111,27 @@ public sealed class DpsOverlay : MonoBehaviour
     public void Initialize(DpsData data)
     {
         _data = data;
+    }
+
+    private void LogHistoryIconResolution(DpsData.RunBreakdownRow row, string status, string detail)
+    {
+        if (row == null || DPSMeter.Instance == null)
+            return;
+
+        string identity = string.IsNullOrEmpty(row.Identity) ? row.Name : row.Identity;
+        string diagnosticKey = status + "|" + row.SourceType + "|" + identity + "|" +
+            (row.IconName ?? string.Empty) + "|" + (row.IconTextureName ?? string.Empty);
+        if (!_historyIconDiagnosticSeen.Add(diagnosticKey))
+            return;
+
+        DPSMeter.Instance.WriteHistoryIconDiagnostic(
+            "status=" + status +
+            " sourceType=" + (row.SourceType ?? "<null>") +
+            " name=" + (row.Name ?? "<null>") +
+            " identity=" + (identity ?? "<null>") +
+            " savedSprite=" + (row.IconName ?? "<null>") +
+            " savedTexture=" + (row.IconTextureName ?? "<null>") +
+            " result=" + (detail ?? "<none>"));
     }
 
     public void SetPartyBarColor(Color fillColor, bool useColdOutline = false)
@@ -824,6 +846,9 @@ public sealed class DpsOverlay : MonoBehaviour
                     (candidate.texture == null || !string.Equals(candidate.texture.name, row.IconTextureName, StringComparison.Ordinal)))
                     continue;
                 _historyIconCache[cacheKey] = candidate;
+                LogHistoryIconResolution(row, "SPRITE-MATCH",
+                    "sprite=" + candidate.name + " texture=" +
+                    (candidate.texture == null ? "<null>" : candidate.texture.name));
                 return candidate;
             }
         }
@@ -840,9 +865,16 @@ public sealed class DpsOverlay : MonoBehaviour
             else if (row.SourceType == "ESSENCE") liveIcon = _data.GetCumulativeEssenceIcon(identity);
             else if (row.SourceType == "HEALING") liveIcon = _data.GetCumulativeHealingIcon(identity);
             else if (row.SourceType == "BARRIER") liveIcon = _data.GetCumulativeBarrierIcon(identity);
-            if (liveIcon != null) return liveIcon;
+            if (liveIcon != null)
+            {
+                LogHistoryIconResolution(row, "REGISTRY-MATCH",
+                    "sprite=" + liveIcon.name + " texture=" +
+                    (liveIcon.texture == null ? "<null>" : liveIcon.texture.name));
+                return liveIcon;
+            }
         }
 
+        LogHistoryIconResolution(row, "UNRESOLVED", "no loaded sprite or live registry icon");
         return null;
     }
 
