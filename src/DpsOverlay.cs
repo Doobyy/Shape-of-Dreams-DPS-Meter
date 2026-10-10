@@ -66,6 +66,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private readonly HashSet<string> _historyIconsMissingAtBaseline = new HashSet<string>(StringComparer.Ordinal);
     private readonly HashSet<string> _historySpriteComparisonsLogged = new HashSet<string>(StringComparer.Ordinal);
     private bool _historyResourceRuntimeAfterLobbyLogged;
+    private bool _historyResourcesReady;
+    private float _nextHistoryResourceCheckTime;
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerGlowColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -228,12 +230,27 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private void Update()
     {
+        if (!_historyResourcesReady && Time.unscaledTime >= _nextHistoryResourceCheckTime)
+        {
+            _nextHistoryResourceCheckTime = Time.unscaledTime + 1f;
+            Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
+            for (int i = 0; sprites != null && i < sprites.Length; i++)
+            {
+                Sprite sprite = sprites[i];
+                if (sprite != null && string.Equals(sprite.name, "SpellBookPage09_115", StringComparison.Ordinal))
+                {
+                    _historyResourcesReady = true;
+                    break;
+                }
+            }
+        }
+
         UpdateUiInputBlockers();
     }
 
     private void OnGUI()
     {
-        if (!Visible || _data == null)
+        if (!Visible || !_historyResourcesReady || _data == null)
         {
             return;
         }
@@ -1574,7 +1591,7 @@ public sealed class DpsOverlay : MonoBehaviour
             return;
         }
 
-        bool visible = Visible && _data != null;
+        bool visible = Visible && _historyResourcesReady && _data != null;
         SetUiInputBlocker(_mainWindowInputBlocker, visible,
             visible ? _windowRect : new Rect());
         SetUiInputBlocker(_historyInputBlocker, visible && _showRunHistory,
