@@ -78,7 +78,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v18.700";
+    public const string DevelopmentVersion = "v18.800";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -587,7 +587,9 @@ public sealed class DPSMeter : ModBehaviour
                                 record.ViewMetrics.Add(new DpsData.RunViewMetrics
                                 {
                                     View = metric.View, Damage = metric.Damage, DamageRate = metric.DamageRate,
+                                    AppliedDamage = metric.AppliedDamage,
                                     Healing = metric.Healing, HealingRate = metric.HealingRate,
+                                    EffectiveHealing = metric.EffectiveHealing,
                                     Barrier = metric.Barrier, BarrierRate = metric.BarrierRate
                                 });
                         }
@@ -602,6 +604,7 @@ public sealed class DPSMeter : ModBehaviour
                                 {
                                     View = row.View, Category = row.Category, SourceType = row.SourceType,
                                     Identity = row.Identity, Name = row.Name, Amount = row.Amount,
+                                    AppliedAmount = row.AppliedAmount, EffectiveAmount = row.EffectiveAmount,
                                     Elemental = row.Elemental, Scaling = row.Scaling,
                                     IconName = row.IconName, IconTextureName = row.IconTextureName,
                                     CharacterMainColorR = row.CharacterMainColorR,
@@ -625,6 +628,8 @@ public sealed class DPSMeter : ModBehaviour
                                     Identity = row.Identity,
                                     Name = row.Name,
                                     Amount = row.Amount,
+                                    AppliedAmount = row.AppliedAmount,
+                                    EffectiveAmount = row.EffectiveAmount,
                                     Elemental = row.Elemental,
                                     Scaling = row.Scaling,
                                     IconName = row.IconName,
@@ -680,7 +685,9 @@ public sealed class DPSMeter : ModBehaviour
                             record.ViewMetrics.Add(new RunHistoryViewMetrics
                             {
                                 View = metric.View, Damage = metric.Damage, DamageRate = metric.DamageRate,
+                                AppliedDamage = metric.AppliedDamage,
                                 Healing = metric.Healing, HealingRate = metric.HealingRate,
+                                EffectiveHealing = metric.EffectiveHealing,
                                 Barrier = metric.Barrier, BarrierRate = metric.BarrierRate
                             });
                     }
@@ -695,6 +702,7 @@ public sealed class DPSMeter : ModBehaviour
                             {
                                 View = row.View, Category = row.Category, SourceType = row.SourceType,
                                 Identity = row.Identity, Name = row.Name, Amount = row.Amount,
+                                AppliedAmount = row.AppliedAmount, EffectiveAmount = row.EffectiveAmount,
                                 Elemental = row.Elemental, Scaling = row.Scaling,
                                 IconName = row.IconName, IconTextureName = row.IconTextureName,
                                 CharacterMainColorR = row.CharacterMainColorR,
@@ -718,6 +726,8 @@ public sealed class DPSMeter : ModBehaviour
                                 Identity = row.Identity,
                                 Name = row.Name,
                                 Amount = row.Amount,
+                                AppliedAmount = row.AppliedAmount,
+                                EffectiveAmount = row.EffectiveAmount,
                                 Elemental = row.Elemental,
                                 Scaling = row.Scaling,
                                 IconName = row.IconName,
