@@ -327,19 +327,19 @@ public sealed class DpsOverlay : MonoBehaviour
                     if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
                     {
                         DrawParty(
-                            _mode == DisplayMode.PartyDps ? _data.CurrentPartyHealing : _data.CumulativePartyHealingRows,
-                            _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyHealing : _data.CumulativePartyHealing,
-                            _mode == DisplayMode.PartyDps ? _data.CurrentPartyHps : _data.TotalPartyHps,
+                            _excludeOverheal ? GetPartyHealingRows(_mode == DisplayMode.PartyDps) : (_mode == DisplayMode.PartyDps ? _data.CurrentPartyHealing : _data.CumulativePartyHealingRows),
+                            _excludeOverheal ? (_mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyEffectiveHealing : _data.CumulativePartyEffectiveHealing) : (_mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyHealing : _data.CumulativePartyHealing),
+                            _excludeOverheal ? ScaleEffectiveRate(_mode == DisplayMode.PartyDps ? _data.CurrentPartyHps : _data.TotalPartyHps, _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyHealing : _data.CumulativePartyHealing, _mode == DisplayMode.PartyDps ? _data.CurrentInstancePartyEffectiveHealing : _data.CumulativePartyEffectiveHealing) : (_mode == DisplayMode.PartyDps ? _data.CurrentPartyHps : _data.TotalPartyHps),
                             "HPS",
                             _mode == DisplayMode.PartyDps
-                                ? "HPS: " + FormatNumber(_data.CurrentPartyHps)
-                                : "HEAL: " + FormatNumber(_data.CumulativePartyHealing));
+                                ? "HPS: " + FormatNumber(_excludeOverheal ? ScaleEffectiveRate(_data.CurrentPartyHps, _data.CurrentInstancePartyHealing, _data.CurrentInstancePartyEffectiveHealing) : _data.CurrentPartyHps)
+                                : "HEAL: " + FormatNumber(_excludeOverheal ? _data.CumulativePartyEffectiveHealing : _data.CumulativePartyHealing));
                     }
                     else
                     {
                         DrawHealingBreakdown(
-                            _mode == DisplayMode.CurrentDps ? _data.CurrentPersonalHealingRows : _data.CumulativeHealingRows,
-                            _mode == DisplayMode.CurrentDps ? _data.CurrentInstancePersonalHealing : _data.CumulativePersonalHealing);
+                            _excludeOverheal ? GetPersonalHealingRows(_mode == DisplayMode.CurrentDps) : (_mode == DisplayMode.CurrentDps ? _data.CurrentPersonalHealingRows : _data.CumulativeHealingRows),
+                            _excludeOverheal ? (_mode == DisplayMode.CurrentDps ? _data.CurrentInstancePersonalEffectiveHealing : _data.CumulativePersonalEffectiveHealing) : (_mode == DisplayMode.CurrentDps ? _data.CurrentInstancePersonalHealing : _data.CumulativePersonalHealing));
                     }
                 }
 
@@ -1835,6 +1835,39 @@ public sealed class DpsOverlay : MonoBehaviour
         public Sprite Icon;
     }
 
+    private IReadOnlyList<KeyValuePair<string, float>> GetPartyHealingRows(bool current)
+    {
+        IReadOnlyList<KeyValuePair<string, float>> source = current ? _data.CurrentPartyHealing : _data.CumulativePartyHealingRows;
+        List<KeyValuePair<string, float>> rows = new List<KeyValuePair<string, float>>(source.Count);
+        for (int i = 0; i < source.Count; i++)
+        {
+            string name = source[i].Key;
+            float amount = current ? _data.GetCurrentPartyHealingEffectiveAmount(name) : _data.GetCumulativePartyHealingEffectiveAmount(name);
+            if (amount > 0f) rows.Add(new KeyValuePair<string, float>(name, amount));
+        }
+        rows.Sort((a, b) => b.Value.CompareTo(a.Value));
+        return rows;
+    }
+
+    private IReadOnlyList<DpsData.BreakdownRow> GetPersonalHealingRows(bool current)
+    {
+        IReadOnlyList<DpsData.BreakdownRow> source = current ? _data.CurrentPersonalHealingRows : _data.CumulativeHealingRows;
+        List<DpsData.BreakdownRow> rows = new List<DpsData.BreakdownRow>(source.Count);
+        for (int i = 0; i < source.Count; i++)
+        {
+            DpsData.BreakdownRow row = source[i];
+            float amount = current ? _data.GetCurrentHealingEffectiveAmount(row.Identity) : _data.GetCumulativeHealingEffectiveAmount(row.Identity);
+            if (amount > 0f) rows.Add(new DpsData.BreakdownRow { Identity = row.Identity, Name = row.Name, Amount = amount });
+        }
+        rows.Sort((a, b) => b.Amount.CompareTo(a.Amount));
+        return rows;
+    }
+
+    private static float ScaleEffectiveRate(float rate, float generated, float effective)
+    {
+        return generated > 0f ? rate * (effective / generated) : 0f;
+    }
+
     private IReadOnlyList<KeyValuePair<string, float>> GetPartyDamageRows(bool cumulative)
     {
         IReadOnlyList<KeyValuePair<string, float>> source = cumulative ? _data.CumulativeParty : _data.CurrentParty;
@@ -2030,9 +2063,13 @@ public sealed class DpsOverlay : MonoBehaviour
             ? _data.CurrentPersonalHps
             : _data.TotalPersonalHps;
 
+        if (_excludeOverheal)
+            hps = ScaleEffectiveRate(hps,
+                _mode == DisplayMode.CurrentDps ? _data.CurrentInstancePersonalHealing : _data.CumulativePersonalHealing,
+                _mode == DisplayMode.CurrentDps ? _data.CurrentInstancePersonalEffectiveHealing : _data.CumulativePersonalEffectiveHealing);
         string healingLabel = _mode == DisplayMode.CurrentDps
             ? "HPS: " + FormatNumber(hps)
-            : "HEAL: " + FormatNumber(_data.CumulativePersonalHealing);
+            : "HEAL: " + FormatNumber(_excludeOverheal ? _data.CumulativePersonalEffectiveHealing : _data.CumulativePersonalHealing);
 
         GUILayout.Label(
             healingLabel,
