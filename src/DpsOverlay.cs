@@ -62,8 +62,9 @@ public sealed class DpsOverlay : MonoBehaviour
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
     private readonly HashSet<string> _historyIconResourceLookupAttempted = new HashSet<string>();
     private readonly Dictionary<string, string> _historyIconResolutionStates = new Dictionary<string, string>();
-    private readonly HashSet<string> _historyAssetBundleDiagnosticsLogged = new HashSet<string>();
     private HashSet<string> _historySpriteNamesBeforeLobby;
+    private readonly HashSet<string> _historyIconsMissingAtBaseline = new HashSet<string>(StringComparer.Ordinal);
+    private readonly HashSet<string> _historySpriteComparisonsLogged = new HashSet<string>(StringComparer.Ordinal);
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerGlowColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -809,63 +810,82 @@ public sealed class DpsOverlay : MonoBehaviour
         return null;
     }
 
-    private void DiagnoseHistoryAssetBundles(string iconName, string textureName, bool spriteFound)
+    private void DiagnoseHistorySpriteInventory(string iconName, string textureName, bool spriteFound)
     {
-        string phase = spriteFound ? "found" : "missing";
-        if (!_historyAssetBundleDiagnosticsLogged.Add(phase))
-            return;
-
         try
         {
-            Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
-            HashSet<string> currentNames = new HashSet<string>(StringComparer.Ordinal);
-            List<string> sample = new List<string>();
-            int validSpriteCount = 0;
-
-            for (int i = 0; sprites != null && i < sprites.Length; i++)
+            if (!spriteFound)
             {
-                Sprite sprite = sprites[i];
+                if (!string.IsNullOrEmpty(iconName))
+                    _historyIconsMissingAtBaseline.Add(iconName);
+
+                if (_historySpriteNamesBeforeLobby != null)
+                    return;
+
+                Sprite[] baselineSprites = Resources.FindObjectsOfTypeAll<Sprite>();
+                HashSet<string> baselineNames = new HashSet<string>(StringComparer.Ordinal);
+                int validBaselineCount = 0;
+
+                for (int i = 0; baselineSprites != null && i < baselineSprites.Length; i++)
+                {
+                    Sprite sprite = baselineSprites[i];
+                    if (sprite == null)
+                        continue;
+
+                    validBaselineCount++;
+                    string texture = sprite.texture == null ? "<null>" : sprite.texture.name;
+                    baselineNames.Add(sprite.name + "@" + texture);
+                }
+
+                _historySpriteNamesBeforeLobby = baselineNames;
+                DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=baseline-missing icon=" + iconName +
+                    " spriteCount=" + validBaselineCount + " uniqueSpriteTexturePairs=" + baselineNames.Count);
+                return;
+            }
+
+            if (_historySpriteNamesBeforeLobby == null || string.IsNullOrEmpty(iconName) ||
+                !_historyIconsMissingAtBaseline.Contains(iconName) ||
+                !_historySpriteComparisonsLogged.Add(iconName))
+                return;
+
+            Sprite[] currentSprites = Resources.FindObjectsOfTypeAll<Sprite>();
+            HashSet<string> currentNames = new HashSet<string>(StringComparer.Ordinal);
+            List<string> newlyVisibleSample = new List<string>();
+            int validCurrentCount = 0;
+
+            for (int i = 0; currentSprites != null && i < currentSprites.Length; i++)
+            {
+                Sprite sprite = currentSprites[i];
                 if (sprite == null)
                     continue;
 
-                validSpriteCount++;
+                validCurrentCount++;
                 string texture = sprite.texture == null ? "<null>" : sprite.texture.name;
                 string identity = sprite.name + "@" + texture;
                 currentNames.Add(identity);
 
-                if (spriteFound && _historySpriteNamesBeforeLobby != null &&
-                    !_historySpriteNamesBeforeLobby.Contains(identity) && sample.Count < 80)
-                    sample.Add(identity);
+                if (!_historySpriteNamesBeforeLobby.Contains(identity) && newlyVisibleSample.Count < 80)
+                    newlyVisibleSample.Add(identity);
             }
 
-            if (!spriteFound)
+            int newlyVisibleCount = 0;
+            foreach (string identity in currentNames)
             {
-                _historySpriteNamesBeforeLobby = currentNames;
-                DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=missing icon=" + iconName +
-                    " spriteCount=" + validSpriteCount + " uniqueSpriteTexturePairs=" + currentNames.Count);
-                return;
+                if (!_historySpriteNamesBeforeLobby.Contains(identity))
+                    newlyVisibleCount++;
             }
 
-            int newCount = 0;
-            if (_historySpriteNamesBeforeLobby != null)
-            {
-                foreach (string identity in currentNames)
-                {
-                    if (!_historySpriteNamesBeforeLobby.Contains(identity))
-                        newCount++;
-                }
-            }
-
-            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=found icon=" + iconName +
-                " spriteCount=" + validSpriteCount + " uniqueSpriteTexturePairs=" + currentNames.Count +
-                " baselineAvailable=" + (_historySpriteNamesBeforeLobby != null) +
-                " newlyVisibleCount=" + newCount +
-                " newlyVisibleSample=" + (sample.Count == 0 ? "<none>" : string.Join(";", sample.ToArray())));
+            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=missing-icon-now-found icon=" + iconName +
+                " texture=" + textureName + " spriteCount=" + validCurrentCount +
+                " uniqueSpriteTexturePairs=" + currentNames.Count +
+                " newlyVisibleCount=" + newlyVisibleCount +
+                " newlyVisibleSample=" + (newlyVisibleSample.Count == 0
+                    ? "<none>" : string.Join(";", newlyVisibleSample.ToArray())));
         }
         catch (Exception ex)
         {
-            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=" + phase +
-                " exception=" + ex.GetType().Name + " icon=" + iconName);
+            DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory exception=" +
+                ex.GetType().Name + " icon=" + iconName + " found=" + spriteFound);
         }
     }
 
@@ -1014,11 +1034,11 @@ public sealed class DpsOverlay : MonoBehaviour
                     continue;
 
                 _historyIconCache[cacheKey] = candidate;
-                DiagnoseHistoryAssetBundles(row.IconName, row.IconTextureName, true);
+                DiagnoseHistorySpriteInventory(row.IconName, row.IconTextureName, true);
                 DiagnoseHistoryIconResolution(row, cacheKey, "loaded-sprite", candidate);
                 return candidate;
             }
-            DiagnoseHistoryAssetBundles(row.IconName, row.IconTextureName, false);
+            DiagnoseHistorySpriteInventory(row.IconName, row.IconTextureName, false);
         }
 
         Sprite resourceIcon = TryLoadHistoryIconFromGameResources(row, cacheKey);
