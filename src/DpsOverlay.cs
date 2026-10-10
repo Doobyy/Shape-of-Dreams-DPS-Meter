@@ -170,6 +170,13 @@ public sealed class DpsOverlay : MonoBehaviour
             _partyPlayerIcons.TryGetValue(playerName, out icon) ? icon : null;
     }
 
+    public bool TryGetPartyPlayerMainColor(string playerName, out Color mainColor)
+    {
+        mainColor = Color.white;
+        return !string.IsNullOrEmpty(playerName) &&
+            _partyPlayerColors.TryGetValue(playerName, out mainColor);
+    }
+
     public void ShowCompletedRun(DpsData.RunRecord run)
     {
         SetDisplayedRunRecord(run);
