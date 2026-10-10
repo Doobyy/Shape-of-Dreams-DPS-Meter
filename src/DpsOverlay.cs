@@ -1641,11 +1641,11 @@ public sealed class DpsOverlay : MonoBehaviour
                     break;
                 case DisplayMode.PartyDps:
                     title = "PARTY DPS";
-                    metric = "DPS: " + FormatNumber(selectedMetrics == null ? 0f : selectedMetrics.DamageRate);
+                    metric = "DPS: " + FormatNumber(selectedMetrics == null ? 0f : (_excludeOverkill ? ScaleEffectiveRate(selectedMetrics.DamageRate, selectedMetrics.Damage, selectedMetrics.AppliedDamage) : selectedMetrics.DamageRate));
                     break;
                 case DisplayMode.PartyTotal:
                     title = "PARTY TOTAL";
-                    metric = "DMG: " + FormatNumber(selectedMetrics == null ? 0f : selectedMetrics.Damage);
+                    metric = "DMG: " + FormatNumber(selectedMetrics == null ? 0f : (_excludeOverkill ? selectedMetrics.AppliedDamage : selectedMetrics.Damage));
                     break;
             }
         }
