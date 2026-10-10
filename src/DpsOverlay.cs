@@ -811,7 +811,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private void DiagnoseHistoryAssetBundles(string iconName, string textureName, bool spriteFound)
     {
         string phase = spriteFound ? "found" : "missing";
-        string diagnosticKey = phase + "|" + (iconName ?? string.Empty) + "|" + (textureName ?? string.Empty);
+        string diagnosticKey = phase;
         if (!_historyAssetBundleDiagnosticsLogged.Add(diagnosticKey))
             return;
 
@@ -840,8 +840,10 @@ public sealed class DpsOverlay : MonoBehaviour
             }
 
             int bundleCount = 0;
+            int totalAssetPathCount = 0;
             List<string> bundleSamples = new List<string>();
             List<string> matchingAssets = new List<string>();
+            List<string> relevantAssetPaths = new List<string>();
             foreach (object bundle in bundles)
             {
                 if (bundle == null)
@@ -855,9 +857,6 @@ public sealed class DpsOverlay : MonoBehaviour
                 if (bundleSamples.Count < 12)
                     bundleSamples.Add(bundleName);
 
-                if (!spriteFound)
-                    continue;
-
                 MethodInfo getAssetNames = bundleType.GetMethod(
                     "GetAllAssetNames", BindingFlags.Public | BindingFlags.Instance,
                     null, Type.EmptyTypes, null);
@@ -867,6 +866,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 if (assetNames == null)
                     continue;
 
+                totalAssetPathCount += assetNames.Length;
                 for (int i = 0; i < assetNames.Length; i++)
                 {
                     string assetPath = assetNames[i];
@@ -884,6 +884,19 @@ public sealed class DpsOverlay : MonoBehaviour
                         if (!matchingAssets.Contains(match) && matchingAssets.Count < 12)
                             matchingAssets.Add(match);
                     }
+
+                    if (!spriteFound || relevantAssetPaths.Count >= 30)
+                        continue;
+
+                    string pathLower = assetPath.ToLowerInvariant();
+                    if (pathLower.Contains("sprite") || pathLower.Contains("icon") ||
+                        pathLower.Contains("skill") || pathLower.Contains("spell") ||
+                        pathLower.Contains("texture") || pathLower.Contains("ui"))
+                    {
+                        string sample = bundleName + ":" + assetPath;
+                        if (!relevantAssetPaths.Contains(sample))
+                            relevantAssetPaths.Add(sample);
+                    }
                 }
             }
 
@@ -892,8 +905,11 @@ public sealed class DpsOverlay : MonoBehaviour
                 " bundleSamples=" + (bundleSamples.Count == 0
                     ? "<none>" : string.Join(",", bundleSamples.ToArray())) +
                 (spriteFound
-                    ? " exactAssetMatches=" + (matchingAssets.Count == 0
-                        ? "<none>" : string.Join(";", matchingAssets.ToArray()))
+                    ? " totalAssetPaths=" + totalAssetPathCount +
+                      " exactAssetMatches=" + (matchingAssets.Count == 0
+                          ? "<none>" : string.Join(";", matchingAssets.ToArray())) +
+                      " relevantAssetPaths=" + (relevantAssetPaths.Count == 0
+                          ? "<none>" : string.Join(";", relevantAssetPaths.ToArray()))
                     : string.Empty));
         }
         catch (Exception ex)
