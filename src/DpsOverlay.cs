@@ -1612,7 +1612,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             case DisplayMode.PartyDps:
                 title = "PARTY DPS";
-                metric = "DPS: " + FormatNumber(_data.CurrentPartyDps);
+                metric = "DPS: " + FormatNumber(_excludeOverkill ? _data.CurrentPartyAppliedDps : _data.CurrentPartyDps);
                 break;
 
             case DisplayMode.PartyTotal:
@@ -1633,11 +1633,11 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 case DisplayMode.CurrentDps:
                     title = "CURRENT";
-                    metric = "DPS: " + FormatNumber(selectedMetrics == null ? 0f : selectedMetrics.DamageRate);
+                    metric = "DPS: " + FormatNumber(selectedMetrics == null ? 0f : (_excludeOverkill ? ScaleEffectiveRate(selectedMetrics.DamageRate, selectedMetrics.Damage, selectedMetrics.AppliedDamage) : selectedMetrics.DamageRate));
                     break;
                 case DisplayMode.DamageTotal:
                     title = "TOTAL";
-                    metric = "DMG: " + FormatNumber(selectedMetrics == null ? 0f : selectedMetrics.Damage);
+                    metric = "DMG: " + FormatNumber(selectedMetrics == null ? 0f : (_excludeOverkill ? selectedMetrics.AppliedDamage : selectedMetrics.Damage));
                     break;
                 case DisplayMode.PartyDps:
                     title = "PARTY DPS";
