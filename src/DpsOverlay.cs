@@ -455,7 +455,7 @@ public sealed class DpsOverlay : MonoBehaviour
             string character = string.IsNullOrEmpty(run.CharacterName) ? "Unknown" : run.CharacterName;
             Rect rowRect = new Rect(0f, y, viewRect.width, rowHeight);
             DrawRunHistoryRow(rowRect, run,
-                character + " " + FormatNumber(run.TotalDamage) + " - " + FormatDuration(run.DurationSeconds),
+                character + " " + FormatNumber(_excludeOverkill ? run.TotalAppliedDamage : run.TotalDamage) + " - " + FormatDuration(run.DurationSeconds),
                 "Visited: " + run.WorldsVisited + " Worlds - " + run.MapsVisited + " Maps",
                 false, i < _data.CompletedRuns.Count - 1);
             y += rowHeight;
@@ -642,7 +642,24 @@ public sealed class DpsOverlay : MonoBehaviour
             if (row != null &&
                 string.Equals(row.View, view, StringComparison.Ordinal) &&
                 string.Equals(row.Category, category, StringComparison.Ordinal))
-                rows.Add(row);
+            {
+                float amount = row.Amount;
+                if (_excludeOverkill && string.Equals(category, "DAMAGE", StringComparison.Ordinal))
+                    amount = row.AppliedAmount;
+                else if (_excludeOverheal && string.Equals(category, "HEALING", StringComparison.Ordinal))
+                    amount = row.EffectiveAmount;
+                if (amount > 0f)
+                    rows.Add(new DpsData.RunBreakdownRow
+                    {
+                        View = row.View, Category = row.Category, SourceType = row.SourceType,
+                        Identity = row.Identity, Name = row.Name, Amount = amount,
+                        AppliedAmount = row.AppliedAmount, EffectiveAmount = row.EffectiveAmount,
+                        Elemental = row.Elemental, Scaling = row.Scaling,
+                        IconName = row.IconName, IconTextureName = row.IconTextureName,
+                        CharacterMainColorR = row.CharacterMainColorR, CharacterMainColorG = row.CharacterMainColorG,
+                        CharacterMainColorB = row.CharacterMainColorB, HasCharacterMainColor = row.HasCharacterMainColor
+                    });
+            }
         }
         rows.Sort((a, b) => b.Amount.CompareTo(a.Amount));
         return rows;
@@ -682,9 +699,11 @@ public sealed class DpsOverlay : MonoBehaviour
         if (metrics == null) return;
 
         List<DpsData.RunBreakdownRow> rows = GetSelectedRunViewRows(run, view, "DAMAGE");
+        float displayDamage = _excludeOverkill ? metrics.AppliedDamage : metrics.Damage;
+        float displayDamageRate = _excludeOverkill ? ScaleEffectiveRate(metrics.DamageRate, metrics.Damage, metrics.AppliedDamage) : metrics.DamageRate;
         if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
         {
-            DrawParty(ToPartyRows(rows), metrics.Damage, metrics.DamageRate, "DPS", null, rows);
+            DrawParty(ToPartyRows(rows), displayDamage, displayDamageRate, "DPS", null, rows);
             return;
         }
 
@@ -708,7 +727,7 @@ public sealed class DpsOverlay : MonoBehaviour
             if (!string.IsNullOrEmpty(row.Scaling) && Enum.TryParse<DpsData.DamageScalingType>(row.Scaling, out parsedScaling))
                 scaling = parsedScaling;
 
-            DrawDamageRow(StripRichTextTags(row.Name), row.Amount, metrics.Damage,
+            DrawDamageRow(StripRichTextTags(row.Name), row.Amount, displayDamage,
                 maxAmount, i, elemental, scaling, ResolveRunHistoryIcon(row));
         }
     }
