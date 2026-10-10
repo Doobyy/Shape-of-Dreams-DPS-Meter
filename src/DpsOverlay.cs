@@ -834,7 +834,13 @@ public sealed class DpsOverlay : MonoBehaviour
         if (!string.IsNullOrEmpty(row.IconName))
         {
             Sprite cached;
-            if (_historyIconCache.TryGetValue(cacheKey, out cached)) return cached;
+            if (_historyIconCache.TryGetValue(cacheKey, out cached))
+            {
+                LogHistoryIconResolution(row, "CACHE-MATCH",
+                    "sprite=" + cached.name + " texture=" +
+                    (cached.texture == null ? "<null>" : cached.texture.name));
+                return cached;
+            }
 
             Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
             for (int i = 0; sprites != null && i < sprites.Length; i++)
