@@ -494,7 +494,7 @@ public sealed class DpsOverlay : MonoBehaviour
         // Keep history selection glow unchanged; party tabs use a more saturated, visible outline hue.
         Color glowColor = Color.HSVToRGB(
             glowHue,
-            vividPartyGlow ? Mathf.Max(glowSaturation, 0.85f) : glowSaturation,
+            vividPartyGlow ? Mathf.Max(glowSaturation, 0.92f) : glowSaturation,
             vividPartyGlow ? 0.55f : Mathf.Min(glowValue, 0.55f));
         for (int ring = 0; ring < CharacterGlowOffsets.Length; ring++)
         {
