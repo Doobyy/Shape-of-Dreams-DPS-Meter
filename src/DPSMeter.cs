@@ -47,8 +47,10 @@ public sealed class RunHistoryViewMetrics
     [DataMember] public string View;
     [DataMember] public float Damage;
     [DataMember] public float DamageRate;
+    [DataMember] public float AppliedDamage;
     [DataMember] public float Healing;
     [DataMember] public float HealingRate;
+    [DataMember] public float EffectiveHealing;
     [DataMember] public float Barrier;
     [DataMember] public float BarrierRate;
 }
@@ -62,6 +64,8 @@ public sealed class RunHistoryBreakdownRow
     [DataMember] public string Identity;
     [DataMember] public string Name;
     [DataMember] public float Amount;
+    [DataMember] public float AppliedAmount;
+    [DataMember] public float EffectiveAmount;
     [DataMember] public string Elemental;
     [DataMember] public string Scaling;
     [DataMember] public string IconName;
@@ -74,7 +78,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v18.500";
+    public const string DevelopmentVersion = "v18.600";
 
     public static DPSMeter Instance { get; private set; }
 
