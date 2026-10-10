@@ -1835,6 +1835,20 @@ public sealed class DpsOverlay : MonoBehaviour
         public Sprite Icon;
     }
 
+    private IReadOnlyList<KeyValuePair<string, float>> GetPartyDamageRows(bool cumulative)
+    {
+        IReadOnlyList<KeyValuePair<string, float>> source = cumulative ? _data.CumulativeParty : _data.CurrentParty;
+        List<KeyValuePair<string, float>> rows = new List<KeyValuePair<string, float>>(source.Count);
+        for (int i = 0; i < source.Count; i++)
+        {
+            string name = source[i].Key;
+            float amount = cumulative ? _data.GetCumulativePartyAppliedAmount(name) : _data.GetCurrentPartyAppliedAmount(name);
+            if (amount > 0f) rows.Add(new KeyValuePair<string, float>(name, amount));
+        }
+        rows.Sort((a, b) => b.Value.CompareTo(a.Value));
+        return rows;
+    }
+
     private void DrawPersonal(
         IReadOnlyList<DpsData.BreakdownRow> sources,
         IReadOnlyList<KeyValuePair<string, float>> other,
@@ -1850,8 +1864,8 @@ public sealed class DpsOverlay : MonoBehaviour
             rows.Add(new DamageRow
             {
                 Name = StripRichTextTags(row.Name),
-                Amount = row.Amount,
-                Elemental = _data.GetCurrentSkillElement(row.Identity),
+                Amount = _excludeOverkill ? (cumulativeEssences ? _data.GetCumulativeSkillAppliedAmount(row.Identity) : _data.GetCurrentSkillAppliedAmount(row.Identity)) : row.Amount,
+                Elemental = cumulativeEssences ? _data.GetCumulativeSkillElement(row.Identity) : _data.GetCurrentSkillElement(row.Identity),
                 Scaling = _data.GetCurrentSkillScaling(row.Identity),
                 Icon = _data.GetSkillIcon(row.Identity)
             });
@@ -1863,8 +1877,8 @@ public sealed class DpsOverlay : MonoBehaviour
             rows.Add(new DamageRow
             {
                 Name = StripRichTextTags(row.Key),
-                Amount = row.Value,
-                Scaling = _data.GetCurrentOtherScaling(row.Key),
+                Amount = _excludeOverkill ? (cumulativeEssences ? _data.GetCumulativeOtherAppliedAmount(row.Key) : _data.GetCurrentOtherAppliedAmount(row.Key)) : row.Value,
+                Scaling = cumulativeEssences ? _data.GetCumulativeOtherScaling(row.Key) : _data.GetCurrentOtherScaling(row.Key),
                 Icon = row.Key == "Basic Attack" ? GetBasicAttackIcon() : _data.GetCurrentOtherIcon(row.Key)
             });
         }
@@ -1878,7 +1892,7 @@ public sealed class DpsOverlay : MonoBehaviour
             rows.Add(new DamageRow
             {
                 Name = StripRichTextTags(_data.GetEssenceDisplayName(row.Key)),
-                Amount = row.Value,
+                Amount = _excludeOverkill ? (cumulativeEssences ? _data.GetCumulativeEssenceAppliedAmount(row.Key) : _data.GetCurrentEssenceAppliedAmount(row.Key)) : row.Value,
                 Elemental = cumulativeEssences
                     ? _data.GetCumulativeEssenceElement(row.Key)
                     : _data.GetCurrentEssenceElement(row.Key),
