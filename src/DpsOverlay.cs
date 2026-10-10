@@ -52,6 +52,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private static readonly Color ApScalingBarOutlineColor = new Color(0.086f, 0.231f, 0.498f, 1f);
     private static readonly Color HpScalingBarOutlineColor = new Color(0.180f, 0.235f, 0.137f, 1f);
     private static readonly Color HealingBarOutlineColor = new Color(0.180f, 0.235f, 0.137f, 1f);
+    private static readonly float[] CharacterGlowOffsets = { 1.5f, 3f, 4.5f };
+    private static readonly float[] CharacterGlowAlphas = { 0.24f, 0.14f, 0.07f };
 
 
     private DpsData _data;
@@ -484,13 +486,11 @@ public sealed class DpsOverlay : MonoBehaviour
         Color.RGBToHSV(outlineColor, out float glowHue, out float glowSaturation, out float glowValue);
         // Brighten the outline hue without blending toward white.
         Color glowColor = Color.HSVToRGB(glowHue, glowSaturation, Mathf.Min(glowValue, 0.55f));
-        float[] glowOffsets = { 1.5f, 3f, 4.5f };
-        float[] glowAlphas = { 0.24f, 0.14f, 0.07f };
-        for (int ring = 0; ring < glowOffsets.Length; ring++)
+        for (int ring = 0; ring < CharacterGlowOffsets.Length; ring++)
         {
-            float glowOffset = glowOffsets[ring];
+            float glowOffset = CharacterGlowOffsets[ring];
             Color ringColor = glowColor;
-            ringColor.a = glowAlphas[ring];
+            ringColor.a = CharacterGlowAlphas[ring];
             GUI.color = ringColor;
 
             DrawSprite(icon, new Rect(iconRect.x - glowOffset, iconRect.y, iconRect.width, iconRect.height));
@@ -2157,7 +2157,8 @@ public sealed class DpsOverlay : MonoBehaviour
                 Color glowColor = DefaultBarOutlineColor;
                 if (_partyPlayerColors.TryGetValue(row.Key, out Color characterColor))
                     emblemTint = characterColor;
-                _partyPlayerGlowColors.TryGetValue(row.Key, out glowColor);
+                if (!_partyPlayerGlowColors.TryGetValue(row.Key, out glowColor))
+                    glowColor = DefaultBarOutlineColor;
                 DrawCharacterGlow(playerIcon, iconRect, glowColor);
                 GUI.color = emblemTint;
                 DrawSprite(playerIcon, iconRect);
