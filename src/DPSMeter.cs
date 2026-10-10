@@ -80,7 +80,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v23.200";
+    public const string DevelopmentVersion = "v23.300";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -129,13 +129,6 @@ public sealed class DPSMeter : ModBehaviour
             WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] UI input blocker " + detail);
         }
     }
-
-    internal static void WriteHistoryIconResourceDiagnostic(string detail)
-    {
-        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HISTORY-RESOURCE " + detail);
-    }
-
-
 
     private static void ClearDebugLog()
     {
