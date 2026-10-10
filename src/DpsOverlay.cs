@@ -61,6 +61,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Color _partyBarOutlineColor = DefaultBarOutlineColor;
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
     private readonly HashSet<string> _historyIconResourceLookupAttempted = new HashSet<string>();
+    private bool _historyAddressablesInventoryLogged;
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerGlowColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -808,6 +809,10 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private void DiagnoseAddressableHistoryIconLocations(string iconName, string textureName)
     {
+        if (_historyAddressablesInventoryLogged)
+            return;
+
+        _historyAddressablesInventoryLogged = true;
         try
         {
             Type addressablesType = null;
@@ -817,7 +822,7 @@ public sealed class DpsOverlay : MonoBehaviour
 
             if (addressablesType == null)
             {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("addressables type unavailable icon=" + iconName);
+                DPSMeter.WriteHistoryIconResourceDiagnostic("addressables inventory unavailable reason=type-not-found");
                 return;
             }
 
@@ -826,19 +831,14 @@ public sealed class DpsOverlay : MonoBehaviour
             System.Collections.IEnumerable locators = locatorsValue as System.Collections.IEnumerable;
             if (locators == null)
             {
-                DPSMeter.WriteHistoryIconResourceDiagnostic("addressable locators unavailable icon=" + iconName);
+                DPSMeter.WriteHistoryIconResourceDiagnostic("addressables inventory unavailable reason=locators-not-found");
                 return;
             }
 
-            string token = iconName ?? string.Empty;
-            if (token.StartsWith("icon", StringComparison.OrdinalIgnoreCase) && token.Length > 4)
-                token = token.Substring(4);
-            else if (token.StartsWith("tex", StringComparison.OrdinalIgnoreCase) && token.Length > 3)
-                token = token.Substring(3);
-
             int locatorCount = 0;
-            List<string> keyMatches = new List<string>();
-            List<string> locationMatches = new List<string>();
+            int totalKeys = 0;
+            List<string> locatorDetails = new List<string>();
+            List<string> candidateKeys = new List<string>();
             foreach (object locator in locators)
             {
                 if (locator == null)
@@ -847,90 +847,50 @@ public sealed class DpsOverlay : MonoBehaviour
 
                 Type locatorType = locator.GetType();
                 System.Reflection.PropertyInfo keysProperty = null;
-                System.Reflection.MethodInfo locate = null;
                 Type[] locatorInterfaces = locatorType.GetInterfaces();
                 for (int interfaceIndex = 0; interfaceIndex < locatorInterfaces.Length; interfaceIndex++)
                 {
-                    Type locatorInterface = locatorInterfaces[interfaceIndex];
                     if (keysProperty == null)
-                        keysProperty = locatorInterface.GetProperty("Keys");
-                    if (locate == null)
-                    {
-                        System.Reflection.MethodInfo interfaceLocate = locatorInterface.GetMethod("Locate");
-                        if (interfaceLocate != null)
-                        {
-                            System.Reflection.ParameterInfo[] parameters = interfaceLocate.GetParameters();
-                            if (parameters.Length == 3 && parameters[0].ParameterType == typeof(object) &&
-                                parameters[1].ParameterType == typeof(Type) && parameters[2].IsOut)
-                                locate = interfaceLocate;
-                        }
-                    }
+                        keysProperty = locatorInterfaces[interfaceIndex].GetProperty("Keys");
                 }
 
                 System.Collections.IEnumerable keys = keysProperty == null ? null :
                     keysProperty.GetValue(locator, null) as System.Collections.IEnumerable;
-                if (keys != null && keyMatches.Count < 12)
+                int locatorKeyCount = 0;
+                if (keys != null)
                 {
                     foreach (object key in keys)
                     {
+                        locatorKeyCount++;
                         string keyText = key as string;
-                        if (string.IsNullOrEmpty(keyText))
+                        if (string.IsNullOrEmpty(keyText) || candidateKeys.Count >= 20)
                             continue;
-                        bool matches = string.Equals(keyText, iconName, StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(keyText, textureName, StringComparison.OrdinalIgnoreCase) ||
-                            (token.Length >= 4 && keyText.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0);
-                        if (!matches)
-                            continue;
-                        keyMatches.Add(keyText);
-                        if (keyMatches.Count >= 12)
-                            break;
+
+                        if (keyText.IndexOf("icon", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            keyText.IndexOf("sprite", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            keyText.IndexOf("atlas", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            keyText.IndexOf("spellbook", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            keyText.IndexOf("essence", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            keyText.IndexOf("skill", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            keyText.IndexOf("memory", StringComparison.OrdinalIgnoreCase) >= 0)
+                            candidateKeys.Add(keyText);
                     }
                 }
 
-                if (locate == null)
-                    continue;
-
-                string[] lookupKeys = { iconName, textureName };
-                for (int k = 0; k < lookupKeys.Length && locationMatches.Count < 8; k++)
-                {
-                    if (string.IsNullOrEmpty(lookupKeys[k]))
-                        continue;
-                    object[] arguments = { lookupKeys[k], typeof(Sprite), null };
-                    object found = locate.Invoke(locator, arguments);
-                    if (!(found is bool) || !(bool)found || arguments[2] == null)
-                        continue;
-
-                    System.Collections.IEnumerable locations = arguments[2] as System.Collections.IEnumerable;
-                    if (locations == null)
-                        continue;
-                    foreach (object location in locations)
-                    {
-                        if (location == null)
-                            continue;
-                        Type locationType = location.GetType();
-                        System.Reflection.PropertyInfo primaryKeyProperty = locationType.GetProperty("PrimaryKey");
-                        System.Reflection.PropertyInfo internalIdProperty = locationType.GetProperty("InternalId");
-                        string primaryKey = primaryKeyProperty == null ? "<no-primary-key>" :
-                            Convert.ToString(primaryKeyProperty.GetValue(location, null));
-                        string internalId = internalIdProperty == null ? "<no-internal-id>" :
-                            Convert.ToString(internalIdProperty.GetValue(location, null));
-                        locationMatches.Add(lookupKeys[k] + "=>" + primaryKey + "@" + internalId);
-                        if (locationMatches.Count >= 8)
-                            break;
-                    }
-                }
+                totalKeys += locatorKeyCount;
+                locatorDetails.Add(locatorType.FullName + ":" + locatorKeyCount);
             }
 
-            DPSMeter.WriteHistoryIconResourceDiagnostic("addressables icon=" + iconName +
-                " locators=" + locatorCount + " matchingKeys=" +
-                (keyMatches.Count == 0 ? "<none>" : string.Join(",", keyMatches.ToArray())) +
-                " spriteLocations=" +
-                (locationMatches.Count == 0 ? "<none>" : string.Join(";", locationMatches.ToArray())));
+            DPSMeter.WriteHistoryIconResourceDiagnostic("addressables inventory icon=" + iconName +
+                " locators=" + locatorCount + " locatorKeys=" +
+                (locatorDetails.Count == 0 ? "<none>" : string.Join(",", locatorDetails.ToArray())) +
+                " totalKeys=" + totalKeys + " candidates=" +
+                (candidateKeys.Count == 0 ? "<none>" : string.Join(",", candidateKeys.ToArray())));
         }
         catch (Exception ex)
         {
-            DPSMeter.WriteHistoryIconResourceDiagnostic("addressables probe exception icon=" + iconName +
-                " type=" + ex.GetType().FullName + " message=" + ex.Message);
+            DPSMeter.WriteHistoryIconResourceDiagnostic("addressables inventory exception type=" +
+                ex.GetType().FullName + " message=" + ex.Message);
         }
     }
 
