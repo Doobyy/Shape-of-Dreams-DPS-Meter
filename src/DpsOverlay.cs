@@ -1820,6 +1820,16 @@ public sealed class DpsOverlay : MonoBehaviour
             _showBarrier,
             "Expand Barrier Breakdown");
 
+        _excludeOverkill = GUI.Toggle(
+            new Rect(_settingsRect.x + left, _settingsRect.y + top + rowHeight * 2f, _settingsRect.width - 24f, rowHeight),
+            _excludeOverkill,
+            "Exclude Overkill");
+
+        _excludeOverheal = GUI.Toggle(
+            new Rect(_settingsRect.x + left, _settingsRect.y + top + rowHeight * 3f, _settingsRect.width - 24f, rowHeight),
+            _excludeOverheal,
+            "Exclude Overheal");
+
         if (GUI.Button(
             new Rect(
                 _settingsRect.xMax - 72f,
