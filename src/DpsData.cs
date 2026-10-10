@@ -28,6 +28,10 @@ public sealed class DpsData
         public string Scaling;
         public string IconName;
         public string IconTextureName;
+        public float CharacterMainColorR;
+        public float CharacterMainColorG;
+        public float CharacterMainColorB;
+        public bool HasCharacterMainColor;
     }
 
     [Serializable]
