@@ -60,6 +60,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Color _partyBarColor = DefaultBarColor;
     private Color _partyBarOutlineColor = DefaultBarOutlineColor;
     private readonly Dictionary<string, Sprite> _historyIconCache = new Dictionary<string, Sprite>();
+    private readonly HashSet<string> _historyIconResourceLookupAttempted = new HashSet<string>();
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerGlowColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -805,6 +806,40 @@ public sealed class DpsOverlay : MonoBehaviour
         return null;
     }
 
+    private Sprite TryLoadHistoryIconFromGameResources(DpsData.RunBreakdownRow row, string cacheKey)
+    {
+        if (row == null || string.IsNullOrEmpty(row.IconName) ||
+            !_historyIconResourceLookupAttempted.Add(cacheKey))
+            return null;
+
+        try
+        {
+            // DewResources is the game's own Addressables-backed resource database.
+            // Only request exact-name entries; do not scan/load unrelated assets.
+            if (DewResources.database == null ||
+                !DewResources.database.nameToGuid.ContainsKey(row.IconName))
+                return null;
+
+            Sprite sprite = DewResources.GetByName<Sprite>(row.IconName);
+            if (sprite == null)
+                return null;
+
+            if (!string.IsNullOrEmpty(row.IconTextureName) &&
+                (sprite.texture == null ||
+                 !string.Equals(sprite.texture.name, row.IconTextureName, StringComparison.Ordinal)))
+                return null;
+
+            _historyIconCache[cacheKey] = sprite;
+            return sprite;
+        }
+        catch (Exception)
+        {
+            // The game's resource database may not be ready this early in startup.
+            // The existing loaded-sprite and live-registry fallbacks remain active.
+            return null;
+        }
+    }
+
     private Sprite ResolveRunHistoryIcon(DpsData.RunBreakdownRow row)
     {
         if (row == null)
@@ -832,6 +867,10 @@ public sealed class DpsOverlay : MonoBehaviour
                 return candidate;
             }
         }
+
+        Sprite resourceIcon = TryLoadHistoryIconFromGameResources(row, cacheKey);
+        if (resourceIcon != null)
+            return resourceIcon;
 
         if (_data == null)
             return null;
