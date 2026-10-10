@@ -91,6 +91,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Rect _settingsRect = new Rect(0f, 0f, 250f, 205f);
     private bool _excludeOverkill;
     private bool _excludeOverheal;
+    private bool _excludeEssenceOfMortality;
 
     private GUIStyle _header;
     private GUIStyle _headerRight;
@@ -719,8 +720,14 @@ public sealed class DpsOverlay : MonoBehaviour
         if (metrics == null) return;
 
         List<DpsData.RunBreakdownRow> rows = GetSelectedRunViewRows(run, view, "DAMAGE");
-        float displayDamage = _excludeOverkill ? metrics.AppliedDamage : metrics.Damage;
-        float displayDamageRate = _excludeOverkill ? ScaleEffectiveRate(metrics.DamageRate, metrics.Damage, metrics.AppliedDamage) : metrics.DamageRate;
+        float mortalityApplied = 0f;
+        float mortalityProduced = _excludeEssenceOfMortality ? RemoveMortalityEssenceRows(rows, out mortalityApplied) : 0f;
+        float adjustedDamage = Mathf.Max(0f, metrics.Damage - mortalityProduced);
+        float adjustedAppliedDamage = Mathf.Max(0f, metrics.AppliedDamage - mortalityApplied);
+        float displayDamage = _excludeOverkill ? adjustedAppliedDamage : adjustedDamage;
+        float displayDamageRate = _excludeOverkill
+            ? ScaleEffectiveRate(metrics.DamageRate, metrics.Damage, adjustedAppliedDamage)
+            : ScaleEffectiveRate(metrics.DamageRate, metrics.Damage, adjustedDamage);
         if (_mode == DisplayMode.PartyDps || _mode == DisplayMode.PartyTotal)
         {
             DrawParty(ToPartyRows(rows), displayDamage, displayDamageRate, "DPS", null, rows);
@@ -767,9 +774,11 @@ public sealed class DpsOverlay : MonoBehaviour
             (run.CompletedAt ?? string.Empty),
             _small);
         GUILayout.Space(3f);
-        GUILayout.Label("DAMAGE: " + FormatNumber(run.TotalDamage), _headerRight);
-
         List<DpsData.RunBreakdownRow> rows = GetSelectedRunRows(run, "DAMAGE");
+        float mortalityApplied = 0f;
+        float mortalityProduced = _excludeEssenceOfMortality ? RemoveMortalityEssenceRows(rows, out mortalityApplied) : 0f;
+        float legacyDamage = Mathf.Max(0f, run.TotalDamage - mortalityProduced);
+        GUILayout.Label("DAMAGE: " + FormatNumber(legacyDamage), _headerRight);
         float maxAmount = GetSelectedRunMax(rows);
         if (rows.Count == 0)
         {
@@ -1017,6 +1026,45 @@ public sealed class DpsOverlay : MonoBehaviour
 
         rows.Sort((a, b) => b.Amount.CompareTo(a.Amount));
         return rows;
+    }
+
+    private static bool IsMortalityEssenceName(string displayName, string identity)
+    {
+        return (!string.IsNullOrEmpty(displayName) && displayName.IndexOf("Mortality", StringComparison.OrdinalIgnoreCase) >= 0) ||
+            (!string.IsNullOrEmpty(identity) && identity.IndexOf("Mortality", StringComparison.OrdinalIgnoreCase) >= 0);
+    }
+
+    private float GetLiveMortalityEssenceAmount(IReadOnlyList<KeyValuePair<string, float>> essences, bool cumulative)
+    {
+        if (essences == null) return 0f;
+        float total = 0f;
+        for (int i = 0; i < essences.Count; i++)
+        {
+            KeyValuePair<string, float> row = essences[i];
+            if (!IsMortalityEssenceName(_data.GetEssenceDisplayName(row.Key), row.Key)) continue;
+            total += _excludeOverkill
+                ? (cumulative ? _data.GetCumulativeEssenceAppliedAmount(row.Key) : _data.GetCurrentEssenceAppliedAmount(row.Key))
+                : row.Value;
+        }
+        return total;
+    }
+
+    private static float RemoveMortalityEssenceRows(List<DpsData.RunBreakdownRow> rows, out float appliedTotal)
+    {
+        appliedTotal = 0f;
+        if (rows == null) return 0f;
+        float total = 0f;
+        for (int i = rows.Count - 1; i >= 0; i--)
+        {
+            DpsData.RunBreakdownRow row = rows[i];
+            if (row == null || !string.Equals(row.SourceType, "ESSENCE", StringComparison.OrdinalIgnoreCase) ||
+                !IsMortalityEssenceName(row.Name, row.Identity))
+                continue;
+            total += row.Amount;
+            appliedTotal += row.AppliedAmount;
+            rows.RemoveAt(i);
+        }
+        return total;
     }
 
     private static float GetSelectedRunTotal(List<DpsData.RunBreakdownRow> rows)
@@ -1438,6 +1486,12 @@ public sealed class DpsOverlay : MonoBehaviour
                 _settingsRect.width - 24f,
                 26f);
 
+            Rect excludeMortalityToggleRect = new Rect(
+                _settingsRect.x + 12f,
+                _settingsRect.y + 136f,
+                _settingsRect.width - 24f,
+                26f);
+
             Rect closeRect = new Rect(
                 _settingsRect.xMax - 72f,
                 _settingsRect.yMax - 30f,
@@ -1451,6 +1505,7 @@ public sealed class DpsOverlay : MonoBehaviour
                     && !barrierToggleRect.Contains(e.mousePosition)
                     && !excludeOverkillToggleRect.Contains(e.mousePosition)
                     && !excludeOverhealToggleRect.Contains(e.mousePosition)
+                    && !excludeMortalityToggleRect.Contains(e.mousePosition)
                     && !closeRect.Contains(e.mousePosition))
                 {
                     _settingsDragging = true;
@@ -1682,7 +1737,8 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             for (int i = 0; i < essences.Count; i++)
             {
-                if (!string.IsNullOrEmpty(essences[i].Key) && essences[i].Value > 0f)
+                if (!string.IsNullOrEmpty(essences[i].Key) && essences[i].Value > 0f &&
+                    !(_excludeEssenceOfMortality && IsMortalityEssenceName(_data.GetEssenceDisplayName(essences[i].Key), essences[i].Key)))
                     count++;
             }
         }
@@ -2000,6 +2056,11 @@ public sealed class DpsOverlay : MonoBehaviour
             _excludeOverheal,
             "Exclude Overheal");
 
+        _excludeEssenceOfMortality = GUI.Toggle(
+            new Rect(_settingsRect.x + left, _settingsRect.y + top + rowHeight * 4f, _settingsRect.width - 24f, rowHeight),
+            _excludeEssenceOfMortality,
+            "Exclude Essence of Mortality Damage");
+
         if (GUI.Button(
             new Rect(
                 _settingsRect.xMax - 72f,
@@ -2090,6 +2151,9 @@ public sealed class DpsOverlay : MonoBehaviour
         float total,
         bool cumulativeEssences)
     {
+        if (_excludeEssenceOfMortality)
+            total = Mathf.Max(0f, total - GetLiveMortalityEssenceAmount(essences, cumulativeEssences));
+
         List<DamageRow> rows = new List<DamageRow>(sources.Count + other.Count + essences.Count);
 
         for (int i = 0; i < sources.Count; i++)
@@ -2121,6 +2185,8 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             KeyValuePair<string, float> row = essences[i];
             if (string.IsNullOrEmpty(row.Key) || row.Value <= 0f)
+                continue;
+            if (_excludeEssenceOfMortality && IsMortalityEssenceName(_data.GetEssenceDisplayName(row.Key), row.Key))
                 continue;
 
             rows.Add(new DamageRow
