@@ -65,6 +65,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private HashSet<string> _historySpriteNamesBeforeLobby;
     private readonly HashSet<string> _historyIconsMissingAtBaseline = new HashSet<string>(StringComparer.Ordinal);
     private readonly HashSet<string> _historySpriteComparisonsLogged = new HashSet<string>(StringComparer.Ordinal);
+    private bool _historyResourceRuntimeAfterLobbyLogged;
     private readonly Dictionary<string, Sprite> _partyPlayerIcons = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, Color> _partyPlayerGlowColors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
@@ -883,7 +884,11 @@ public sealed class DpsOverlay : MonoBehaviour
                 " newlyVisibleSample=" + (newlyVisibleSample.Count == 0
                     ? "<none>" : string.Join(";", newlyVisibleSample.ToArray())));
             DPSMeter.WriteHistoryIconResourceDiagnostic("scene-inventory " + GetHistorySceneInventory());
-            DPSMeter.WriteHistoryIconResourceDiagnostic("resource-runtime " + GetHistoryResourceRuntimeInventory("after-lobby"));
+            if (!_historyResourceRuntimeAfterLobbyLogged)
+            {
+                _historyResourceRuntimeAfterLobbyLogged = true;
+                DPSMeter.WriteHistoryIconResourceDiagnostic("resource-runtime " + GetHistoryResourceRuntimeInventory("after-lobby"));
+            }
         }
         catch (Exception ex)
         {
