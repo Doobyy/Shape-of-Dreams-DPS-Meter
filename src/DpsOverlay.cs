@@ -846,7 +846,27 @@ public sealed class DpsOverlay : MonoBehaviour
                 locatorCount++;
 
                 Type locatorType = locator.GetType();
-                System.Reflection.PropertyInfo keysProperty = locatorType.GetProperty("Keys");
+                System.Reflection.PropertyInfo keysProperty = null;
+                System.Reflection.MethodInfo locate = null;
+                Type[] locatorInterfaces = locatorType.GetInterfaces();
+                for (int interfaceIndex = 0; interfaceIndex < locatorInterfaces.Length; interfaceIndex++)
+                {
+                    Type locatorInterface = locatorInterfaces[interfaceIndex];
+                    if (keysProperty == null)
+                        keysProperty = locatorInterface.GetProperty("Keys");
+                    if (locate == null)
+                    {
+                        System.Reflection.MethodInfo interfaceLocate = locatorInterface.GetMethod("Locate");
+                        if (interfaceLocate != null)
+                        {
+                            System.Reflection.ParameterInfo[] parameters = interfaceLocate.GetParameters();
+                            if (parameters.Length == 3 && parameters[0].ParameterType == typeof(object) &&
+                                parameters[1].ParameterType == typeof(Type) && parameters[2].IsOut)
+                                locate = interfaceLocate;
+                        }
+                    }
+                }
+
                 System.Collections.IEnumerable keys = keysProperty == null ? null :
                     keysProperty.GetValue(locator, null) as System.Collections.IEnumerable;
                 if (keys != null && keyMatches.Count < 12)
@@ -864,20 +884,6 @@ public sealed class DpsOverlay : MonoBehaviour
                         keyMatches.Add(keyText);
                         if (keyMatches.Count >= 12)
                             break;
-                    }
-                }
-
-                System.Reflection.MethodInfo locate = null;
-                System.Reflection.MethodInfo[] methods = locatorType.GetMethods();
-                for (int i = 0; i < methods.Length; i++)
-                {
-                    System.Reflection.ParameterInfo[] parameters = methods[i].GetParameters();
-                    if (methods[i].Name == "Locate" && parameters.Length == 3 &&
-                        parameters[0].ParameterType == typeof(object) &&
-                        parameters[1].ParameterType == typeof(Type) && parameters[2].IsOut)
-                    {
-                        locate = methods[i];
-                        break;
                     }
                 }
 
