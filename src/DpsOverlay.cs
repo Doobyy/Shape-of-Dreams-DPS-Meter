@@ -277,7 +277,7 @@ public sealed class DpsOverlay : MonoBehaviour
                         _data.CurrentPersonalSkillRows,
                         _data.CurrentPersonalOther,
                         _data.CurrentPersonalEssences,
-                        _data.CurrentInstancePersonalDamage,
+                        (_excludeOverkill ? _data.CurrentInstancePersonalAppliedDamage : _data.CurrentInstancePersonalDamage),
                         false);
                     break;
 
@@ -286,16 +286,16 @@ public sealed class DpsOverlay : MonoBehaviour
                         _data.CumulativePersonalSkillRows,
                         _data.CumulativePersonalOther,
                         _data.CumulativePersonalEssences,
-                        _data.CumulativePersonalDamage,
+                        (_excludeOverkill ? _data.CumulativePersonalAppliedDamage : _data.CumulativePersonalDamage),
                         true);
                     break;
 
                 case DisplayMode.PartyDps:
-                    DrawParty(_data.CurrentParty, _data.CurrentInstancePartyDamage, _data.CurrentPartyDps, "DPS");
+                    DrawParty(_excludeOverkill ? GetPartyDamageRows(false) : _data.CurrentParty, _excludeOverkill ? _data.CurrentInstancePartyAppliedDamage : _data.CurrentInstancePartyDamage, _excludeOverkill ? _data.CurrentPartyAppliedDps : _data.CurrentPartyDps, "DPS");
                     break;
 
                 case DisplayMode.PartyTotal:
-                    DrawParty(_data.CumulativeParty, _data.CumulativePartyDamage, _data.CumulativePartyDps, "DPS");
+                    DrawParty(_excludeOverkill ? GetPartyDamageRows(true) : _data.CumulativeParty, _excludeOverkill ? _data.CumulativePartyAppliedDamage : _data.CumulativePartyDamage, _excludeOverkill ? _data.CumulativePartyAppliedDps : _data.CumulativePartyDps, "DPS");
                     break;
             }
         }
