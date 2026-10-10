@@ -880,10 +880,7 @@ public sealed class DpsOverlay : MonoBehaviour
             DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=missing-icon-now-found icon=" + iconName +
                 " texture=" + textureName + " spriteCount=" + validCurrentCount +
                 " uniqueSpriteTexturePairs=" + currentNames.Count +
-                " newlyVisibleCount=" + newlyVisibleCount +
-                " newlyVisibleSample=" + (newlyVisibleSample.Count == 0
-                    ? "<none>" : string.Join(";", newlyVisibleSample.ToArray())));
-            DPSMeter.WriteHistoryIconResourceDiagnostic("scene-inventory " + GetHistorySceneInventory());
+                " newlyVisibleCount=" + newlyVisibleCount);
             if (!_historyResourceRuntimeAfterLobbyLogged)
             {
                 _historyResourceRuntimeAfterLobbyLogged = true;
@@ -937,7 +934,7 @@ public sealed class DpsOverlay : MonoBehaviour
         }
     }
 
-    private static string GetHistoryResourceRuntimeInventory(string phase)
+    private string GetHistoryResourceRuntimeInventory(string phase)
     {
         List<string> assemblyNames = new List<string>();
         List<string> locatorDetails = new List<string>();
@@ -992,7 +989,39 @@ public sealed class DpsOverlay : MonoBehaviour
 
                         System.Collections.ICollection keyCollection = keysObject as System.Collections.ICollection;
                         string keyCount = keyCollection == null ? "?" : keyCollection.Count.ToString();
-                        locatorDetails.Add(locatorId + "(type=" + locatorType.Name + ",keys=" + keyCount + ")");
+                        List<string> matchingKeys = new List<string>();
+                        List<string> keyTypeSamples = new List<string>();
+                        System.Collections.IEnumerable keyEnumerable = keysObject as System.Collections.IEnumerable;
+                        if (keyEnumerable != null)
+                        {
+                            foreach (object key in keyEnumerable)
+                            {
+                                if (key == null)
+                                    continue;
+
+                                string keyText = Convert.ToString(key);
+                                if (keyTypeSamples.Count < 5)
+                                    keyTypeSamples.Add(key.GetType().Name + ":" + keyText);
+
+                                bool matchesMissingIcon = false;
+                                foreach (string missingIcon in _historyIconsMissingAtBaseline)
+                                {
+                                    if (!string.IsNullOrEmpty(missingIcon) &&
+                                        keyText.IndexOf(missingIcon, StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        matchesMissingIcon = true;
+                                        break;
+                                    }
+                                }
+
+                                if (matchesMissingIcon && matchingKeys.Count < 30)
+                                    matchingKeys.Add(key.GetType().Name + ":" + keyText);
+                            }
+                        }
+
+                        locatorDetails.Add(locatorId + "(type=" + locatorType.Name + ",keys=" + keyCount +
+                            ",matching-icon-keys=" + (matchingKeys.Count == 0 ? "<none>" : string.Join(";", matchingKeys.ToArray())) +
+                            ",key-samples=" + (keyTypeSamples.Count == 0 ? "<none>" : string.Join(";", keyTypeSamples.ToArray())) + ")");
                     }
 
                     locatorStatus = "locatorCount=" + locatorCount + " details=" +
