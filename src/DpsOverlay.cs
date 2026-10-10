@@ -150,6 +150,9 @@ public sealed class DpsOverlay : MonoBehaviour
     {
         _selectedRunRecord = null;
         _showRunHistory = false;
+        // A new run returns the window to its normal automatic sizing behavior.
+        _manualResize = false;
+        _collapsedWindowHeight = 197f;
         ApplyRunAppearance(run);
     }
 
@@ -602,6 +605,17 @@ public sealed class DpsOverlay : MonoBehaviour
         }
         rows.Sort((a, b) => b.Amount.CompareTo(a.Amount));
         return rows;
+    }
+
+    private int GetSelectedRunRowCount(string category)
+    {
+        DpsData.RunRecord run = _selectedRunRecord;
+        if (run == null) return 0;
+
+        if (run.ViewRows == null || run.ViewRows.Count == 0)
+            return GetSelectedRunRows(run, category).Count;
+
+        return GetSelectedRunViewRows(run, GetSelectedRunViewName(), category).Count;
     }
 
     private static List<KeyValuePair<string, float>> ToPartyRows(List<DpsData.RunBreakdownRow> rows)
@@ -1378,7 +1392,20 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private void UpdateWindowHeight()
     {
-        if (!_manualResize && (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal))
+        if (_selectedRunRecord != null)
+        {
+            int rowCount = GetSelectedRunRowCount("DAMAGE");
+            bool legacyLog = _selectedRunRecord.ViewRows == null || _selectedRunRecord.ViewRows.Count == 0;
+            float legacyHeaderHeight = legacyLog ? 63f : 0f;
+            float desiredHeight = 50f + legacyHeaderHeight + (Mathf.Max(1, rowCount) * 22f) + 2f;
+            float maxCollapsedHeight = Mathf.Max(90f, Screen.height - _windowRect.y - 10f);
+
+            // Saved history ignores a manually chosen live-window height so its rows can be read without scrolling.
+            _collapsedWindowHeight = Mathf.Min(
+                Mathf.Max(197f, desiredHeight),
+                maxCollapsedHeight);
+        }
+        else if (!_manualResize && (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal))
         {
             int rowCount = GetCurrentDpsRowCount();
             float desiredHeight = 50f + (rowCount * 22f) + (rowCount > 0 ? 2f : 0f);
@@ -1452,7 +1479,11 @@ public sealed class DpsOverlay : MonoBehaviour
         if (_showHealing)
         {
             int rowCount;
-            if (partyMode)
+            if (_selectedRunRecord != null)
+            {
+                rowCount = GetSelectedRunRowCount("HEALING");
+            }
+            else if (partyMode)
             {
                 IReadOnlyList<KeyValuePair<string, float>> rows =
                     _mode == DisplayMode.PartyDps ? _data.CurrentPartyHealing : _data.CumulativePartyHealingRows;
@@ -1470,7 +1501,11 @@ public sealed class DpsOverlay : MonoBehaviour
         if (_showBarrier)
         {
             int rowCount;
-            if (partyMode)
+            if (_selectedRunRecord != null)
+            {
+                rowCount = GetSelectedRunRowCount("BARRIER");
+            }
+            else if (partyMode)
             {
                 IReadOnlyList<KeyValuePair<string, float>> rows =
                     _mode == DisplayMode.PartyDps ? _data.CurrentPartyBarrier : _data.CumulativePartyBarrierRows;
