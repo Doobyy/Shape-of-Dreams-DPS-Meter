@@ -1270,6 +1270,18 @@ public sealed class DpsOverlay : MonoBehaviour
                 _settingsRect.width - 24f,
                 26f);
 
+            Rect excludeOverkillToggleRect = new Rect(
+                _settingsRect.x + 12f,
+                _settingsRect.y + 84f,
+                _settingsRect.width - 24f,
+                26f);
+
+            Rect excludeOverhealToggleRect = new Rect(
+                _settingsRect.x + 12f,
+                _settingsRect.y + 110f,
+                _settingsRect.width - 24f,
+                26f);
+
             Rect closeRect = new Rect(
                 _settingsRect.xMax - 72f,
                 _settingsRect.yMax - 30f,
@@ -1281,6 +1293,8 @@ public sealed class DpsOverlay : MonoBehaviour
                 if (_settingsRect.Contains(e.mousePosition)
                     && !healingToggleRect.Contains(e.mousePosition)
                     && !barrierToggleRect.Contains(e.mousePosition)
+                    && !excludeOverkillToggleRect.Contains(e.mousePosition)
+                    && !excludeOverhealToggleRect.Contains(e.mousePosition)
                     && !closeRect.Contains(e.mousePosition))
                 {
                     _settingsDragging = true;
