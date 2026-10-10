@@ -817,7 +817,12 @@ public sealed class DpsOverlay : MonoBehaviour
 
         try
         {
-            MethodInfo getLoadedBundles = typeof(AssetBundle).GetMethod(
+            Type assetBundleType = null;
+            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length && assetBundleType == null; i++)
+                assetBundleType = assemblies[i].GetType("UnityEngine.AssetBundle", false);
+
+            MethodInfo getLoadedBundles = assetBundleType == null ? null : assetBundleType.GetMethod(
                 "GetAllLoadedAssetBundles",
                 BindingFlags.Public | BindingFlags.Static,
                 null,
@@ -829,27 +834,31 @@ public sealed class DpsOverlay : MonoBehaviour
             if (bundles == null)
             {
                 DPSMeter.WriteHistoryIconResourceDiagnostic("asset-bundles phase=" + phase +
-                    " unavailable=GetAllLoadedAssetBundles icon=" + iconName);
+                    " unavailable=" + (assetBundleType == null ? "type-not-found" : "GetAllLoadedAssetBundles") +
+                    " icon=" + iconName);
                 return;
             }
 
             int bundleCount = 0;
             List<string> bundleSamples = new List<string>();
             List<string> matchingAssets = new List<string>();
-            foreach (object bundleObject in bundles)
+            foreach (object bundle in bundles)
             {
-                AssetBundle bundle = bundleObject as AssetBundle;
                 if (bundle == null)
                     continue;
 
                 bundleCount++;
+                Type bundleType = bundle.GetType();
+                System.Reflection.PropertyInfo nameProperty = bundleType.GetProperty("name");
+                string bundleName = nameProperty == null ? bundleType.Name :
+                    Convert.ToString(nameProperty.GetValue(bundle, null));
                 if (bundleSamples.Count < 12)
-                    bundleSamples.Add(bundle.name);
+                    bundleSamples.Add(bundleName);
 
                 if (!spriteFound)
                     continue;
 
-                MethodInfo getAssetNames = bundle.GetType().GetMethod(
+                MethodInfo getAssetNames = bundleType.GetMethod(
                     "GetAllAssetNames", BindingFlags.Public | BindingFlags.Instance,
                     null, Type.EmptyTypes, null);
                 string[] assetNames = getAssetNames == null
@@ -871,7 +880,7 @@ public sealed class DpsOverlay : MonoBehaviour
                         string.Equals(assetName, textureName, StringComparison.OrdinalIgnoreCase);
                     if (iconMatch || textureMatch)
                     {
-                        string match = bundle.name + ":" + assetPath;
+                        string match = bundleName + ":" + assetPath;
                         if (!matchingAssets.Contains(match) && matchingAssets.Count < 12)
                             matchingAssets.Add(match);
                     }
