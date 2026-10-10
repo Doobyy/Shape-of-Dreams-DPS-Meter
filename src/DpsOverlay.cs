@@ -816,8 +816,25 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             // DewResources is the game's own Addressables-backed resource database.
             // Only request exact-name entries; do not scan/load unrelated assets.
-            if (DewResources.database == null ||
-                !DewResources.database.nameToGuid.ContainsKey(row.IconName))
+            // Access the database through reflection: its concrete base type is
+            // supplied by Sirenix.Serialization, which this mod intentionally does not reference.
+            System.Reflection.PropertyInfo databaseProperty =
+                typeof(DewResources).GetProperty("database");
+            object database = databaseProperty == null ? null : databaseProperty.GetValue(null, null);
+            if (database == null)
+                return null;
+
+            System.Reflection.MemberInfo nameMapMember =
+                (System.Reflection.MemberInfo)database.GetType().GetProperty("nameToGuid") ??
+                database.GetType().GetField("nameToGuid");
+            object nameMap = null;
+            if (nameMapMember is System.Reflection.PropertyInfo nameMapProperty)
+                nameMap = nameMapProperty.GetValue(database, null);
+            else if (nameMapMember is System.Reflection.FieldInfo nameMapField)
+                nameMap = nameMapField.GetValue(database);
+
+            System.Collections.IDictionary nameMapDictionary = nameMap as System.Collections.IDictionary;
+            if (nameMapDictionary == null || !nameMapDictionary.Contains(row.IconName))
                 return null;
 
             Sprite sprite = DewResources.GetByName<Sprite>(row.IconName);
