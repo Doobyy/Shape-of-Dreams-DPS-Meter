@@ -312,11 +312,11 @@ public sealed class DpsOverlay : MonoBehaviour
                     break;
 
                 case DisplayMode.PartyDps:
-                    DrawParty(_excludeOverkill ? GetPartyDamageRows(false) : _data.CurrentParty, _excludeOverkill ? _data.CurrentInstancePartyAppliedDamage : _data.CurrentInstancePartyDamage, _excludeOverkill ? _data.CurrentPartyAppliedDps : _data.CurrentPartyDps, "DPS");
+                    DrawLivePartyDamage(false);
                     break;
 
                 case DisplayMode.PartyTotal:
-                    DrawParty(_excludeOverkill ? GetPartyDamageRows(true) : _data.CumulativeParty, _excludeOverkill ? _data.CumulativePartyAppliedDamage : _data.CumulativePartyDamage, _excludeOverkill ? _data.CumulativePartyAppliedDps : _data.CumulativePartyDps, "DPS");
+                    DrawLivePartyDamage(true);
                     break;
             }
         }
@@ -2130,18 +2130,56 @@ public sealed class DpsOverlay : MonoBehaviour
         return generated > 0f ? rate * (effective / generated) : 0f;
     }
 
-    private IReadOnlyList<KeyValuePair<string, float>> GetPartyDamageRows(bool cumulative)
+    private void DrawLivePartyDamage(bool cumulative)
     {
+        bool appliedOnly = _excludeOverkill;
         IReadOnlyList<KeyValuePair<string, float>> source = cumulative ? _data.CumulativeParty : _data.CurrentParty;
         List<KeyValuePair<string, float>> rows = new List<KeyValuePair<string, float>>(source.Count);
+        float total = cumulative
+            ? (appliedOnly ? _data.CumulativePartyAppliedDamage : _data.CumulativePartyDamage)
+            : (appliedOnly ? _data.CurrentInstancePartyAppliedDamage : _data.CurrentInstancePartyDamage);
+        float rate = cumulative
+            ? (appliedOnly ? _data.CumulativePartyAppliedDps : _data.CumulativePartyDps)
+            : (appliedOnly ? _data.CurrentPartyAppliedDps : _data.CurrentPartyDps);
+
         for (int i = 0; i < source.Count; i++)
         {
             string name = source[i].Key;
-            float amount = cumulative ? _data.GetCumulativePartyAppliedAmount(name) : _data.GetCurrentPartyAppliedAmount(name);
-            if (amount > 0f) rows.Add(new KeyValuePair<string, float>(name, amount));
+            float amount = appliedOnly
+                ? (cumulative ? _data.GetCumulativePartyAppliedAmount(name) : _data.GetCurrentPartyAppliedAmount(name))
+                : source[i].Value;
+            if (amount > 0f)
+                rows.Add(new KeyValuePair<string, float>(name, amount));
         }
+
+        if (_excludeEssenceOfMortality)
+        {
+            IReadOnlyList<KeyValuePair<string, float>> essences = cumulative
+                ? _data.CumulativePersonalEssences
+                : _data.CurrentPersonalEssences;
+            float mortalityAmount = GetLiveMortalityEssenceAmount(essences, cumulative);
+            if (mortalityAmount > 0f)
+            {
+                total = Mathf.Max(0f, total - mortalityAmount);
+                for (int i = 0; i < rows.Count; i++)
+                {
+                    if (!string.Equals(rows[i].Key, "You", StringComparison.Ordinal))
+                        continue;
+
+                    float adjustedPlayerAmount = Mathf.Max(0f, rows[i].Value - mortalityAmount);
+                    rows[i] = new KeyValuePair<string, float>(rows[i].Key, adjustedPlayerAmount);
+                    break;
+                }
+                rows.RemoveAll(row => row.Value <= 0f);
+            }
+        }
+
+        float unfilteredTotal = cumulative
+            ? (appliedOnly ? _data.CumulativePartyAppliedDamage : _data.CumulativePartyDamage)
+            : (appliedOnly ? _data.CurrentInstancePartyAppliedDamage : _data.CurrentInstancePartyDamage);
+        rate = ScaleEffectiveRate(rate, unfilteredTotal, total);
         rows.Sort((a, b) => b.Value.CompareTo(a.Value));
-        return rows;
+        DrawParty(rows, total, rate, "DPS");
     }
 
     private void DrawPersonal(
