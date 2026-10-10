@@ -2139,6 +2139,7 @@ public sealed class DpsOverlay : MonoBehaviour
             float valueLeft = Mathf.Max(rowRect.x + 7f, valueRight - valueWidth);
             Sprite playerIcon = null;
             bool hasPlayerIcon = false;
+            DpsData.RunBreakdownRow matchedSavedRow = null;
             if (savedPartyRows != null)
             {
                 for (int savedIndex = 0; savedIndex < savedPartyRows.Count; savedIndex++)
@@ -2146,6 +2147,7 @@ public sealed class DpsOverlay : MonoBehaviour
                     DpsData.RunBreakdownRow savedRow = savedPartyRows[savedIndex];
                     if (savedRow == null || !string.Equals(savedRow.Name, row.Key, StringComparison.Ordinal))
                         continue;
+                    matchedSavedRow = savedRow;
                     playerIcon = ResolveRunHistoryIcon(savedRow);
                     hasPlayerIcon = playerIcon != null;
                     break;
@@ -2165,8 +2167,22 @@ public sealed class DpsOverlay : MonoBehaviour
 
                 if (savedPartyRows != null)
                 {
-                    // Saved run breakdown rows use skill/essence icons, not character emblems.
-                    GUI.color = Color.white;
+                    // Saved party rows carry the emblem tint captured for this run.
+                    if (matchedSavedRow != null && matchedSavedRow.HasCharacterMainColor)
+                    {
+                        Color mainColor = new Color(
+                            matchedSavedRow.CharacterMainColorR,
+                            matchedSavedRow.CharacterMainColorG,
+                            matchedSavedRow.CharacterMainColorB,
+                            1f);
+                        Color glowColor = new Color(mainColor.r * 0.32f, mainColor.g * 0.32f, mainColor.b * 0.32f, 1f);
+                        DrawCharacterGlow(playerIcon, iconRect, glowColor, true);
+                        GUI.color = mainColor;
+                    }
+                    else
+                    {
+                        GUI.color = Color.white;
+                    }
                     DrawSprite(playerIcon, iconRect);
                     GUI.color = Color.white;
                 }
