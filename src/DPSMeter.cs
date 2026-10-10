@@ -80,7 +80,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v23.500";
+    public const string DevelopmentVersion = "v23.600";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -1139,6 +1139,18 @@ public sealed class DPSMeter : ModBehaviour
 
         if (info.actor.firstEntity as Hero == null && !IsRegenOrbHealingActor(info.actor))
         {
+            if (_rejectedHealTraceCount < 5)
+            {
+                _rejectedHealTraceCount++;
+                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HEAL-REJECT #" +
+                    _rejectedHealTraceCount + " amount=" + info.amount +
+                    " discarded=" + info.discardedAmount +
+                    " actor=" + DescribeActor(info.actor) +
+                    " target=" + DescribeActor(info.target) +
+                    " localHero=" + DescribeActor(local.hero));
+                TraceSourceChain(info.actor, "[" + DevelopmentVersion + "][DPS Meter] HEAL-REJECT");
+            }
+
             return;
         }
 
@@ -1854,6 +1866,7 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
 
 
     private static int _healthOrbTraceCount;
+    private static int _rejectedHealTraceCount;
     private static int _bismuthHealTraceCount;
     private static int _bismuthBookDamageTraceCount;
 
