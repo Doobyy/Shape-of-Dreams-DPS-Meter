@@ -74,7 +74,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v18.200";
+    public const string DevelopmentVersion = "v18.300";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -87,7 +87,6 @@ public sealed class DPSMeter : ModBehaviour
     private System.Func<EventInfoTravelToNodeInterrupt, bool> _travelInterruptHandler;
     private readonly Dictionary<string, DpsData.DamageScalingType> _skillScalingCache = new Dictionary<string, DpsData.DamageScalingType>();
     private readonly Dictionary<Gem, DpsData.DamageScalingType> _essenceScalingCache = new Dictionary<Gem, DpsData.DamageScalingType>();
-    private readonly HashSet<string> _essenceScalingDiagnosticSeen = new HashSet<string>();
     private static readonly HashSet<string> _memoryScalingDiagnosticSeen = new HashSet<string>();
     private readonly HashSet<string> _activeRunWorlds = new HashSet<string>();
     private readonly HashSet<string> _activeRunMaps = new HashSet<string>();
@@ -118,7 +117,10 @@ public sealed class DPSMeter : ModBehaviour
 
     internal void WriteOverlayInputDiagnostic(string detail)
     {
-        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] UI input blocker " + detail);
+        if (!string.Equals(detail, "initialized", StringComparison.Ordinal))
+        {
+            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] UI input blocker " + detail);
+        }
     }
 
     private static void ClearDebugLog()
@@ -286,9 +288,6 @@ public sealed class DPSMeter : ModBehaviour
                 _gameConcludedHandler = handler;
 
                 Behaviour behaviour = manager as Behaviour;
-                WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] CONCLUSION subscribed manager="
-                    + manager.name + " active="
-                    + (behaviour == null ? "<not-behaviour>" : behaviour.isActiveAndEnabled.ToString()));
                 return;
             }
 
@@ -633,9 +632,6 @@ public sealed class DPSMeter : ModBehaviour
                 }
             }
             _data.LoadCompletedRuns(records);
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY loaded count="
-                + _data.CompletedRuns.Count + " file-count=" + records.Count + " chars=" + json.Length
-                + " path=" + _runHistoryPath);
         }
         catch (Exception ex)
         {
@@ -761,8 +757,6 @@ public sealed class DPSMeter : ModBehaviour
             }
 
             File.WriteAllText(_runHistoryPath, json);
-            WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] RUN-HISTORY saved count="
-                + saved.Runs.Count + " chars=" + json.Length + " path=" + _runHistoryPath);
         }
         catch (Exception ex)
         {
@@ -2371,7 +2365,6 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         // case the damage event's actor chain can contain the Gem even when
         // the first AbilityInstance is not the Essence's instance.
         Gem directGem = FindDamageSourceEssence(info.actor);
-        TraceTargetEssenceScaling(info.actor, directGem);
         TraceTargetMemoryScaling(info.actor, skill);
         
         
@@ -2689,92 +2682,6 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         return null;
     }
 
-    private void TraceTargetEssenceScaling(Actor actor, Gem directGem)
-    {
-        Gem targetGem = null;
-        Actor current = actor;
-        int depth = 0;
-
-        while (current != null && depth < 8)
-        {
-            AbilityInstance instance = current as AbilityInstance;
-            if (instance != null && IsTargetEssenceGem(instance.gem))
-            {
-                targetGem = instance.gem;
-                break;
-            }
-
-            if (current is Gem currentGem && IsTargetEssenceGem(currentGem))
-            {
-                targetGem = currentGem;
-                break;
-            }
-
-            current = current.parentActor;
-            depth++;
-        }
-
-        if (targetGem == null)
-        {
-            return;
-        }
-
-        string identity = targetGem.GetOriginalName();
-        if (string.IsNullOrEmpty(identity))
-        {
-            identity = targetGem.name;
-        }
-
-        if (string.IsNullOrEmpty(identity) || !_essenceScalingDiagnosticSeen.Add(identity))
-        {
-            return;
-        }
-
-        WriteDebugLog("[v5.62] TARGET ESSENCE trace gem=" + identity +
-            " localized=" + (GetLocalizedEssenceName(targetGem) ?? "<null>") +
-            " directGem=" + DescribeGem(directGem));
-
-        current = actor;
-        depth = 0;
-        while (current != null && depth < 8)
-        {
-            AbilityInstance instance = current as AbilityInstance;
-            string instanceGem = instance == null ? "<none>" : DescribeGem(instance.gem);
-            WriteDebugLog("[v5.62] runtime depth=" + depth +
-                " type=" + current.GetType().FullName +
-                " name=" + (current.name ?? "<null>") +
-                " instanceGem=" + instanceGem);
-
-            LogScalingFields(current, "[v5.62] runtime depth=" + depth);
-            current = current.parentActor;
-            depth++;
-        }
-
-        try
-        {
-            if (targetGem.skill == null || targetGem.skill.currentConfig == null)
-            {
-                WriteDebugLog("[v5.62] configured unavailable skillOrConfig=<null>");
-                return;
-            }
-
-            AbilityInstance configured = targetGem.skill.currentConfig.spawnedInstance;
-            if (configured == null)
-            {
-                WriteDebugLog("[v5.62] configured unavailable spawnedInstance=<null>");
-                return;
-            }
-
-            WriteDebugLog("[v5.62] configured root type=" + configured.GetType().FullName +
-                " name=" + (configured.name ?? "<null>") +
-                " gem=" + DescribeGem(configured.gem));
-            TraceConfiguredEssenceTree(configured, targetGem, 0);
-        }
-        catch (Exception ex)
-        {
-            WriteDebugLog("[v5.62] configured trace exception=" + ex.GetType().Name);
-        }
-    }
 
     private static void TraceTargetMemoryScaling(Actor actor, SkillTrigger directSkill)
     {
@@ -3186,39 +3093,6 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
         }
     }
 
-    private static void TraceConfiguredEssenceTree(
-        AbilityInstance instance,
-        Gem targetGem,
-        int depth)
-    {
-        if (instance == null || depth > 8)
-        {
-            return;
-        }
-
-        WriteDebugLog("[v5.62] configured depth=" + depth +
-            " type=" + instance.GetType().FullName +
-            " name=" + (instance.name ?? "<null>") +
-            " gem=" + DescribeGem(instance.gem) +
-            " gemMatches=" + (instance.gem == targetGem));
-
-        LogScalingFields(instance, "[v5.62] configured depth=" + depth);
-
-        List<Actor> children = instance.children;
-        if (children == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < children.Count; i++)
-        {
-            AbilityInstance child = children[i] as AbilityInstance;
-            if (child != null)
-            {
-                TraceConfiguredEssenceTree(child, targetGem, depth + 1);
-            }
-        }
-    }
 
     private DpsData.DamageScalingType GetCachedEssenceScaling(Gem gem, Actor actor)
     {
