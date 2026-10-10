@@ -485,14 +485,17 @@ public sealed class DpsOverlay : MonoBehaviour
             1f);
     }
 
-    private void DrawCharacterGlow(Sprite icon, Rect iconRect, Color outlineColor)
+    private void DrawCharacterGlow(Sprite icon, Rect iconRect, Color outlineColor, bool vividPartyGlow = false)
     {
         if (icon == null)
             return;
 
         Color.RGBToHSV(outlineColor, out float glowHue, out float glowSaturation, out float glowValue);
-        // Brighten the outline hue without blending toward white.
-        Color glowColor = Color.HSVToRGB(glowHue, glowSaturation, Mathf.Min(glowValue, 0.55f));
+        // Keep history selection glow unchanged; party tabs use a more saturated, visible outline hue.
+        Color glowColor = Color.HSVToRGB(
+            glowHue,
+            vividPartyGlow ? Mathf.Max(glowSaturation, 0.85f) : glowSaturation,
+            vividPartyGlow ? 0.55f : Mathf.Min(glowValue, 0.55f));
         for (int ring = 0; ring < CharacterGlowOffsets.Length; ring++)
         {
             float glowOffset = CharacterGlowOffsets[ring];
