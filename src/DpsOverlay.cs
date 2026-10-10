@@ -840,6 +840,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 _historySpriteNamesBeforeLobby = baselineNames;
                 DPSMeter.WriteHistoryIconResourceDiagnostic("sprite-inventory phase=baseline-missing icon=" + iconName +
                     " spriteCount=" + validBaselineCount + " uniqueSpriteTexturePairs=" + baselineNames.Count);
+                DPSMeter.WriteHistoryIconResourceDiagnostic("resource-runtime " + GetHistoryResourceRuntimeInventory("baseline"));
                 return;
             }
 
@@ -882,6 +883,7 @@ public sealed class DpsOverlay : MonoBehaviour
                 " newlyVisibleSample=" + (newlyVisibleSample.Count == 0
                     ? "<none>" : string.Join(";", newlyVisibleSample.ToArray())));
             DPSMeter.WriteHistoryIconResourceDiagnostic("scene-inventory " + GetHistorySceneInventory());
+            DPSMeter.WriteHistoryIconResourceDiagnostic("resource-runtime " + GetHistoryResourceRuntimeInventory("after-lobby"));
         }
         catch (Exception ex)
         {
@@ -928,6 +930,108 @@ public sealed class DpsOverlay : MonoBehaviour
         {
             return "scene-inventory-error=" + ex.GetType().Name;
         }
+    }
+
+    private static string GetHistoryResourceRuntimeInventory(string phase)
+    {
+        List<string> assemblyNames = new List<string>();
+        List<string> locatorDetails = new List<string>();
+        string addressablesTypeStatus = "type=<null>";
+        string locatorStatus = "locators=<unavailable>";
+        string dewDatabaseStatus = "dew-database=<unavailable>";
+
+        try
+        {
+            System.Reflection.Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; assemblies != null && i < assemblies.Length; i++)
+            {
+                System.Reflection.Assembly assembly = assemblies[i];
+                if (assembly == null)
+                    continue;
+
+                string name = assembly.GetName().Name ?? string.Empty;
+                if (name.IndexOf("Addressable", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("ResourceManager", StringComparison.OrdinalIgnoreCase) >= 0)
+                    assemblyNames.Add(name);
+            }
+
+            Type addressablesType = Type.GetType("UnityEngine.AddressableAssets.Addressables, Unity.Addressables");
+            addressablesTypeStatus = addressablesType == null ? "type=<null>" : "type=" + addressablesType.FullName;
+            if (addressablesType != null)
+            {
+                System.Reflection.PropertyInfo locatorsProperty = addressablesType.GetProperty(
+                    "ResourceLocators", BindingFlags.Public | BindingFlags.Static);
+                object locatorsObject = locatorsProperty == null ? null : locatorsProperty.GetValue(null, null);
+                System.Collections.IEnumerable locators = locatorsObject as System.Collections.IEnumerable;
+                if (locators == null)
+                {
+                    locatorStatus = "locators=<unavailable>";
+                }
+                else
+                {
+                    int locatorCount = 0;
+                    foreach (object locator in locators)
+                    {
+                        if (locator == null)
+                            continue;
+
+                        locatorCount++;
+                        Type locatorType = locator.GetType();
+                        System.Reflection.PropertyInfo idProperty = locatorType.GetProperty("LocatorId");
+                        string locatorId = idProperty == null ? locatorType.Name :
+                            Convert.ToString(idProperty.GetValue(locator, null));
+                        object keysObject = null;
+                        System.Reflection.PropertyInfo keysProperty = locatorType.GetProperty("Keys");
+                        if (keysProperty != null)
+                            keysObject = keysProperty.GetValue(locator, null);
+
+                        System.Collections.ICollection keyCollection = keysObject as System.Collections.ICollection;
+                        string keyCount = keyCollection == null ? "?" : keyCollection.Count.ToString();
+                        locatorDetails.Add(locatorId + "(type=" + locatorType.Name + ",keys=" + keyCount + ")");
+                    }
+
+                    locatorStatus = "locatorCount=" + locatorCount + " details=" +
+                        (locatorDetails.Count == 0 ? "<none>" : string.Join(";", locatorDetails.ToArray()));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            locatorStatus = "locator-error=" + ex.GetType().Name;
+        }
+
+        try
+        {
+            System.Reflection.PropertyInfo databaseProperty = typeof(DewResources).GetProperty("database");
+            object database = databaseProperty == null ? null : databaseProperty.GetValue(null, null);
+            if (database == null)
+            {
+                dewDatabaseStatus = databaseProperty == null ? "dew-database-property=<missing>" : "dew-database=<null>";
+            }
+            else
+            {
+                System.Reflection.MemberInfo mapMember =
+                    (System.Reflection.MemberInfo)database.GetType().GetProperty("nameToGuid") ??
+                    database.GetType().GetField("nameToGuid");
+                object map = null;
+                if (mapMember is System.Reflection.PropertyInfo mapProperty)
+                    map = mapProperty.GetValue(database, null);
+                else if (mapMember is System.Reflection.FieldInfo mapField)
+                    map = mapField.GetValue(database);
+
+                System.Collections.IDictionary dictionary = map as System.Collections.IDictionary;
+                dewDatabaseStatus = "dew-database-type=" + database.GetType().FullName +
+                    " name-map-count=" + (dictionary == null ? "?" : dictionary.Count.ToString());
+            }
+        }
+        catch (Exception ex)
+        {
+            dewDatabaseStatus = "dew-database-error=" + ex.GetType().Name;
+        }
+
+        return "phase=" + phase +
+            " addressable-assemblies=" + (assemblyNames.Count == 0 ? "<none>" : string.Join(";", assemblyNames.ToArray())) +
+            " " + addressablesTypeStatus + " " + locatorStatus + " " + dewDatabaseStatus;
     }
 
     private Sprite TryLoadHistoryIconFromGameResources(DpsData.RunBreakdownRow row, string cacheKey)
