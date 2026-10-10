@@ -80,7 +80,7 @@ public sealed class RunHistoryBreakdownRow
 
 public sealed class DPSMeter : ModBehaviour
 {
-    public const string DevelopmentVersion = "v20.800";
+    public const string DevelopmentVersion = "v20.900";
 
     public static DPSMeter Instance { get; private set; }
 
@@ -129,10 +129,7 @@ public sealed class DPSMeter : ModBehaviour
         }
     }
 
-    internal void WriteHistoryIconDiagnostic(string detail)
-    {
-        WriteDebugLog("[" + DevelopmentVersion + "][DPS Meter] HISTORY-ICON " + detail);
-    }
+
 
     private static void ClearDebugLog()
     {
