@@ -4,6 +4,6 @@
   "author": "Doobyy",
   "modVer": "0.1.0",
   "assemblies": [
-    "obj/Release/*.dll"
+    "DPSMeter.dll"
   ]
 }
