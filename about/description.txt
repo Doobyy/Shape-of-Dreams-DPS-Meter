@@ -1,15 +1,14 @@
 DPS Meter
 
-A client-side damage meter for Shape of Dreams.
+A client-side combat meter for Shape of Dreams.
 
-Current features:
-- Total damage
-- DPS
-- Damage breakdown by skill
-- Damage breakdown by Essence
-- Percentage contribution for skills and Essences
-- Reset button
-- Hide button
-- Console commands: dps_reset and dps_meter
+Features:
+- Current DPS and total damage, with skill and Essence breakdowns
+- HPS, healing totals, and healing-source breakdowns
+- BPS, barrier totals, and barrier-source breakdowns
+- Party DPS/total comparisons and contribution percentages
+- Recent run history with character and run details
+- Optional display filters for overkill, overheal, and Essence of Mortality damage
+- Movable overlay, settings, and context-menu actions
 
-The meter listens to the game's existing client damage event and attributes damage through the game's actor tree rather than changing damage calculations.
+The meter observes the game's client-side combat events and attributes activity using the game's actor and skill relationships. It does not modify the game's damage calculations.
