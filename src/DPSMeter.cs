@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.IO;
+using System.Text;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 
