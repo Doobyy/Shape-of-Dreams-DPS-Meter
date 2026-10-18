@@ -3134,10 +3134,10 @@ public sealed class DpsOverlay : MonoBehaviour
         // Give both scroll views their own near-black scrollbar artwork. Tinting GUI.color
         // alone does not reliably change the built-in scrollbar thumb.
         _scrollSkin = UnityEngine.Object.Instantiate(GUI.skin);
-        _scrollTrackTexture = CreateScrollbarTexture(new Color(0.055f, 0.055f, 0.055f, 1f));
-        _scrollThumbTexture = CreateScrollbarTexture(new Color(0.105f, 0.105f, 0.105f, 1f));
-        _scrollThumbHoverTexture = CreateScrollbarTexture(new Color(0.14f, 0.14f, 0.14f, 1f));
-        _scrollThumbActiveTexture = CreateScrollbarTexture(new Color(0.18f, 0.18f, 0.18f, 1f));
+        _scrollTrackTexture = CreateScrollbarTexture(new Color(0.075f, 0.075f, 0.075f, 1f));
+        _scrollThumbTexture = CreateScrollbarTexture(new Color(0.19f, 0.19f, 0.19f, 1f));
+        _scrollThumbHoverTexture = CreateScrollbarTexture(new Color(0.25f, 0.25f, 0.25f, 1f));
+        _scrollThumbActiveTexture = CreateScrollbarTexture(new Color(0.31f, 0.31f, 0.31f, 1f));
 
         _scrollSkin.verticalScrollbar = CreateScrollbarStyle(_scrollSkin.verticalScrollbar, _scrollTrackTexture);
         _scrollSkin.horizontalScrollbar = CreateScrollbarStyle(_scrollSkin.horizontalScrollbar, _scrollTrackTexture);
