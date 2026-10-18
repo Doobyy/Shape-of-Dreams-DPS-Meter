@@ -1943,20 +1943,21 @@ public sealed class DpsOverlay : MonoBehaviour
         // with the context-menu labels.
         GUI.color = new Color(0.025f, 0.025f, 0.025f, 0.97f);
         GUI.DrawTexture(_contextMenuRect, _whiteTexture);
-        GUI.color = new Color(0.38f, 0.38f, 0.38f, 0.9f);
+        GUI.color = new Color(0.18f, 0.18f, 0.18f, 0.65f);
         GUI.DrawTexture(new Rect(_contextMenuRect.x, _contextMenuRect.y, _contextMenuRect.width, 1f), _whiteTexture);
         GUI.DrawTexture(new Rect(_contextMenuRect.x, _contextMenuRect.yMax - 1f, _contextMenuRect.width, 1f), _whiteTexture);
         GUI.DrawTexture(new Rect(_contextMenuRect.x, _contextMenuRect.y, 1f, _contextMenuRect.height), _whiteTexture);
         GUI.DrawTexture(new Rect(_contextMenuRect.xMax - 1f, _contextMenuRect.y, 1f, _contextMenuRect.height), _whiteTexture);
         GUI.color = Color.white;
 
-        const float padding = 4f;
+        const float horizontalPadding = 8f;
+        const float verticalPadding = 4f;
         const float rowHeight = 28f;
-        const float rowWidth = 92f;
+        const float rowWidth = 84f;
 
         Rect settingsRect = new Rect(
-            _contextMenuRect.x + padding,
-            _contextMenuRect.y + padding,
+            _contextMenuRect.x + horizontalPadding,
+            _contextMenuRect.y + verticalPadding,
             rowWidth,
             rowHeight);
 
