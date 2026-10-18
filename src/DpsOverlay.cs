@@ -87,7 +87,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Vector2 _settingsDragOffset;
     private Texture2D _contextMenuHighlightTexture;
     private Rect _contextMenuRect;
-    private Rect _settingsRect = new Rect(0f, 0f, 250f, 235f);
+    private Rect _settingsRect = new Rect(0f, 0f, 264f, 235f);
     private bool _excludeOverkill;
     private bool _excludeOverheal;
     private bool _excludeEssenceOfMortality;
