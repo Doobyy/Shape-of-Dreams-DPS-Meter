@@ -2122,16 +2122,24 @@ public sealed class DpsOverlay : MonoBehaviour
             _excludeEssenceOfMortality,
             "Exclude Essence of Mortality Damage");
 
+        Rect autoSizeRect = new Rect(
+            _settingsRect.x + 12f,
+            _settingsRect.yMax - 58f,
+            90f,
+            22f);
         if (GUI.Button(
-            new Rect(
-                _settingsRect.x + 12f,
-                _settingsRect.yMax - 58f,
-                90f,
-                22f),
+            autoSizeRect,
             new GUIContent("Auto Size", "Restore automatic window height expansion to fit DPS rows. Manual resizing stays active until reset or mod reload.")))
         {
             _manualResize = false;
             UpdateWindowHeight();
+        }
+
+        if (autoSizeRect.Contains(Event.current.mousePosition))
+        {
+            GUI.Box(
+                new Rect(_settingsRect.x + 108f, _settingsRect.yMax - 60f, 128f, 38f),
+                "Restore automatic height\nexpansion for DPS rows.");
         }
 
         if (GUI.Button(
