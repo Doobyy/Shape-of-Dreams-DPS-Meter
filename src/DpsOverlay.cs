@@ -101,6 +101,11 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _rowRight;
     private GUIStyle _historyCloseTabLabel;
     private Texture2D _whiteTexture;
+    private GUISkin _scrollSkin;
+    private Texture2D _scrollTrackTexture;
+    private Texture2D _scrollThumbTexture;
+    private Texture2D _scrollThumbHoverTexture;
+    private Texture2D _scrollThumbActiveTexture;
     private Sprite _basicAttackIcon;
     private Vector2 _historyScroll;
     private bool _showRunHistory;
@@ -281,6 +286,8 @@ public sealed class DpsOverlay : MonoBehaviour
             Mathf.Max(20f, _collapsedWindowHeight - 50f));
 
         GUILayout.BeginArea(contentRect);
+        GUISkin previousScrollSkin = GUI.skin;
+        GUI.skin = _scrollSkin;
         _scroll = GUILayout.BeginScrollView(
             _scroll,
             GUILayout.Width(contentRect.width),
@@ -322,10 +329,8 @@ public sealed class DpsOverlay : MonoBehaviour
             }
         }
 
-        // Fade the scrollbar controls without dimming the DPS rows themselves.
-        GUI.color = new Color(0.18f, 0.18f, 0.18f, 0.9f);
         GUILayout.EndScrollView();
-        GUI.color = Color.white;
+        GUI.skin = previousScrollSkin;
         GUILayout.EndArea();
 
         if (_selectedRunRecord != null ||
@@ -461,6 +466,8 @@ public sealed class DpsOverlay : MonoBehaviour
         float contentHeight = rowHeight * (1 + _data.CompletedRuns.Count);
         Rect viewRect = new Rect(0f, 0f, listRect.width,
             Mathf.Max(listRect.height, contentHeight));
+        GUISkin previousHistorySkin = GUI.skin;
+        GUI.skin = _scrollSkin;
         _historyScroll = GUI.BeginScrollView(listRect, _historyScroll, viewRect);
 
         float y = 0f;
@@ -489,10 +496,8 @@ public sealed class DpsOverlay : MonoBehaviour
             y += rowHeight;
         }
 
-        // Keep the history scrollbar available but visually secondary to the run rows.
-        GUI.color = new Color(0.18f, 0.18f, 0.18f, 0.9f);
         GUI.EndScrollView();
-        GUI.color = Color.white;
+        GUI.skin = previousHistorySkin;
     }
 
     private void DrawHistoryOutlineLine(float x1, float y1, float x2, float y2, float thickness)
@@ -3039,6 +3044,39 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = Color.white;
     }
 
+    private Texture2D CreateScrollbarTexture(Color color)
+    {
+        Texture2D texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        texture.hideFlags = HideFlags.HideAndDontSave;
+        texture.SetPixel(0, 0, color);
+        texture.Apply();
+        return texture;
+    }
+
+    private GUIStyle CreateScrollbarStyle(GUIStyle source, Texture2D background)
+    {
+        GUIStyle style = new GUIStyle(source);
+        style.normal.background = background;
+        style.focused.background = background;
+        style.onNormal.background = background;
+        style.onFocused.background = background;
+        return style;
+    }
+
+    private void SetScrollbarThumbStates(GUIStyle style)
+    {
+        style.normal.background = _scrollThumbTexture;
+        style.focused.background = _scrollThumbTexture;
+        style.onNormal.background = _scrollThumbTexture;
+        style.onFocused.background = _scrollThumbTexture;
+
+        style.hover.background = _scrollThumbHoverTexture;
+        style.onHover.background = _scrollThumbHoverTexture;
+
+        style.active.background = _scrollThumbActiveTexture;
+        style.onActive.background = _scrollThumbActiveTexture;
+    }
+
     private void EnsureStyles()
     {
         if (_header != null)
@@ -3092,6 +3130,22 @@ public sealed class DpsOverlay : MonoBehaviour
 
         _barBackground = new GUIStyle(GUI.skin.box);
         _barFill = new GUIStyle(GUI.skin.box);
+
+        // Give both scroll views their own near-black scrollbar artwork. Tinting GUI.color
+        // alone does not reliably change the built-in scrollbar thumb.
+        _scrollSkin = UnityEngine.Object.Instantiate(GUI.skin);
+        _scrollTrackTexture = CreateScrollbarTexture(new Color(0.055f, 0.055f, 0.055f, 1f));
+        _scrollThumbTexture = CreateScrollbarTexture(new Color(0.105f, 0.105f, 0.105f, 1f));
+        _scrollThumbHoverTexture = CreateScrollbarTexture(new Color(0.14f, 0.14f, 0.14f, 1f));
+        _scrollThumbActiveTexture = CreateScrollbarTexture(new Color(0.18f, 0.18f, 0.18f, 1f));
+
+        _scrollSkin.verticalScrollbar = CreateScrollbarStyle(_scrollSkin.verticalScrollbar, _scrollTrackTexture);
+        _scrollSkin.horizontalScrollbar = CreateScrollbarStyle(_scrollSkin.horizontalScrollbar, _scrollTrackTexture);
+        _scrollSkin.verticalScrollbarThumb = CreateScrollbarStyle(_scrollSkin.verticalScrollbarThumb, _scrollThumbTexture);
+        _scrollSkin.horizontalScrollbarThumb = CreateScrollbarStyle(_scrollSkin.horizontalScrollbarThumb, _scrollThumbTexture);
+        SetScrollbarThumbStates(_scrollSkin.verticalScrollbarThumb);
+        SetScrollbarThumbStates(_scrollSkin.horizontalScrollbarThumb);
+
         _whiteTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
         _whiteTexture.SetPixel(0, 0, Color.white);
         _whiteTexture.Apply();
