@@ -101,6 +101,8 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _rowRight;
     private GUIStyle _historyCloseTabLabel;
     private GUIStyle _contextMenuLabelStyle;
+    private GUIStyle _autoSizeTooltipStyle;
+    private Texture2D _autoSizeTooltipBackgroundTexture;
     private Texture2D _whiteTexture;
     private GUISkin _scrollSkin;
     private Texture2D _scrollTrackTexture;
@@ -2160,8 +2162,9 @@ public sealed class DpsOverlay : MonoBehaviour
         if (autoSizeRect.Contains(Event.current.mousePosition))
         {
             const float tooltipWidth = 240f;
-            const float tooltipHeight = 48f;
-            const float tooltipOffset = 16f;
+            const float tooltipHeight = 56f;
+            // Keep the tooltip clear of the game's cursor hotspot and sprite.
+            const float tooltipOffset = 32f;
 
             Vector2 mouse = Event.current.mousePosition;
             float tooltipX = mouse.x + tooltipOffset;
@@ -2180,7 +2183,8 @@ public sealed class DpsOverlay : MonoBehaviour
 
             GUI.Box(
                 tooltipRect,
-                "Restore automatic window height expansion to fit DPS rows.");
+                "Restore automatic window height expansion to fit DPS rows.",
+                _autoSizeTooltipStyle);
         }
 
         if (GUI.Button(
@@ -3193,5 +3197,30 @@ public sealed class DpsOverlay : MonoBehaviour
         _whiteTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
         _whiteTexture.SetPixel(0, 0, Color.white);
         _whiteTexture.Apply();
+
+        // Use an opaque, near-black tooltip with explicit wrapping so busy UI beneath
+        // it cannot reduce contrast or cause the description to be clipped on one line.
+        _autoSizeTooltipBackgroundTexture = CreateScrollbarTexture(new Color(0.015f, 0.015f, 0.015f, 1f));
+        _autoSizeTooltipStyle = new GUIStyle(GUI.skin.box)
+        {
+            alignment = TextAnchor.MiddleLeft,
+            fontSize = 12,
+            wordWrap = true,
+            richText = false,
+            clipping = TextClipping.Clip,
+            padding = new RectOffset(10, 10, 6, 6)
+        };
+        _autoSizeTooltipStyle.normal.background = _autoSizeTooltipBackgroundTexture;
+        _autoSizeTooltipStyle.focused.background = _autoSizeTooltipBackgroundTexture;
+        _autoSizeTooltipStyle.hover.background = _autoSizeTooltipBackgroundTexture;
+        _autoSizeTooltipStyle.active.background = _autoSizeTooltipBackgroundTexture;
+        _autoSizeTooltipStyle.onNormal.background = _autoSizeTooltipBackgroundTexture;
+        _autoSizeTooltipStyle.onFocused.background = _autoSizeTooltipBackgroundTexture;
+        _autoSizeTooltipStyle.onHover.background = _autoSizeTooltipBackgroundTexture;
+        _autoSizeTooltipStyle.onActive.background = _autoSizeTooltipBackgroundTexture;
+        _autoSizeTooltipStyle.normal.textColor = Color.white;
+        _autoSizeTooltipStyle.focused.textColor = Color.white;
+        _autoSizeTooltipStyle.hover.textColor = Color.white;
+        _autoSizeTooltipStyle.active.textColor = Color.white;
     }
 }
