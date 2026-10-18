@@ -36,6 +36,7 @@ To update later, close the game and replace the existing `mods/DPSMeter` folder 
 
 ## Features
 
+- **Current vs. total:** current DPS resets whenever you change locations, letting you track your DPS separately in each location. Total damage remains cumulative across the run.
 - **Damage tracking:** current DPS and total damage, with breakdowns by skill and Essence.
 - **Healing and barriers:** healing-per-second (HPS), barrier-per-second (BPS), totals, and source breakdowns.
 - **Party comparison:** compare player contributions in DPS and total views, including each player's share of the total.
