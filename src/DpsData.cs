@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -81,17 +80,6 @@ public sealed class DpsData
         public List<RunRecord> Runs = new List<RunRecord>();
     }
 
-    public sealed class HealingRecord
-    {
-        public int Index;
-        public float Time;
-        public float Amount;
-        public string Identity;
-        public string SourceName;
-        public string ActorChain;
-    }
-
-    private readonly List<HealingRecord> _healingRecords = new List<HealingRecord>();
     private readonly List<RunRecord> _completedRuns = new List<RunRecord>();
     public RunRecord ActiveRun { get; private set; }
     public IReadOnlyList<RunRecord> CompletedRuns => _completedRuns;
@@ -117,9 +105,6 @@ public sealed class DpsData
             if (runs[i] != null) _completedRuns.Add(runs[i]);
         }
     }
-
-    private const int MaxHealingRecords = 10000;
-    private int _nextHealingRecordIndex = 1;
 
     public enum DamageScalingType
     {
@@ -444,7 +429,7 @@ public sealed class DpsData
         Add(_cumulativePartyBarrier, playerName, barrier);
     }
 
-    public void AddHealing(float generatedHealing, float effectiveHealing, string sourceIdentity, string sourceName, Sprite icon, string actorChain)
+    public void AddHealing(float generatedHealing, float effectiveHealing, string sourceName, Sprite icon)
     {
         if (generatedHealing <= 0f)
         {
@@ -488,46 +473,6 @@ public sealed class DpsData
             _currentPersonalHealingIcons[sourceName] = icon;
             _cumulativePersonalHealingIcons[sourceName] = icon;
         }
-
-        if (_healingRecords.Count >= MaxHealingRecords)
-        {
-            _healingRecords.RemoveAt(0);
-        }
-
-        _healingRecords.Add(new HealingRecord
-        {
-            Index = _nextHealingRecordIndex++,
-            Time = now,
-            Amount = generatedHealing,
-            Identity = sourceIdentity,
-            SourceName = sourceName,
-            ActorChain = actorChain
-        });
-    }
-
-    public string ExportHealingLog()
-    {
-        StringBuilder builder = new StringBuilder();
-        builder.AppendLine("Shape of Dreams DPS Meter - Healing Diagnostic Export");
-        builder.AppendLine("Version: " + DPSMeter.DevelopmentVersion);
-        builder.AppendLine("Records retained: " + _healingRecords.Count);
-        builder.AppendLine();
-
-        for (int i = 0; i < _healingRecords.Count; i++)
-        {
-            HealingRecord record = _healingRecords[i];
-            builder.AppendLine("=== Healing Event " + record.Index + " ===");
-            builder.AppendLine("Time: " + record.Time.ToString("0.000"));
-            builder.AppendLine("Amount: " + record.Amount.ToString("0.######"));
-            builder.AppendLine("Identity: " + (record.Identity ?? "<null>"));
-            builder.AppendLine("SourceName: " + (record.SourceName ?? "<null>"));
-            builder.AppendLine("Actor chain:");
-            builder.AppendLine(string.IsNullOrEmpty(record.ActorChain) ? "  <none>" : record.ActorChain);
-            builder.AppendLine();
-        }
-
-        return builder.ToString();
-    }
 
     public void AddDamage(
         float producedDamage,
