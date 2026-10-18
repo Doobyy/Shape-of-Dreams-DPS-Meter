@@ -3146,6 +3146,13 @@ public sealed class DpsOverlay : MonoBehaviour
         SetScrollbarThumbStates(_scrollSkin.verticalScrollbarThumb);
         SetScrollbarThumbStates(_scrollSkin.horizontalScrollbarThumb);
 
+        // Keep the scrollbar from noticeably narrowing the row layout.
+        // Unity reserves this width inside the scroll view when a bar is visible.
+        _scrollSkin.verticalScrollbar.fixedWidth = 4f;
+        _scrollSkin.verticalScrollbarThumb.fixedWidth = 4f;
+        _scrollSkin.verticalScrollbar.padding = new RectOffset(0, 0, 0, 0);
+        _scrollSkin.verticalScrollbar.margin = new RectOffset(0, 0, 0, 0);
+
         _whiteTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
         _whiteTexture.SetPixel(0, 0, Color.white);
         _whiteTexture.Apply();
