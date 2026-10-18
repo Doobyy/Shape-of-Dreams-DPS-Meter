@@ -15,25 +15,29 @@ The source is published here so players can inspect how attribution works and bu
 
 ## Screenshots
 
-### Current DPS
+<table>
+  <tr>
+    <th align="center">Current DPS</th>
+    <th align="center">Total Damage</th>
+    <th align="center">Party DPS</th>
+  </tr>
+  <tr>
+    <td align="center" valign="top"><img src="images/current-dps.meter.png" alt="Current DPS meter" width="100%"></td>
+    <td align="center" valign="top"><img src="images/total-dps-meter.png" alt="Total damage meter" width="100%"></td>
+    <td align="center" valign="top"><img src="images/party-dps.png" alt="Party DPS comparison" width="100%"></td>
+  </tr>
+</table>
 
-![Current DPS meter](images/current-dps.meter.png)
-
-### Party DPS
-
-![Party DPS comparison](images/party-dps.png)
-
-### Total damage
-
-![Total DPS meter](images/total-dps-meter.png)
-
-### Settings
-
-![DPS Meter settings](images/settings.png)
-
-### Run history
-
-![Run history pane](images/run-history.png)
+<table>
+  <tr>
+    <th align="center">Run History</th>
+    <th align="center">Settings</th>
+  </tr>
+  <tr>
+    <td align="center" valign="top"><img src="images/run-history.png" alt="Run history pane" width="100%"></td>
+    <td align="center" valign="top"><img src="images/settings.png" alt="DPS Meter settings" width="100%"></td>
+  </tr>
+</table>
 
 ## Installation
 
