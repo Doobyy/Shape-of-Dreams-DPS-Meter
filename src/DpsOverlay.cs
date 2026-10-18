@@ -196,9 +196,9 @@ public sealed class DpsOverlay : MonoBehaviour
         _selectedRunRecord = null;
         _showRunHistory = false;
         RefreshSettingsWindowPosition();
-        // A new run returns the window to its normal automatic sizing behavior.
-        _manualResize = false;
-        _collapsedWindowHeight = 197f;
+        // Preserve a user's manual size override until they reset it or reload the mod.
+        if (!_manualResize)
+            _collapsedWindowHeight = 197f;
         ApplyRunAppearance(run);
     }
 
