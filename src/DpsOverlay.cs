@@ -188,12 +188,14 @@ public sealed class DpsOverlay : MonoBehaviour
     {
         SetDisplayedRunRecord(run);
         _showRunHistory = false;
+        RefreshSettingsWindowPosition();
     }
 
     public void ShowLiveRun(DpsData.RunRecord run)
     {
         _selectedRunRecord = null;
         _showRunHistory = false;
+        RefreshSettingsWindowPosition();
         // A new run returns the window to its normal automatic sizing behavior.
         _manualResize = false;
         _collapsedWindowHeight = 197f;
@@ -436,7 +438,10 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = Color.white;
 
         if (GUI.Button(closeTabRect, GUIContent.none, GUIStyle.none))
+        {
             _showRunHistory = false;
+            RefreshSettingsWindowPosition();
+        }
 
         Matrix4x4 previousMatrix = GUI.matrix;
         GUIUtility.RotateAroundPivot(90f, closeTabRect.center);
@@ -1962,6 +1967,7 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 _contextMenuOpen = false;
                 _showRunHistory = !_showRunHistory;
+                RefreshSettingsWindowPosition();
                 e.Use();
             }
         }
@@ -2033,6 +2039,45 @@ public sealed class DpsOverlay : MonoBehaviour
 
         _settingsOpen = true;
         _settingsDragging = false;
+    }
+
+    private void RefreshSettingsWindowPosition()
+    {
+        if (!_settingsOpen)
+            return;
+
+        const float gap = 8f;
+        const float historyGap = 4f;
+        float historyWidth = _showRunHistory
+            ? HistoryPanelWidth + HistoryCloseTabWidth + historyGap
+            : 0f;
+        float totalWidth = _windowRect.width + historyWidth + gap + _settingsRect.width;
+        float maxMeterX = Screen.width - totalWidth - 4f;
+        if (_windowRect.x > maxMeterX)
+            _windowRect.x = Mathf.Max(4f, maxMeterX);
+
+        float x;
+        if (_showRunHistory)
+        {
+            Rect historyPanel = GetRunHistoryPanelRect();
+            x = historyPanel.x + HistoryPanelWidth + HistoryCloseTabWidth + gap;
+        }
+        else
+        {
+            x = _windowRect.xMax + gap;
+        }
+
+        x = Mathf.Clamp(
+            x,
+            4f,
+            Mathf.Max(4f, Screen.width - _settingsRect.width - 4f));
+
+        float y = Mathf.Clamp(
+            _settingsRect.y,
+            4f,
+            Mathf.Max(4f, Screen.height - _settingsRect.height - 4f));
+
+        _settingsRect = new Rect(x, y, _settingsRect.width, _settingsRect.height);
     }
 
     private void DrawSettingsWindow()
