@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.IO;
 using UnityEngine;
 
 namespace DPSMeter;
@@ -1438,7 +1437,7 @@ public sealed class DpsOverlay : MonoBehaviour
             if (_windowRect.Contains(e.mousePosition))
             {
                 const float menuWidth = 100f;
-                const float menuHeight = 120f;
+                const float menuHeight = 92f;
                 const float menuGap = 4f;
 
                 _contextMenuOpen = false;
@@ -1933,15 +1932,9 @@ public sealed class DpsOverlay : MonoBehaviour
             rowWidth,
             rowHeight);
 
-        Rect exportRect = new Rect(
+        Rect historyRect = new Rect(
             reloadRect.x,
             reloadRect.yMax,
-            rowWidth,
-            rowHeight);
-
-        Rect historyRect = new Rect(
-            exportRect.x,
-            exportRect.yMax,
             rowWidth,
             rowHeight);
 
@@ -1949,7 +1942,6 @@ public sealed class DpsOverlay : MonoBehaviour
 
         DrawContextMenuRow(settingsRect, "Settings");
         DrawContextMenuRow(reloadRect, "Reload");
-        DrawContextMenuRow(exportRect, "Export");
         DrawContextMenuRow(historyRect, "Run History");
 
         if (e.type == EventType.MouseDown && e.button == 0)
@@ -1964,12 +1956,6 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 _contextMenuOpen = false;
                 DewMod.ReloadFromActiveMods();
-                e.Use();
-            }
-            else if (exportRect.Contains(e.mousePosition))
-            {
-                _contextMenuOpen = false;
-                ExportHealingLog();
                 e.Use();
             }
             else if (historyRect.Contains(e.mousePosition))
@@ -2070,21 +2056,6 @@ public sealed class DpsOverlay : MonoBehaviour
             "Close"))
         {
             _settingsOpen = false;
-        }
-    }
-
-    private void ExportHealingLog()
-    {
-        try
-        {
-            string path = Path.Combine(
-                Application.persistentDataPath,
-                "DPSMeter-healing-export.log");
-
-            File.WriteAllText(path, _data.ExportHealingLog());
-        }
-        catch (Exception)
-        {
         }
     }
 
