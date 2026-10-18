@@ -2159,9 +2159,28 @@ public sealed class DpsOverlay : MonoBehaviour
 
         if (autoSizeRect.Contains(Event.current.mousePosition))
         {
+            const float tooltipWidth = 240f;
+            const float tooltipHeight = 48f;
+            const float tooltipOffset = 16f;
+
+            Vector2 mouse = Event.current.mousePosition;
+            float tooltipX = mouse.x + tooltipOffset;
+            float tooltipY = mouse.y + tooltipOffset;
+
+            if (tooltipX + tooltipWidth > Screen.width - 4f)
+                tooltipX = mouse.x - tooltipWidth - tooltipOffset;
+            if (tooltipY + tooltipHeight > Screen.height - 4f)
+                tooltipY = mouse.y - tooltipHeight - tooltipOffset;
+
+            Rect tooltipRect = new Rect(
+                Mathf.Clamp(tooltipX, 4f, Mathf.Max(4f, Screen.width - tooltipWidth - 4f)),
+                Mathf.Clamp(tooltipY, 4f, Mathf.Max(4f, Screen.height - tooltipHeight - 4f)),
+                tooltipWidth,
+                tooltipHeight);
+
             GUI.Box(
-                new Rect(_settingsRect.x + 108f, _settingsRect.yMax - 60f, 128f, 38f),
-                "Restore automatic height\nexpansion for DPS rows.");
+                tooltipRect,
+                "Restore automatic window height expansion to fit DPS rows.");
         }
 
         if (GUI.Button(
