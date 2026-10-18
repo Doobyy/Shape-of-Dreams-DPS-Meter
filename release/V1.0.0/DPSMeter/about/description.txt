@@ -1,0 +1,15 @@
+DPS Meter
+
+A client-side damage meter for Shape of Dreams.
+
+Current features:
+- Total damage
+- DPS
+- Damage breakdown by skill
+- Damage breakdown by Essence
+- Percentage contribution for skills and Essences
+- Reset button
+- Hide button
+- Console commands: dps_reset and dps_meter
+
+The meter listens to the game's existing client damage event and attributes damage through the game's actor tree rather than changing damage calculations.
