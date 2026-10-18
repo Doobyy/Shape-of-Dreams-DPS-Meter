@@ -27,3 +27,7 @@ Do not copy only the DLL; keep the `about` folder alongside it. Also avoid accid
 ## Source code
 
 The full C# source and build instructions are available in the [repository README](../../README.md).
+
+If you'd like to support the project, you're welcome to:
+
+<a href="https://ko-fi.com/dooby0530"><img src="https://storage.ko-fi.com/cdn/kofi3.png?v=6" alt="Buy Me a Coffee on Ko-fi" width="160"></a>

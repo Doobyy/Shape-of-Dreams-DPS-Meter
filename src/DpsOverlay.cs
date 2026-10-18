@@ -87,7 +87,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Vector2 _settingsDragOffset;
     private Texture2D _contextMenuHighlightTexture;
     private Rect _contextMenuRect;
-    private Rect _settingsRect = new Rect(0f, 0f, 264f, 235f);
+    private Rect _settingsRect = new Rect(0f, 0f, 264f, 265f);
     private bool _excludeOverkill;
     private bool _excludeOverheal;
     private bool _excludeEssenceOfMortality;
@@ -1517,6 +1517,12 @@ public sealed class DpsOverlay : MonoBehaviour
                 90f,
                 22f);
 
+            Rect buyMeCoffeeRect = new Rect(
+                autoSizeRect.x,
+                autoSizeRect.yMax + 6f,
+                128f,
+                22f);
+
             Rect closeRect = new Rect(
                 _settingsRect.xMax - 72f,
                 _settingsRect.yMax - 30f,
@@ -1532,6 +1538,7 @@ public sealed class DpsOverlay : MonoBehaviour
                     && !excludeOverhealToggleRect.Contains(e.mousePosition)
                     && !excludeMortalityToggleRect.Contains(e.mousePosition)
                     && !autoSizeRect.Contains(e.mousePosition)
+                    && !buyMeCoffeeRect.Contains(e.mousePosition)
                     && !closeRect.Contains(e.mousePosition))
                 {
                     _settingsDragging = true;
@@ -2196,6 +2203,25 @@ public sealed class DpsOverlay : MonoBehaviour
                 new Rect(tooltipRect.x + 2f, tooltipRect.y + 1f, tooltipRect.width - 4f, tooltipRect.height - 2f),
                 "Restore automatic window height expansion to fit DPS rows.",
                 _autoSizeTooltipStyle);
+        }
+
+        Color previousBackgroundColor = GUI.backgroundColor;
+        Color previousContentColor = GUI.contentColor;
+        GUI.backgroundColor = new Color(70f / 255f, 124f / 255f, 235f / 255f, previousBackgroundColor.a);
+        GUI.contentColor = Color.white;
+        bool buyMeCoffeeClicked = GUI.Button(
+            new Rect(
+                autoSizeRect.x,
+                autoSizeRect.yMax + 6f,
+                128f,
+                22f),
+            "Buy Me a Coffee");
+        GUI.backgroundColor = previousBackgroundColor;
+        GUI.contentColor = previousContentColor;
+
+        if (buyMeCoffeeClicked)
+        {
+            Application.OpenURL("https://ko-fi.com/dooby0530");
         }
 
         if (GUI.Button(

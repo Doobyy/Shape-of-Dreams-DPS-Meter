@@ -102,3 +102,7 @@ The meter observes the game's client-side combat events and uses the game's acto
 ## Notes
 
 This is a community mod. The published source is available for transparency and independent inspection; the downloadable ZIP contains the compiled release.
+
+If you'd like to support the project, you're welcome to:
+
+<a href="https://ko-fi.com/dooby0530"><img src="https://storage.ko-fi.com/cdn/kofi3.png?v=6" alt="Buy Me a Coffee on Ko-fi" width="160"></a>
