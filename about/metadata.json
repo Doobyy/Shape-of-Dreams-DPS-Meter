@@ -2,7 +2,7 @@
   "id": "com.doobyy.dpsmeter",
   "name": "DPS Meter",
   "author": "Doobyy",
-  "modVer": "0.1.0",
+  "modVer": "1.0.0",
   "assemblies": [
     "DPSMeter.dll"
   ]
