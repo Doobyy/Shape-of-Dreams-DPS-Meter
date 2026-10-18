@@ -17,6 +17,7 @@ Do not copy only the DLL; keep the `about` folder alongside it. Also avoid accid
 
 ## Included features
 
+- Current DPS resets whenever you change locations, letting you track your DPS separately in each location; total damage remains cumulative across the run
 - Current and total damage tracking, with skill and Essence breakdowns
 - Healing and barrier metrics
 - Party contribution comparisons
