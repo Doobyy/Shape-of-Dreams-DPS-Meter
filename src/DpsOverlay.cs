@@ -102,7 +102,6 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _historyCloseTabLabel;
     private GUIStyle _contextMenuLabelStyle;
     private GUIStyle _autoSizeTooltipStyle;
-    private Texture2D _autoSizeTooltipBackgroundTexture;
     private Texture2D _whiteTexture;
     private GUISkin _scrollSkin;
     private Texture2D _scrollTrackTexture;
@@ -2162,7 +2161,7 @@ public sealed class DpsOverlay : MonoBehaviour
         if (autoSizeRect.Contains(Event.current.mousePosition))
         {
             const float tooltipWidth = 205f;
-            const float tooltipHeight = 56f;
+            const float tooltipHeight = 48f;
             // Keep the tooltip clear of the game's cursor hotspot and sprite.
             const float tooltipOffset = 32f;
 
@@ -2181,8 +2180,18 @@ public sealed class DpsOverlay : MonoBehaviour
                 tooltipWidth,
                 tooltipHeight);
 
-            GUI.Box(
-                tooltipRect,
+            // Reuse the context menu's opaque near-black fill and subtle gray outline.
+            GUI.color = new Color(0.025f, 0.025f, 0.025f, 0.97f);
+            GUI.DrawTexture(tooltipRect, _whiteTexture);
+            GUI.color = new Color(0.18f, 0.18f, 0.18f, 0.65f);
+            GUI.DrawTexture(new Rect(tooltipRect.x, tooltipRect.y, tooltipRect.width, 1f), _whiteTexture);
+            GUI.DrawTexture(new Rect(tooltipRect.x, tooltipRect.yMax - 1f, tooltipRect.width, 1f), _whiteTexture);
+            GUI.DrawTexture(new Rect(tooltipRect.x, tooltipRect.y, 1f, tooltipRect.height), _whiteTexture);
+            GUI.DrawTexture(new Rect(tooltipRect.xMax - 1f, tooltipRect.y, 1f, tooltipRect.height), _whiteTexture);
+            GUI.color = Color.white;
+
+            GUI.Label(
+                new Rect(tooltipRect.x + 2f, tooltipRect.y + 1f, tooltipRect.width - 4f, tooltipRect.height - 2f),
                 "Restore automatic window height expansion to fit DPS rows.",
                 _autoSizeTooltipStyle);
         }
@@ -3078,46 +3087,6 @@ public sealed class DpsOverlay : MonoBehaviour
         GUI.color = Color.white;
     }
 
-    private Texture2D CreateRoundedTooltipTexture()
-    {
-        const int size = 32;
-        const float cornerRadius = 8f;
-        const float borderThickness = 1.5f;
-        const float antialias = 0.75f;
-        Color fill = new Color(0.015f, 0.015f, 0.015f, 1f);
-        Color border = new Color(0.42f, 0.42f, 0.42f, 1f);
-        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-        texture.hideFlags = HideFlags.HideAndDontSave;
-        texture.wrapMode = TextureWrapMode.Clamp;
-        texture.filterMode = FilterMode.Bilinear;
-
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                float px = Mathf.Min(x + 0.5f, size - x - 0.5f);
-                float py = Mathf.Min(y + 0.5f, size - y - 0.5f);
-                float dx = cornerRadius - px;
-                float dy = cornerRadius - py;
-                float outsideCornerDistance = Mathf.Sqrt(
-                    Mathf.Max(0f, dx) * Mathf.Max(0f, dx) +
-                    Mathf.Max(0f, dy) * Mathf.Max(0f, dy)) - cornerRadius;
-                float edgeDistance = Mathf.Max(
-                    outsideCornerDistance,
-                    Mathf.Max(-px, -py));
-                float outerCoverage = 1f - Mathf.Clamp01((edgeDistance + antialias * 0.5f) / antialias);
-                float innerDistance = edgeDistance + borderThickness;
-                float innerCoverage = 1f - Mathf.Clamp01((innerDistance + antialias * 0.5f) / antialias);
-                Color pixel = Color.Lerp(Color.clear, border, outerCoverage);
-                pixel = Color.Lerp(pixel, fill, innerCoverage);
-                texture.SetPixel(x, y, pixel);
-            }
-        }
-
-        texture.Apply();
-        return texture;
-    }
-
     private Texture2D CreateScrollbarTexture(Color color)
     {
         Texture2D texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
@@ -3238,27 +3207,15 @@ public sealed class DpsOverlay : MonoBehaviour
         _whiteTexture.SetPixel(0, 0, Color.white);
         _whiteTexture.Apply();
 
-        // Use an opaque, near-black tooltip with explicit wrapping so busy UI beneath
-        // it cannot reduce contrast or cause the description to be clipped on one line.
-        _autoSizeTooltipBackgroundTexture = CreateRoundedTooltipTexture();
-        _autoSizeTooltipStyle = new GUIStyle(GUI.skin.box)
+        // Match the context menu's white text and compact, left-aligned label styling.
+        _autoSizeTooltipStyle = new GUIStyle(_contextMenuLabelStyle)
         {
-            alignment = TextAnchor.MiddleLeft,
             fontSize = 12,
             wordWrap = true,
             richText = false,
             clipping = TextClipping.Clip,
-            padding = new RectOffset(9, 9, 6, 6),
-            border = new RectOffset(10, 10, 10, 10)
+            padding = new RectOffset(6, 6, 2, 2)
         };
-        _autoSizeTooltipStyle.normal.background = _autoSizeTooltipBackgroundTexture;
-        _autoSizeTooltipStyle.focused.background = _autoSizeTooltipBackgroundTexture;
-        _autoSizeTooltipStyle.hover.background = _autoSizeTooltipBackgroundTexture;
-        _autoSizeTooltipStyle.active.background = _autoSizeTooltipBackgroundTexture;
-        _autoSizeTooltipStyle.onNormal.background = _autoSizeTooltipBackgroundTexture;
-        _autoSizeTooltipStyle.onFocused.background = _autoSizeTooltipBackgroundTexture;
-        _autoSizeTooltipStyle.onHover.background = _autoSizeTooltipBackgroundTexture;
-        _autoSizeTooltipStyle.onActive.background = _autoSizeTooltipBackgroundTexture;
         _autoSizeTooltipStyle.normal.textColor = Color.white;
         _autoSizeTooltipStyle.focused.textColor = Color.white;
         _autoSizeTooltipStyle.hover.textColor = Color.white;
