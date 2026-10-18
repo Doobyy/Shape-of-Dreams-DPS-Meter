@@ -395,14 +395,14 @@ public sealed class DpsOverlay : MonoBehaviour
             DrawContextMenu();
         }
 
-        if (_settingsOpen)
-        {
-            DrawSettingsWindow();
-        }
-
         if (_showRunHistory)
         {
             DrawRunHistoryPanel();
+        }
+
+        if (_settingsOpen)
+        {
+            DrawSettingsWindow();
         }
 
 
@@ -1987,11 +1987,32 @@ public sealed class DpsOverlay : MonoBehaviour
     private void OpenSettingsWindow()
     {
         const float gap = 8f;
+        const float historyGap = 4f;
 
-        float x = _windowRect.xMax + gap;
-        if (x + _settingsRect.width > Screen.width - 4f)
+        // Keep the panels in a consistent left-to-right order. If the whole
+        // group would extend beyond the screen, move the meter left first.
+        float historyWidth = _showRunHistory
+            ? HistoryPanelWidth + HistoryCloseTabWidth + historyGap
+            : 0f;
+        float totalWidth = _windowRect.width + historyWidth + gap + _settingsRect.width;
+        float maxMeterX = Screen.width - totalWidth - 4f;
+        if (_windowRect.x > maxMeterX)
         {
-            x = _windowRect.x - _settingsRect.width - gap;
+            _windowRect.x = Mathf.Max(4f, maxMeterX);
+        }
+
+        float x;
+        float y;
+        if (_showRunHistory)
+        {
+            Rect historyPanel = GetRunHistoryPanelRect();
+            x = historyPanel.x + HistoryPanelWidth + HistoryCloseTabWidth + gap;
+            y = historyPanel.y;
+        }
+        else
+        {
+            x = _windowRect.xMax + gap;
+            y = _windowRect.y;
         }
 
         x = Mathf.Clamp(
@@ -1999,8 +2020,8 @@ public sealed class DpsOverlay : MonoBehaviour
             4f,
             Mathf.Max(4f, Screen.width - _settingsRect.width - 4f));
 
-        float y = Mathf.Clamp(
-            _windowRect.y,
+        y = Mathf.Clamp(
+            y,
             4f,
             Mathf.Max(4f, Screen.height - _settingsRect.height - 4f));
 
