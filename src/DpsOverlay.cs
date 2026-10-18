@@ -87,7 +87,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private Vector2 _settingsDragOffset;
     private Texture2D _contextMenuHighlightTexture;
     private Rect _contextMenuRect;
-    private Rect _settingsRect = new Rect(0f, 0f, 250f, 205f);
+    private Rect _settingsRect = new Rect(0f, 0f, 250f, 235f);
     private bool _excludeOverkill;
     private bool _excludeOverheal;
     private bool _excludeEssenceOfMortality;
@@ -1496,6 +1496,12 @@ public sealed class DpsOverlay : MonoBehaviour
                 _settingsRect.width - 24f,
                 26f);
 
+            Rect autoSizeRect = new Rect(
+                _settingsRect.x + 12f,
+                _settingsRect.yMax - 58f,
+                90f,
+                22f);
+
             Rect closeRect = new Rect(
                 _settingsRect.xMax - 72f,
                 _settingsRect.yMax - 30f,
@@ -1510,6 +1516,7 @@ public sealed class DpsOverlay : MonoBehaviour
                     && !excludeOverkillToggleRect.Contains(e.mousePosition)
                     && !excludeOverhealToggleRect.Contains(e.mousePosition)
                     && !excludeMortalityToggleRect.Contains(e.mousePosition)
+                    && !autoSizeRect.Contains(e.mousePosition)
                     && !closeRect.Contains(e.mousePosition))
                 {
                     _settingsDragging = true;
@@ -1601,6 +1608,9 @@ public sealed class DpsOverlay : MonoBehaviour
             {
                 Vector2 delta = e.mousePosition - _resizeStartMouse;
                 _resizeMoved = true;
+                // Lock in the user's size immediately so automatic row expansion
+                // cannot overwrite the drag before the mouse button is released.
+                _manualResize = true;
                 _windowRect.width = Mathf.Clamp(
                     _resizeStartSize.x + delta.x,
                     260f,
@@ -1683,25 +1693,24 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private void UpdateWindowHeight()
     {
-        if (_selectedRunRecord != null)
+        if (!_manualResize)
         {
-            int rowCount = GetSelectedRunRowCount("DAMAGE");
-            bool legacyLog = _selectedRunRecord.ViewRows == null || _selectedRunRecord.ViewRows.Count == 0;
-            float legacyHeaderHeight = legacyLog ? 63f : 0f;
-            float desiredHeight = 50f + legacyHeaderHeight + (Mathf.Max(1, rowCount) * 22f) + 2f;
-            float maxCollapsedHeight = Mathf.Max(90f, Screen.height - _windowRect.y - 10f);
+            float desiredHeight = 197f;
 
-            // Saved history ignores a manually chosen live-window height so its rows can be read without scrolling.
-            _collapsedWindowHeight = Mathf.Min(
-                Mathf.Max(197f, desiredHeight),
-                maxCollapsedHeight);
-        }
-        else if (!_manualResize && (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal))
-        {
-            int rowCount = GetCurrentDpsRowCount();
-            float desiredHeight = 50f + (rowCount * 22f) + (rowCount > 0 ? 2f : 0f);
-            float maxCollapsedHeight = Mathf.Max(90f, Screen.height - _windowRect.y - 10f);
+            if (_selectedRunRecord != null)
+            {
+                int rowCount = GetSelectedRunRowCount("DAMAGE");
+                bool legacyLog = _selectedRunRecord.ViewRows == null || _selectedRunRecord.ViewRows.Count == 0;
+                float legacyHeaderHeight = legacyLog ? 63f : 0f;
+                desiredHeight = 50f + legacyHeaderHeight + (Mathf.Max(1, rowCount) * 22f) + 2f;
+            }
+            else if (_mode == DisplayMode.CurrentDps || _mode == DisplayMode.DamageTotal)
+            {
+                int rowCount = GetCurrentDpsRowCount();
+                desiredHeight = 50f + (rowCount * 22f) + (rowCount > 0 ? 2f : 0f);
+            }
 
+            float maxCollapsedHeight = Mathf.Max(90f, Screen.height - _windowRect.y - 10f);
             _collapsedWindowHeight = Mathf.Min(
                 Mathf.Max(197f, desiredHeight),
                 maxCollapsedHeight);
@@ -2112,6 +2121,18 @@ public sealed class DpsOverlay : MonoBehaviour
             new Rect(_settingsRect.x + left, _settingsRect.y + top + rowHeight * 4f, _settingsRect.width - 24f, rowHeight),
             _excludeEssenceOfMortality,
             "Exclude Essence of Mortality Damage");
+
+        if (GUI.Button(
+            new Rect(
+                _settingsRect.x + 12f,
+                _settingsRect.yMax - 58f,
+                90f,
+                22f),
+            new GUIContent("Auto Size", "Restore automatic window height expansion to fit DPS rows. Manual resizing stays active until reset or mod reload.")))
+        {
+            _manualResize = false;
+            UpdateWindowHeight();
+        }
 
         if (GUI.Button(
             new Rect(
