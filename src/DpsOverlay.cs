@@ -1939,7 +1939,16 @@ public sealed class DpsOverlay : MonoBehaviour
 
     private void DrawContextMenu()
     {
-        GUI.Box(_contextMenuRect, GUIContent.none);
+        // Use a nearly opaque custom panel so busy game visuals cannot compete
+        // with the context-menu labels.
+        GUI.color = new Color(0.025f, 0.025f, 0.025f, 0.97f);
+        GUI.DrawTexture(_contextMenuRect, _whiteTexture);
+        GUI.color = new Color(0.38f, 0.38f, 0.38f, 0.9f);
+        GUI.DrawTexture(new Rect(_contextMenuRect.x, _contextMenuRect.y, _contextMenuRect.width, 1f), _whiteTexture);
+        GUI.DrawTexture(new Rect(_contextMenuRect.x, _contextMenuRect.yMax - 1f, _contextMenuRect.width, 1f), _whiteTexture);
+        GUI.DrawTexture(new Rect(_contextMenuRect.x, _contextMenuRect.y, 1f, _contextMenuRect.height), _whiteTexture);
+        GUI.DrawTexture(new Rect(_contextMenuRect.xMax - 1f, _contextMenuRect.y, 1f, _contextMenuRect.height), _whiteTexture);
+        GUI.color = Color.white;
 
         const float padding = 4f;
         const float rowHeight = 28f;
