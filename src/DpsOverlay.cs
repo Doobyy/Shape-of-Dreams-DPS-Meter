@@ -322,7 +322,10 @@ public sealed class DpsOverlay : MonoBehaviour
             }
         }
 
+        // Fade the scrollbar controls without dimming the DPS rows themselves.
+        GUI.color = new Color(1f, 1f, 1f, 0.42f);
         GUILayout.EndScrollView();
+        GUI.color = Color.white;
         GUILayout.EndArea();
 
         if (_selectedRunRecord != null ||
@@ -486,7 +489,10 @@ public sealed class DpsOverlay : MonoBehaviour
             y += rowHeight;
         }
 
+        // Keep the history scrollbar available but visually secondary to the run rows.
+        GUI.color = new Color(1f, 1f, 1f, 0.42f);
         GUI.EndScrollView();
+        GUI.color = Color.white;
     }
 
     private void DrawHistoryOutlineLine(float x1, float y1, float x2, float y2, float thickness)
