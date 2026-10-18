@@ -11,13 +11,29 @@ The source is published here so players can inspect how attribution works and bu
 - **Party comparison:** compare player contributions in DPS and total views, including each player's share of the total.
 - **Run history:** retain recent run summaries, including character, outcome, run duration, and visited-world/map information.
 - **Display filters:** optionally exclude overkill damage, overhealing, or damage attributed to Essence of Mortality from displayed calculations. These filters affect the meter's numbers and preserve underlying run data so totals can be recalculated when a filter changes.
-- **Configurable overlay:** move the meter and settings window, choose views/metrics to show, and use the context menu for available actions such as settings, reload, export, and reset.
+- **Configurable overlay:** move the meter and settings window, choose which metrics to display, and use the context menu to open settings, reload the mod, or open run history.
 
 ## Screenshots
 
-Screenshots will be added here.
+### Current DPS
 
-<!-- TODO: Add current screenshots of the DPS, party, settings, and run-history views. -->
+![Current DPS meter](images/current-dps.meter.png)
+
+### Party DPS
+
+![Party DPS comparison](images/party-dps.png)
+
+### Total damage
+
+![Total DPS meter](images/total-dps-meter.png)
+
+### Settings
+
+![DPS Meter settings](images/settings.png)
+
+### Run history
+
+![Run history pane](images/run-history.png)
 
 ## Installation
 
