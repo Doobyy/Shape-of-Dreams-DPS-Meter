@@ -2,7 +2,37 @@
 
 A client-side combat meter for **Shape of Dreams**. It tracks damage, healing, and barrier contribution during a run, with separate views for individual and party performance.
 
-The source is published here so players can inspect how attribution works and build the mod themselves.
+The compiled mod is available for players who want to install it directly. The C# source is also published so anyone can inspect it or build it themselves.
+
+## Download
+
+**[Download DPS Meter v1.0.0 (precompiled ZIP)](https://github.com/Doobyy/Shape-of-Dreams-DPS-Meter/raw/refs/heads/main/release/V1.0.0/DPSMeter-1.0.0.zip)**
+
+The ZIP contains the ready-to-install `DPSMeter` mod folder. You do not need to compile the source to use this version.
+
+## Install the precompiled mod
+
+1. Download `DPSMeter-1.0.0.zip` from the link above.
+2. Extract the ZIP. It should contain a folder named `DPSMeter`, with `DPSMeter.dll` and an `about` folder inside it.
+3. Open your **Shape of Dreams game installation folder**.
+4. Copy the entire extracted `DPSMeter` folder into the game's `mods` folder. Create a folder named `mods` if it does not already exist.
+5. Confirm the files are arranged like this:
+
+   ```text
+   Shape of Dreams/
+   └── mods/
+       └── DPSMeter/
+           ├── DPSMeter.dll
+           └── about/
+               ├── metadata.json
+               └── description.txt
+   ```
+
+   The important detail is that `DPSMeter.dll` is directly inside `mods/DPSMeter/`—not loose in `mods/` and not nested inside an extra `DPSMeter/DPSMeter/` folder.
+
+6. Launch the game.
+
+To update later, close the game and replace the existing `mods/DPSMeter` folder with the folder from the newer release ZIP.
 
 ## Features
 
@@ -10,7 +40,7 @@ The source is published here so players can inspect how attribution works and bu
 - **Healing and barriers:** healing-per-second (HPS), barrier-per-second (BPS), totals, and source breakdowns.
 - **Party comparison:** compare player contributions in DPS and total views, including each player's share of the total.
 - **Run history:** retain recent run summaries, including character, outcome, run duration, and visited-world/map information.
-- **Display filters:** optionally exclude overkill damage, overhealing, or damage attributed to Essence of Mortality from displayed calculations. These filters affect the meter's numbers and preserve underlying run data so totals can be recalculated when a filter changes.
+- **Display filters:** optionally exclude overkill damage, overhealing, or damage attributed to Essence of Mortality from displayed calculations. These filters affect displayed totals while preserving underlying run data so totals can be recalculated when a filter changes.
 - **Configurable overlay:** move the meter and settings window, choose which metrics to display, and use the context menu to open settings, reload the mod, or open run history.
 
 ## Screenshots
@@ -39,12 +69,6 @@ The source is published here so players can inspect how attribution works and bu
   </tr>
 </table>
 
-## Installation
-
-Use the mod package supplied with the release or install it through the game's supported mod/Workshop workflow when available. Follow the installation instructions included with that specific release package.
-
-The repository is primarily the source-code project; a compiled `DPSMeter.dll` is distributed separately with a release package.
-
 ## Build from source
 
 ### Requirements
@@ -68,10 +92,13 @@ The meter observes the game's client-side combat events and uses the game's acto
 
 ## Repository contents
 
-- `src/` — mod source code.
-- `about/` — mod metadata and in-game description.
+- `src/` — C# source code.
+- `about/` — mod metadata and in-game description used by the project.
+- `release/V1.0.0/DPSMeter/` — the compiled v1.0.0 mod package.
+- `release/V1.0.0/DPSMeter-1.0.0.zip` — ready-to-install ZIP archive.
+- `images/` — screenshots.
 - `DPSMeter.csproj` — project and game-reference configuration.
 
 ## Notes
 
-This project is maintained as a community mod. The published source is provided for transparency and independent inspection; the release DLL should be treated as a separate build artifact.
+This is a community mod. The published source is available for transparency and independent inspection; the downloadable ZIP contains the compiled release.
