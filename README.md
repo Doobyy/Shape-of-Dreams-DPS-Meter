@@ -2,17 +2,17 @@
 
 A client-side combat meter for **Shape of Dreams**. It tracks damage, healing, and barrier contribution during a run, with separate views for individual and party performance.
 
-The compiled mod is available for players who want to install it directly. The C# source is also published so anyone can inspect it or build it themselves.
+The compiled mod is available on the [GitHub Releases page](https://github.com/Doobyy/Shape-of-Dreams-DPS-Meter/releases). The C# source is also published so anyone can inspect it or build it themselves.
 
 ## Download
 
-**[Download DPS Meter v1.0.0 (precompiled ZIP)](https://github.com/Doobyy/Shape-of-Dreams-DPS-Meter/raw/refs/heads/main/release/V1.0.0/DPSMeter-1.0.0.zip)**
+**[Download the latest release](https://github.com/Doobyy/Shape-of-Dreams-DPS-Meter/releases)**
 
 The ZIP contains the ready-to-install `DPSMeter` mod folder. You do not need to compile the source to use this version.
 
 ## Install the precompiled mod
 
-1. Download `DPSMeter-1.0.0.zip` from the link above.
+1. Open the [Releases page](https://github.com/Doobyy/Shape-of-Dreams-DPS-Meter/releases) and download the ZIP asset attached to the latest release.
 2. Extract the ZIP. It should contain a folder named `DPSMeter`, with `DPSMeter.dll` and an `about` folder inside it.
 3. Open your **Shape of Dreams game installation folder**.
 4. Copy the entire extracted `DPSMeter` folder into the game's `mods` folder. Create a folder named `mods` if it does not already exist.
