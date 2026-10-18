@@ -100,6 +100,7 @@ public sealed class DpsOverlay : MonoBehaviour
     private GUIStyle _barFill;
     private GUIStyle _rowRight;
     private GUIStyle _historyCloseTabLabel;
+    private GUIStyle _contextMenuLabelStyle;
     private Texture2D _whiteTexture;
     private GUISkin _scrollSkin;
     private Texture2D _scrollTrackTexture;
@@ -2017,7 +2018,7 @@ public sealed class DpsOverlay : MonoBehaviour
             GUI.DrawTexture(rect, _contextMenuHighlightTexture);
         }
 
-        GUI.Label(rect, label);
+        GUI.Label(rect, label, _contextMenuLabelStyle);
     }
 
     private void OpenSettingsWindow()
@@ -3122,6 +3123,13 @@ public sealed class DpsOverlay : MonoBehaviour
         _rowRight = new GUIStyle(_row)
         {
             alignment = TextAnchor.MiddleRight
+        };
+
+        _contextMenuLabelStyle = new GUIStyle(GUI.skin.label)
+        {
+            alignment = TextAnchor.MiddleLeft,
+            padding = new RectOffset(6, 0, 0, 0),
+            wordWrap = false
         };
 
         _historyCloseTabLabel = new GUIStyle(GUI.skin.label)
