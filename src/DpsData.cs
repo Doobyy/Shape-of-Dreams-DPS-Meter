@@ -474,6 +474,7 @@ public sealed class DpsData
             _cumulativePersonalHealingIcons[sourceName] = icon;
         }
 
+    }
     public void AddDamage(
         float producedDamage,
         float appliedDamage,
