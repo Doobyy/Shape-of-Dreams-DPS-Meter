@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.IO;
-using System.Text;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 
@@ -1171,7 +1170,6 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         string sourceName = GetHealingSourceName(info.actor);
-        string sourceIdentity = GetSkillSlotIdentity(info.actor);
 
 
         // Passive Stars already have a dedicated resolver. Keep that path
@@ -1198,12 +1196,10 @@ public sealed class DPSMeter : ModBehaviour
                 // Guidance is identified by the actual Shrine_Guidance actor in
                 // its chain, and its player-facing name comes from native UI
                 // localization rather than a hard-coded string.
-                string shrineIdentity;
-                string shrineName = TryGetLocalizedShrineName(info.actor, out shrineIdentity);
+                string shrineName = TryGetLocalizedShrineName(info.actor);
                 if (!string.IsNullOrEmpty(shrineName))
                 {
                     sourceName = shrineName;
-                    sourceIdentity = shrineIdentity;
                 }
                 else
                 {
@@ -1218,13 +1214,11 @@ public sealed class DPSMeter : ModBehaviour
 
         if (healingGem != null)
         {
-            sourceIdentity = GetEssenceIdentity(healingGem);
             sourceName = GetLocalizedEssenceName(healingGem) ?? sourceName;
         }
 
         Sprite healingIcon = FindHealingIcon(healingGem ?? info.actor);
 
-        string healingActorChain = BuildHealingExportActorChain(info.actor);
         Hero healingHero = info.actor.firstEntity as Hero;
         DewPlayer sourcePlayer = FindPlayer(healingHero);
         if (sourcePlayer != null && sourcePlayer.isHumanPlayer)
@@ -1239,7 +1233,7 @@ public sealed class DPSMeter : ModBehaviour
 
         if (info.target == local.hero)
         {
-            _data.AddHealing(healing, effectiveHealing, sourceIdentity, sourceName, healingIcon, healingActorChain);
+            _data.AddHealing(healing, effectiveHealing, sourceName, healingIcon);
         }
 
     }
@@ -1658,10 +1652,8 @@ public sealed class DPSMeter : ModBehaviour
         return null;
     }
 
-    private static string TryGetLocalizedShrineName(Actor source, out string sourceIdentity)
+    private static string TryGetLocalizedShrineName(Actor source)
     {
-        sourceIdentity = null;
-
         if (source == null)
         {
             return null;
@@ -1686,7 +1678,6 @@ public sealed class DPSMeter : ModBehaviour
             if (isShrineGuidance)
             {
                 const string shrineKey = "Shrine_Guidance";
-                sourceIdentity = shrineKey;
 
                 try
                 {
@@ -1773,22 +1764,6 @@ public sealed class DPSMeter : ModBehaviour
         }
 
         return null;
-    }
-
-    private static string GetEssenceIdentity(Gem gem)
-    {
-        if (gem == null)
-        {
-            return null;
-        }
-
-        string key = gem.GetOriginalName();
-        if (string.IsNullOrEmpty(key))
-        {
-            key = gem.name;
-        }
-
-        return string.IsNullOrEmpty(key) ? gem.GetType().Name : key;
     }
 
     private static string GetLocalizedEssenceName(Gem gem)
@@ -1883,87 +1858,6 @@ private static bool IsPrismaticReadableNameILReference(string operandText)
             + " name=" + info.actor.name);
 
         TraceSourceChain(info.actor, "[" + DevelopmentVersion + "]  book");
-    }
-
-
-    private static string BuildHealingExportActorChain(Actor source)
-    {
-        if (source == null)
-        {
-            return null;
-        }
-
-        StringBuilder builder = new StringBuilder();
-        Actor current = source;
-        int depth = 0;
-
-        while (current != null && depth < 8)
-        {
-            Type type = current.GetType();
-
-            builder.Append("  actor[")
-                .Append(depth)
-                .Append("] type=")
-                .Append(type.Name)
-                .Append(" name=")
-                .Append(current.name ?? "<null>");
-
-            try
-            {
-                MethodInfo originalNameMethod = type.GetMethod(
-                    "GetOriginalName",
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-                if (originalNameMethod != null &&
-                    originalNameMethod.GetParameters().Length == 0 &&
-                    originalNameMethod.ReturnType == typeof(string))
-                {
-                    string originalName = originalNameMethod.Invoke(current, null) as string;
-                    if (!string.IsNullOrEmpty(originalName))
-                    {
-                        builder.Append(" original=").Append(originalName);
-                    }
-                }
-            }
-            catch (Exception)
-            {
-            }
-
-            try
-            {
-                string localized;
-                if (DewLocalization.TryGetUIValue(type.Name + "_Name", out localized) &&
-                    !string.IsNullOrEmpty(localized))
-                {
-                    builder.Append(" uiName=").Append(localized);
-                }
-            }
-            catch (Exception)
-            {
-            }
-
-            SkillTrigger skill = current.firstTrigger as SkillTrigger;
-            if (skill != null)
-            {
-                try
-                {
-                    string skillName = DewLocalization.GetSkillName(skill, 0);
-                    if (!string.IsNullOrEmpty(skillName))
-                    {
-                        builder.Append(" skillName=").Append(skillName);
-                    }
-                }
-                catch (Exception)
-                {
-                }
-            }
-
-            builder.AppendLine();
-            current = current.parentActor;
-            depth++;
-        }
-
-        return builder.ToString().TrimEnd();
     }
 
 
