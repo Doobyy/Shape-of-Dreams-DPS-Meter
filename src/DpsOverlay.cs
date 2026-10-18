@@ -1477,7 +1477,9 @@ public sealed class DpsOverlay : MonoBehaviour
 
             _contextMenuOpen = false;
         }
-        if (_settingsOpen)
+        // Settings only owns pointer input while the pointer is over it or its
+        // own drag is in progress. Clicks elsewhere should still control the main meter.
+        if (_settingsOpen && (_settingsRect.Contains(e.mousePosition) || _settingsDragging))
         {
             Rect healingToggleRect = new Rect(
                 _settingsRect.x + 12f,
